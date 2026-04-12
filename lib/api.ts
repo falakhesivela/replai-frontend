@@ -26,7 +26,13 @@ import type {
   Slot,
 } from './types'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+// On the server (server actions, route handlers) use INTERNAL_API_URL which
+// points directly at the backend — Next.js rewrite rules don't apply to
+// server-side fetch, so /api-proxy/* would fail to resolve.
+const API_URL =
+  typeof window === 'undefined'
+    ? (process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL)
+    : process.env.NEXT_PUBLIC_API_URL
 
 /**
  * Thrown when the backend rejects the caller's Supabase JWT (401/403).
