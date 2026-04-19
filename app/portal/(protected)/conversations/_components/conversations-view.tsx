@@ -430,7 +430,7 @@ function TabBar({
           onClick={() => onChange(tab)}
           className={`relative flex items-center gap-1.5 px-2.5 py-2 text-[11px] font-medium transition-colors ${
             active === tab
-              ? 'text-gray-900 border-b-2 border-gray-900 -mb-px'
+              ? 'text-[#1E0B6F] border-b-2 border-[#3D6BF8] -mb-px'
               : 'text-gray-400 hover:text-gray-600'
           }`}
         >
@@ -464,6 +464,7 @@ export default function ConversationsView({
   const [search, setSearch] = useState('')
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null)
   const [threadTab, setThreadTab] = useState<ThreadTab>('messages')
+  const [summaryExpanded, setSummaryExpanded] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [replyText, setReplyText] = useState('')
@@ -1003,12 +1004,25 @@ export default function ConversationsView({
             />
 
             {selectedConv.summary ? (
-              <div className="shrink-0 border-b border-gray-100 bg-gray-50 px-5 py-2 flex items-start gap-2">
-                <span className="text-sm shrink-0">📝</span>
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  <span className="font-medium text-gray-600">Summary: </span>
-                  {selectedConv.summary}
-                </p>
+              <div className="shrink-0 border-b border-gray-100 bg-gray-50 px-5 py-2">
+                <button
+                  type="button"
+                  onClick={() => setSummaryExpanded(v => !v)}
+                  className="flex w-full items-center gap-2 text-left"
+                >
+                  <span className="text-sm shrink-0">📝</span>
+                  <span className="text-xs font-medium text-gray-600 shrink-0">Summary</span>
+                  {!summaryExpanded && (
+                    <span className="text-xs text-gray-400 truncate flex-1">{selectedConv.summary}</span>
+                  )}
+                  <ChevronDown
+                    size={14}
+                    className={`ml-auto shrink-0 text-gray-400 transition-transform ${summaryExpanded ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {summaryExpanded && (
+                  <p className="mt-1.5 text-xs text-gray-500 leading-relaxed pl-6">{selectedConv.summary}</p>
+                )}
               </div>
             ) : selectedConv.status === 'ai' || selectedConv.status === 'human' ? (
               <div className="shrink-0 border-b border-gray-100 bg-gray-50 px-5 py-2 flex items-center gap-2">
@@ -1023,7 +1037,7 @@ export default function ConversationsView({
                 onClick={() => setThreadTab('messages')}
                 className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
                   threadTab === 'messages'
-                    ? 'border-gray-900 text-gray-900'
+                    ? 'border-[#3D6BF8] text-[#1E0B6F]'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -1035,7 +1049,7 @@ export default function ConversationsView({
                 onClick={() => setThreadTab('notes')}
                 className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
                   threadTab === 'notes'
-                    ? 'border-gray-900 text-gray-900'
+                    ? 'border-[#3D6BF8] text-[#1E0B6F]'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -1162,7 +1176,7 @@ export default function ConversationsView({
                       type="button"
                       onClick={() => void submitNote()}
                       disabled={!noteText.trim() || noteSubmitting}
-                      className="rounded-md bg-gray-900 px-4 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-40"
+                      className="rounded-md bg-[#1E0B6F] px-4 py-1.5 text-xs font-medium text-white hover:bg-[#2d1499] disabled:opacity-40"
                     >
                       {noteSubmitting ? 'Adding…' : 'Add note'}
                     </button>

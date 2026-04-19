@@ -25,6 +25,7 @@ import {
   markAfterHoursMessageRead,
   setMyBusinessHours,
   setTempClosure,
+  updateMyReminderSettings,
   type TokenGetter,
 } from '@/lib/api'
 import type { AfterHoursMessage, BusinessHoursItem, Client, ClosedDate } from '@/lib/types'
@@ -141,10 +142,10 @@ function relativeTime(iso: string): string {
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 const inputClass =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed'
+  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8] disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed'
 
 const btnPrimary =
-  'inline-flex items-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+  'inline-flex items-center gap-2 rounded-md bg-[#1E0B6F] px-3 py-2 text-sm font-medium text-white hover:bg-[#2d1499] focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
 
 const btnGhost =
   'inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
@@ -182,8 +183,8 @@ function DayToggle({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 ${
-        checked ? 'bg-gray-900' : 'bg-gray-200'
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 ${
+        checked ? 'bg-[#1E0B6F]' : 'bg-gray-200'
       }`}
     >
       <span
@@ -393,7 +394,7 @@ function TempClosureCard({
             placeholder="e.g. We're in a meeting until 3pm. We'll get back to you shortly."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+            className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]"
           />
           <p className="mt-1 text-xs text-gray-400">
             Customers will see this message and be asked if they want to leave a message for you.
@@ -547,7 +548,7 @@ function ClosedDatesSection({
                 className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
                   already
                     ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-900 hover:bg-gray-50'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-[#3D6BF8] hover:bg-gray-50'
                 }`}
               >
                 {already && <Check size={10} className="inline mr-1 text-gray-400" />}
@@ -712,7 +713,7 @@ function AfterHoursSection({
       <div className="flex items-center gap-2 mb-4">
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-            count > 0 ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500'
+            count > 0 ? 'bg-[#1E0B6F] text-white' : 'bg-gray-100 text-gray-500'
           }`}
         >
           <MessageSquare size={11} />
@@ -759,6 +760,95 @@ function AfterHoursSection({
           ))}
         </ul>
       )}
+    </SectionCard>
+  )
+}
+
+// ── Section 5: Reminder settings ─────────────────────────────────────────────
+
+const REMINDER_OPTIONS = [
+  { value: 1,  label: '1 hour before' },
+  { value: 2,  label: '2 hours before' },
+  { value: 6,  label: '6 hours before' },
+  { value: 12, label: '12 hours before' },
+  { value: 24, label: '24 hours before (day before)' },
+  { value: 48, label: '48 hours before (2 days before)' },
+]
+
+function ReminderSection({
+  initialEnabled,
+  initialHoursBefore,
+  getToken,
+}: {
+  initialEnabled: boolean
+  initialHoursBefore: number
+  getToken: TokenGetter
+}) {
+  const { toast } = useToast()
+  const [enabled, setEnabled] = useState(initialEnabled)
+  const [hoursBefore, setHoursBefore] = useState(initialHoursBefore)
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updateMyReminderSettings(getToken, {
+        reminder_enabled: enabled,
+        reminder_hours_before: hoursBefore,
+      })
+      toast.success('Reminder settings saved.')
+    } catch {
+      toast.error('Failed to save reminder settings.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <SectionCard
+      title="Appointment reminders"
+      description="Automatically send customers a WhatsApp reminder before their appointment."
+    >
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Send reminders</p>
+            <p className="text-xs text-gray-500 mt-0.5">Customers get a WhatsApp message before their appointment.</p>
+          </div>
+          <DayToggle checked={enabled} onChange={setEnabled} />
+        </div>
+
+        {enabled && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              When to send
+            </label>
+            <select
+              value={hoursBefore}
+              onChange={(e) => setHoursBefore(Number(e.target.value))}
+              className={inputClass}
+            >
+              {REMINDER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="flex justify-end pt-1">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className={btnPrimary}
+          >
+            {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+            Save
+          </button>
+        </div>
+      </div>
     </SectionCard>
   )
 }
@@ -810,6 +900,11 @@ export default function BusinessHoursForm({
       />
       <TimezoneSection currentTimezone={timezone} />
       <ClosedDatesSection initial={initialClosedDates} getToken={getToken} />
+      <ReminderSection
+        initialEnabled={client.reminder_enabled ?? true}
+        initialHoursBefore={client.reminder_hours_before ?? 24}
+        getToken={getToken}
+      />
       <AfterHoursSection
         initial={initialAfterHoursMessages}
         clientId={client.id}

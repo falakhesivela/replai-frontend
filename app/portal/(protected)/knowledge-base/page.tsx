@@ -367,7 +367,7 @@ export default function KnowledgeBasePage() {
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
                     <div
-                      className="h-full rounded-full bg-gray-900 transition-all duration-150"
+                      className="h-full rounded-full bg-[#1E0B6F] transition-all duration-150"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>

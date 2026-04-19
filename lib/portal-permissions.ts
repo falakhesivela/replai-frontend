@@ -8,6 +8,7 @@ export const PERMISSIONS_BY_ROLE: Record<PortalRole, readonly string[]> = {
   owner: [
     'manage_team',
     'manage_billing',
+    'manage_subscription',
     'manage_settings',
     'view_analytics',
     'manage_agent',
@@ -19,6 +20,7 @@ export const PERMISSIONS_BY_ROLE: Record<PortalRole, readonly string[]> = {
     'view_bookings',
     'manage_bookings',
     'manage_broadcasts',
+    'manage_ecommerce',
   ],
   manager: [
     'manage_team',
@@ -31,6 +33,7 @@ export const PERMISSIONS_BY_ROLE: Record<PortalRole, readonly string[]> = {
     'view_bookings',
     'manage_bookings',
     'manage_broadcasts',
+    'manage_ecommerce',
   ],
   agent: [
     'view_conversations',

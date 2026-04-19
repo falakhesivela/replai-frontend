@@ -6,12 +6,13 @@ import { Copy, Loader2, UserPlus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import {
   PortalAuthError,
+  getClientRoles,
   getPortalTeamDirectory,
   invitePortalTeamMember,
   patchPortalTeamMember,
   removePortalTeamMember,
 } from '@/lib/api'
-import type { PortalTeamDirectory, PortalTeamRow } from '@/lib/types'
+import type { CustomRole, PortalTeamDirectory, PortalTeamRow } from '@/lib/types'
 import { usePermissions } from '@/hooks/usePermissions'
 
 function initials(name: string): string {
@@ -52,6 +53,7 @@ export function TeamMembersPage() {
     return session?.access_token ?? null
   }, [])
   const [data, setData] = useState<PortalTeamDirectory | null>(null)
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -60,8 +62,12 @@ export function TeamMembersPage() {
   const refresh = useCallback(async () => {
     setLoadError(null)
     try {
-      const d = await getPortalTeamDirectory(getAccessToken)
+      const [d, roles] = await Promise.all([
+        getPortalTeamDirectory(getAccessToken),
+        getClientRoles(getAccessToken).catch(() => [] as CustomRole[]),
+      ])
       setData(d)
+      setCustomRoles(roles)
     } catch (e) {
       if (e instanceof PortalAuthError) {
         if (e.status === 403) {
@@ -88,16 +94,27 @@ export function TeamMembersPage() {
     <div className="max-w-5xl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <h1 className="text-2xl font-semibold text-gray-900">Team Members</h1>
-        {data?.can_invite && canManageTeam && (
-          <button
-            type="button"
-            onClick={() => setInviteOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
-          >
-            <UserPlus size={16} strokeWidth={1.75} />
-            Invite member
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {canManageTeam && (
+            <button
+              type="button"
+              onClick={() => router.push('/portal/team/roles')}
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Manage roles
+            </button>
+          )}
+          {data?.can_invite && canManageTeam && (
+            <button
+              type="button"
+              onClick={() => setInviteOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-[#1E0B6F] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d1499] focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2"
+            >
+              <UserPlus size={16} strokeWidth={1.75} />
+              Invite member
+            </button>
+          )}
+        </div>
       </div>
 
       {loadError && (
@@ -147,6 +164,7 @@ export function TeamMembersPage() {
                       busyId={rowBusy}
                       setBusy={setRowBusy}
                       onUpdated={refresh}
+                      customRoles={customRoles}
                     />
                   ))}
                 </tbody>
@@ -159,6 +177,7 @@ export function TeamMembersPage() {
       {inviteOpen && data && (
         <InviteModal
           getAccessToken={getAccessToken}
+          customRoles={customRoles}
           onClose={() => setInviteOpen(false)}
           onSuccess={() => {
             setInviteOpen(false)
@@ -177,6 +196,7 @@ function TeamRowView({
   busyId,
   setBusy,
   onUpdated,
+  customRoles,
 }: {
   row: PortalTeamRow
   readOnly: boolean
@@ -184,15 +204,22 @@ function TeamRowView({
   busyId: string | null
   setBusy: (id: string | null) => void
   onUpdated: () => Promise<void>
+  customRoles: CustomRole[]
 }) {
+  const router = useRouter()
   const mid = row.member_id
   const busy = mid != null && busyId === mid
 
-  async function onRoleChange(next: 'manager' | 'agent') {
-    if (!mid || !row.actions.change_role || row.role === next) return
+  async function onRoleChange(value: string) {
+    if (!mid || !row.actions.change_role) return
     setBusy(mid)
     try {
-      await patchPortalTeamMember(getAccessToken, mid, { role: next })
+      if (value === 'manager' || value === 'agent') {
+        await patchPortalTeamMember(getAccessToken, mid, { role: value, custom_role_id: '' })
+      } else {
+        // value is a custom_role_id — base tier stays agent
+        await patchPortalTeamMember(getAccessToken, mid, { role: 'agent', custom_role_id: value })
+      }
       await onUpdated()
     } finally {
       setBusy(null)
@@ -231,7 +258,10 @@ function TeamRowView({
   const color = row.avatar_color || '#6b7280'
 
   return (
-    <tr className="hover:bg-gray-50/60">
+    <tr
+      className={`hover:bg-gray-50/60 ${mid ? 'cursor-pointer' : ''}`}
+      onClick={mid ? () => router.push(`/portal/team/${mid}`) : undefined}
+    >
       <td className="px-4 py-3">
         <div
           className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white shadow-sm"
@@ -244,7 +274,7 @@ function TeamRowView({
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium text-gray-900">{row.name || '—'}</span>
           {row.is_self && (
-            <span className="rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            <span className="rounded-full bg-[#1E0B6F] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
               You
             </span>
           )}
@@ -252,11 +282,17 @@ function TeamRowView({
       </td>
       <td className="px-4 py-3 text-gray-600">{row.email || '—'}</td>
       <td className="px-4 py-3">
-        <span
-          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${roleBadgeClasses(row.role)}`}
-        >
-          {roleLabel(row.role)}
-        </span>
+        {row.custom_role ? (
+          <span className="inline-flex rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium ring-1 ring-indigo-200 text-indigo-700">
+            {row.custom_role.name}
+          </span>
+        ) : (
+          <span
+            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${roleBadgeClasses(row.role)}`}
+          >
+            {roleLabel(row.role)}
+          </span>
+        )}
       </td>
       <td className="px-4 py-3">
         {row.role === 'owner' ? (
@@ -280,20 +316,27 @@ function TeamRowView({
         {row.conversation_count}
       </td>
       {!readOnly && (
-        <td className="px-4 py-3">
+        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
           {mid && (row.actions.change_role || row.actions.deactivate || row.actions.remove) ? (
             <div className="flex flex-col gap-2 items-stretch">
               {row.actions.change_role && !row.is_self && (
                 <select
                   disabled={busy}
-                  value={row.role === 'agent' ? 'agent' : 'manager'}
-                  onChange={(e) =>
-                    void onRoleChange(e.target.value as 'manager' | 'agent')
-                  }
-                  className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 disabled:opacity-50"
+                  value={row.custom_role?.id ?? (row.role === 'agent' ? 'agent' : 'manager')}
+                  onChange={(e) => void onRoleChange(e.target.value)}
+                  className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8] disabled:opacity-50"
                 >
-                  <option value="manager">Manager</option>
-                  <option value="agent">Agent</option>
+                  {customRoles.length > 0 && (
+                    <optgroup label="Custom roles">
+                      {customRoles.map((r) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="Default">
+                    <option value="manager">Manager</option>
+                    <option value="agent">Agent</option>
+                  </optgroup>
                 </select>
               )}
               <div className="flex flex-wrap gap-1.5">
@@ -341,16 +384,19 @@ function TeamRowView({
 
 function InviteModal({
   getAccessToken,
+  customRoles,
   onClose,
   onSuccess,
 }: {
   getAccessToken: () => Promise<string | null>
+  customRoles: CustomRole[]
   onClose: () => void
   onSuccess: () => void
 }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<'manager' | 'agent'>('agent')
+  // roleValue is either a custom role id, 'manager', or 'agent'
+  const [roleValue, setRoleValue] = useState<string>('agent')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<{
@@ -365,10 +411,12 @@ function InviteModal({
     setError(null)
     setPending(true)
     try {
+      const isCustom = roleValue !== 'manager' && roleValue !== 'agent'
       const res = await invitePortalTeamMember(getAccessToken, {
         name: name.trim(),
         email: email.trim(),
-        role,
+        role: isCustom ? 'agent' : (roleValue as 'manager' | 'agent'),
+        custom_role_id: isCustom ? roleValue : null,
       })
       setDone({
         name: res.name,
@@ -435,7 +483,7 @@ function InviteModal({
             <button
               type="button"
               onClick={onSuccess}
-              className="w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+              className="w-full rounded-md bg-[#1E0B6F] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d1499]"
             >
               Done
             </button>
@@ -449,7 +497,7 @@ function InviteModal({
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]"
                 placeholder="Full name"
               />
             </div>
@@ -460,19 +508,28 @@ function InviteModal({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]"
                 placeholder="colleague@company.com"
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
               <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as 'manager' | 'agent')}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                value={roleValue}
+                onChange={(e) => setRoleValue(e.target.value)}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]"
               >
-                <option value="manager">Manager</option>
-                <option value="agent">Agent</option>
+                {customRoles.length > 0 && (
+                  <optgroup label="Custom roles">
+                    {customRoles.map((r) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+                <optgroup label="Default">
+                  <option value="manager">Manager</option>
+                  <option value="agent">Agent</option>
+                </optgroup>
               </select>
             </div>
             {error && (
@@ -491,7 +548,7 @@ function InviteModal({
               <button
                 type="submit"
                 disabled={pending}
-                className="flex-1 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+                className="flex-1 rounded-md bg-[#1E0B6F] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d1499] disabled:opacity-50"
               >
                 {pending ? 'Sending…' : 'Send invite'}
               </button>

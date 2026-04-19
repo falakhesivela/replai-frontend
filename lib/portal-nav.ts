@@ -13,13 +13,18 @@ export const PORTAL_NAV_ACCESS: readonly PortalNavEntry[] = [
   { href: '/portal/conversations', permission: 'view_conversations' },
   { href: '/portal/leads', permission: 'view_leads' },
   { href: '/portal/bookings', permission: 'view_bookings' },
+  { href: '/portal/my-bookings', permission: 'view_bookings' },
   { href: '/portal/broadcasts', permission: 'manage_broadcasts' },
   { href: '/portal/team', permission: 'manage_team' },
+  { href: '/portal/team/roles', permission: 'manage_team' },
   { href: '/portal/setup', permission: 'manage_settings' },
   {
     href: '/portal/settings',
     anyPermission: ['manage_settings', 'view_settings'],
   },
+  { href: '/portal/subscription', permission: 'manage_subscription' },
+  { href: '/portal/ecommerce/products', permission: 'manage_ecommerce' },
+  { href: '/portal/ecommerce/orders', permission: 'manage_ecommerce' },
 ]
 
 export function portalNavEntryAllowsRole(

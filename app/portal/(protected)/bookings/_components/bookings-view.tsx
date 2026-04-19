@@ -23,6 +23,7 @@ import {
 } from '@/lib/api'
 import type { Booking, Service, Slot } from '@/lib/types'
 import { usePermissions } from '@/hooks/usePermissions'
+import BookingDetailPanel from './booking-detail-panel'
 
 // Token getter that pulls a fresh Supabase access token on every call so we
 // don't ship an expired JWT to the backend after the page has been open for a
@@ -185,72 +186,66 @@ function ActionsDropdown({
 function BookingRow({
   booking,
   onUpdate,
+  onSelect,
 }: {
   booking: Booking
   onUpdate: (updated: Booking) => void
+  onSelect: (booking: Booking) => void
 }) {
-  const [expanded, setExpanded] = useState(false)
-
   return (
-    <>
-      <tr
-        className="border-t border-gray-100 hover:bg-gray-50/50 cursor-pointer transition-colors"
-        onClick={() => setExpanded((e) => !e)}
-      >
-        <td className="px-4 py-3">
+    <tr
+      className="border-t border-gray-100 hover:bg-gray-50/50 cursor-pointer transition-colors"
+      onClick={() => onSelect(booking)}
+    >
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-1.5">
+          <ChevronRight
+            size={13}
+            strokeWidth={2}
+            className="shrink-0 text-gray-400"
+          />
+          <span className="text-sm font-medium text-gray-900">{formatTime(booking.booking_time)}</span>
+          <span className="text-xs text-gray-400">{formatDate(booking.booking_date)}</span>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-700">{booking.customer_name}</td>
+      <td className="px-4 py-3 text-sm text-gray-500">
+        {booking.services ? (
+          <>
+            {booking.services.name}
+            <span className="ml-1.5 text-xs text-gray-400">({booking.services.duration_minutes}m)</span>
+          </>
+        ) : (
+          <span className="italic text-gray-300">Unknown</span>
+        )}
+      </td>
+      <td className="px-4 py-3">
+        <StatusBadge status={booking.status} />
+      </td>
+      <td className="px-4 py-3 hidden md:table-cell">
+        {booking.assigned_member ? (
           <div className="flex items-center gap-1.5">
-            <ChevronRight
-              size={13}
-              strokeWidth={2}
-              className={`shrink-0 text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
-            />
-            <span className="text-sm font-medium text-gray-900">{formatTime(booking.booking_time)}</span>
-            <span className="text-xs text-gray-400">{formatDate(booking.booking_date)}</span>
-          </div>
-        </td>
-        <td className="px-4 py-3 text-sm text-gray-700">{booking.customer_name}</td>
-        <td className="px-4 py-3 text-sm text-gray-500">
-          {booking.services ? (
-            <>
-              {booking.services.name}
-              <span className="ml-1.5 text-xs text-gray-400">({booking.services.duration_minutes}m)</span>
-            </>
-          ) : (
-            <span className="italic text-gray-300">Unknown</span>
-          )}
-        </td>
-        <td className="px-4 py-3">
-          <StatusBadge status={booking.status} />
-        </td>
-        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-          <ActionsDropdown booking={booking} onUpdate={onUpdate} />
-        </td>
-      </tr>
-      {expanded && (
-        <tr className="border-t border-gray-50 bg-gray-50/40">
-          <td colSpan={5} className="px-10 py-3">
-            <div className="flex items-start gap-8 text-xs">
-              <div>
-                <p className="font-medium uppercase tracking-wide text-gray-400">Phone</p>
-                <p className="mt-0.5 font-mono text-gray-700">{booking.customer_phone}</p>
-              </div>
-              <div>
-                <p className="font-medium uppercase tracking-wide text-gray-400">Booked at</p>
-                <p className="mt-0.5 text-gray-600">
-                  {new Date(booking.created_at).toLocaleString('en-GB', {
-                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                  })}
-                </p>
-              </div>
-              <div>
-                <p className="font-medium uppercase tracking-wide text-gray-400">Time</p>
-                <p className="mt-0.5 font-mono text-gray-500">{booking.booking_time.slice(0, 5)}</p>
-              </div>
+            <div
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
+              style={{ backgroundColor: booking.assigned_member.avatar_color ?? '#6b7280' }}
+            >
+              {booking.assigned_member.name.trim().split(/\s+/).filter(Boolean).map((p, i, arr) =>
+                i === 0 || i === arr.length - 1 ? p[0] : ''
+              ).join('').toUpperCase().slice(0, 2)}
             </div>
-          </td>
-        </tr>
-      )}
-    </>
+            <span className="text-xs text-gray-500 truncate max-w-[60px]">{booking.assigned_member.name}</span>
+            <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-400">
+              {booking.assigned_member.role_label ?? (booking.assigned_member.role.charAt(0).toUpperCase() + booking.assigned_member.role.slice(1))}
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs text-gray-300">—</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+        <ActionsDropdown booking={booking} onUpdate={onUpdate} />
+      </td>
+    </tr>
   )
 }
 
@@ -331,7 +326,7 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
           onClick={() => onChange(value)}
           className={`relative px-4 py-2.5 text-xs font-medium transition-colors ${
             active === value
-              ? 'border-b-2 border-gray-900 text-gray-900 -mb-px'
+              ? 'border-b-2 border-[#3D6BF8] text-[#1E0B6F] -mb-px'
               : 'text-gray-400 hover:text-gray-600'
           }`}
         >
@@ -436,11 +431,11 @@ function CalendarView({
               disabled={count === 0}
               className={`h-16 flex flex-col items-center border-b border-r border-gray-50 pt-2 transition-colors last:border-r-0 ${
                 isWeekend ? 'bg-gray-50/50' : ''
-              } ${count > 0 ? 'hover:bg-blue-50 cursor-pointer' : 'cursor-default'}`}
+              } ${count > 0 ? 'hover:bg-indigo-50 cursor-pointer' : 'cursor-default'}`}
             >
               <span
                 className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                  isToday ? 'bg-gray-900 text-white' : 'text-gray-700'
+                  isToday ? 'bg-[#1E0B6F] text-white' : 'text-gray-700'
                 }`}
               >
                 {day}
@@ -558,7 +553,7 @@ function NewBookingModal({
                 value={serviceId}
                 onChange={(e) => setServiceId(e.target.value)}
                 required
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
               >
                 <option value="">Select a service…</option>
                 {services.map((s) => (
@@ -583,7 +578,7 @@ function NewBookingModal({
                 onChange={(e) => setSlotId(e.target.value)}
                 required
                 disabled={!serviceId || slots.length === 0}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50"
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] disabled:opacity-50"
               >
                 <option value="">
                   {!serviceId
@@ -614,7 +609,7 @@ function NewBookingModal({
               onChange={(e) => setCustomerName(e.target.value)}
               required
               placeholder="Jane Smith"
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
+              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
             />
           </div>
 
@@ -627,7 +622,7 @@ function NewBookingModal({
               onChange={(e) => setCustomerPhone(e.target.value)}
               required
               placeholder="+27821234567"
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
+              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
             />
           </div>
 
@@ -647,7 +642,7 @@ function NewBookingModal({
             <button
               type="submit"
               disabled={!canSubmit || submitting}
-              className="flex items-center gap-1.5 rounded-md bg-gray-900 px-4 py-2 text-xs font-medium text-white hover:bg-gray-700 transition-colors disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-md bg-[#1E0B6F] px-4 py-2 text-xs font-medium text-white hover:bg-[#2d1499] transition-colors disabled:opacity-40"
             >
               {submitting && <Loader2 size={12} className="animate-spin" />}
               Create Booking
@@ -673,6 +668,7 @@ export default function BookingsView({
   const [view, setView] = useState<ViewMode>('list')
   const [dayFilter, setDayFilter] = useState<string | null>(null)
   const [showNewBooking, setShowNewBooking] = useState(false)
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
 
   const today = todayStr()
 
@@ -689,7 +685,11 @@ export default function BookingsView({
             setBookings((prev) => [...prev, payload.new as Booking])
           } else if (payload.eventType === 'UPDATE') {
             setBookings((prev) =>
-              prev.map((b) => (b.id === (payload.new as Booking).id ? (payload.new as Booking) : b))
+              prev.map((b) =>
+                b.id === (payload.new as Booking).id
+                  ? { ...b, ...(payload.new as Booking) }
+                  : b
+              )
             )
           } else if (payload.eventType === 'DELETE') {
             setBookings((prev) => prev.filter((b) => b.id !== (payload.old as Partial<Booking>).id))
@@ -702,6 +702,7 @@ export default function BookingsView({
 
   const handleUpdate = useCallback((updated: Booking) => {
     setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
+    setSelectedBooking((prev) => (prev?.id === updated.id ? updated : prev))
   }, [])
 
   const handleDayClick = useCallback((date: string) => {
@@ -730,6 +731,16 @@ export default function BookingsView({
         />
       )}
 
+      {selectedBooking && (
+        <BookingDetailPanel
+          booking={selectedBooking}
+          allBookings={bookings}
+          token={getFreshToken}
+          onClose={() => setSelectedBooking(null)}
+          onUpdate={handleUpdate}
+        />
+      )}
+
       {/* Heading */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -739,7 +750,7 @@ export default function BookingsView({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowNewBooking(true)}
-            className="flex items-center gap-1.5 rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 transition-colors"
+            className="flex items-center gap-1.5 rounded-md bg-[#1E0B6F] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2d1499] transition-colors"
           >
             <Plus size={13} strokeWidth={2} />
             New Booking
@@ -748,7 +759,7 @@ export default function BookingsView({
             onClick={() => setView((v) => (v === 'list' ? 'calendar' : 'list'))}
             className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
               view === 'calendar'
-                ? 'border-gray-900 bg-gray-900 text-white'
+                ? 'border-[#3D6BF8] bg-[#1E0B6F] text-white'
                 : 'border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -803,6 +814,7 @@ export default function BookingsView({
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400">Customer</th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400">Service</th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400 hidden md:table-cell">Assigned</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -812,6 +824,7 @@ export default function BookingsView({
                     key={booking.id}
                     booking={booking}
                     onUpdate={handleUpdate}
+                    onSelect={setSelectedBooking}
                   />
                 ))}
               </tbody>

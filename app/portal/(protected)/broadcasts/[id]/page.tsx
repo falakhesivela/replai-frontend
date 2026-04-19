@@ -208,13 +208,13 @@ export default function BroadcastDetailPage() {
           </div>
           <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gray-900 transition-all duration-500"
+              className="h-full rounded-full bg-[#1E0B6F] transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
           {broadcast.status === 'sending' && (
             <p className="text-[11px] text-blue-500 mt-1.5 flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse inline-block" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#3D6BF8] animate-pulse inline-block" />
               Sending in progress…
             </p>
           )}

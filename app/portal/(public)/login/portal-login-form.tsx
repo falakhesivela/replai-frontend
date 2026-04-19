@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { resolvePortalLanding } from '@/lib/portal-login'
 
@@ -31,7 +32,7 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
   const message = error ?? (accountError ? NO_ACCOUNT_MSG : null)
   const successMessage = passwordReset ? 'Password updated. Sign in with your new password.' : null
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     setPending(true)
@@ -74,80 +75,127 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold text-gray-900">Client Portal</h1>
-          <p className="mt-1 text-sm text-gray-500">Sign in for business owners and team members</p>
+    <div className="min-h-screen flex">
+      {/* Left branded panel */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between px-12 py-12">
+        <Image
+          src="/images/woman_agent.jpg"
+          alt=""
+          fill
+          className="object-cover object-center"
+          priority
+        />
+        {/* Dark gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1E0B6F]/90 via-[#1E0B6F]/40 to-[#1E0B6F]/60" />
+
+        <div className="relative z-10 w-full">
+          <Image
+            src="/images/replai_logo.png"
+            alt="Replai"
+            width={120}
+            height={36}
+            className="object-contain brightness-0 invert"
+            priority
+          />
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white rounded-lg border border-gray-200 p-6 sm:p-8 shadow-sm space-y-5"
-        >
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-              placeholder="you@example.com"
+        <div className="relative z-10 text-left">
+          <h2 className="text-3xl font-bold text-white leading-snug">
+            Your AI-powered<br />customer assistant
+          </h2>
+          <p className="mt-3 text-blue-100 text-sm max-w-xs">
+            Automate conversations, manage bookings, and delight your customers — 24/7.
+          </p>
+        </div>
+
+        <p className="relative z-10 text-white/40 text-xs">© {new Date().getFullYear()} ReplAI</p>
+      </div>
+
+      {/* Right form panel */}
+      <div className="flex-1 flex items-center justify-center bg-gray-50 px-6 py-12">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
+          <div className="flex justify-center mb-8 lg:hidden">
+            <Image
+              src="/images/replai_logo.png"
+              alt="Replai"
+              width={110}
+              height={33}
+              className="object-contain"
+              priority
             />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
+            <p className="mt-1 text-sm text-gray-500">Sign in to your client portal</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email
               </label>
-              <Link
-                href="/portal/forgot-password"
-                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                Forgot password?
-              </Link>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8] bg-white"
+                placeholder="you@example.com"
+              />
             </div>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-              placeholder="••••••••"
-            />
-          </div>
 
-          {successMessage && (
-            <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
-              {successMessage}
-            </p>
-          )}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Link
+                  href="/portal/forgot-password"
+                  className="text-xs text-[#3D6BF8] hover:text-[#1E0B6F] transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8] bg-white"
+                placeholder="••••••••"
+              />
+            </div>
 
-          {message && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-              {message}
-            </p>
-          )}
+            {successMessage && (
+              <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                {successMessage}
+              </p>
+            )}
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {pending ? 'Signing in…' : 'Sign in'}
-          </button>
-        </form>
+            {message && (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                {message}
+              </p>
+            )}
 
-        <p className="mt-6 text-center text-xs text-gray-400">
-          Need an account?{' '}
-          <span className="text-gray-500">Contact us.</span>
-        </p>
+            <button
+              type="submit"
+              disabled={pending}
+              className="w-full rounded-lg bg-[#1E0B6F] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2d1499] focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {pending ? 'Signing in…' : 'Sign in'}
+            </button>
+          </form>
+
+          <p className="mt-8 text-center text-xs text-gray-400">
+            Need an account?{' '}
+            <span className="text-gray-500">Contact us.</span>
+          </p>
+        </div>
       </div>
     </div>
   )

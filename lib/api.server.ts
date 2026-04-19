@@ -12,9 +12,12 @@ import type {
   Client,
   ClientCreate,
   ClientCreateResponse,
+  ClientSubscription,
   Conversation,
   KnowledgeFile,
+  Plan,
   Service,
+  SubscriptionDetail,
 } from './types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -135,5 +138,23 @@ export function updateClientBookingStatus(
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
+  })
+}
+
+// ── Subscription (admin) ──────────────────────────────────────────────────────
+
+export function getClientSubscriptionDetail(clientId: string): Promise<SubscriptionDetail> {
+  return adminFetch(`/clients/${clientId}/subscription`)
+}
+
+export function toggleClientFeatureAdmin(
+  clientId: string,
+  plan_key: string,
+  enabled: boolean
+): Promise<{ subscription: ClientSubscription; features: Record<string, boolean> }> {
+  return adminFetch(`/clients/${clientId}/subscription/toggle`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan_key, enabled }),
   })
 }

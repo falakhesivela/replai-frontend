@@ -17,6 +17,8 @@ export interface Client {
   agent_use_emoji?: boolean
   agent_sign_off?: boolean
   agent_response_style?: 'formal' | 'friendly' | 'casual'
+  reminder_enabled?: boolean
+  reminder_hours_before?: number
 }
 
 export interface BusinessHoursItem {
@@ -175,14 +177,25 @@ export interface Booking {
   booking_date: string  // "YYYY-MM-DD"
   booking_time: string  // "HH:MM"
   status: 'confirmed' | 'cancelled' | 'completed' | 'no_show'
+  assigned_to: string | null
+  assigned_at: string | null
   created_at: string
   services: { name: string; duration_minutes: number } | null
+  assigned_member: { id: string; name: string; avatar_color: string | null; role: string; role_label: string | null } | null
 }
 
 export interface PortalTeamRowActions {
   change_role: boolean
   deactivate: boolean
   remove: boolean
+}
+
+export interface CustomRole {
+  id: string
+  client_id: string
+  name: string
+  permissions: string[]
+  created_at: string
 }
 
 export interface PortalTeamRow {
@@ -192,10 +205,20 @@ export interface PortalTeamRow {
   email: string
   role: 'owner' | 'manager' | 'agent'
   is_active: boolean
+  is_bookable: boolean
   conversation_count: number
   avatar_color: string | null
   is_self: boolean
   actions: PortalTeamRowActions
+  custom_role: Pick<CustomRole, 'id' | 'name' | 'permissions'> | null
+}
+
+export interface BookableMember {
+  id: string
+  name: string
+  avatar_color: string | null
+  role: 'owner' | 'manager' | 'agent'
+  role_label: string | null
 }
 
 export interface PortalTeamDirectory {
@@ -269,4 +292,90 @@ export interface PortalTeamInviteResult {
   temp_password: string
   /** False when Resend failed or was skipped (invite still created; share password manually). */
   email_sent?: boolean
+}
+
+// ── Subscription & feature toggles ───────────────────────────────────────────
+
+export interface Plan {
+  id: string
+  key: string
+  name: string
+  description: string | null
+  price: number
+  currency: string
+  is_active: boolean
+  /** Annotated fields — present when returned from get_subscription_detail */
+  enabled?: boolean
+  enabled_at?: string | null
+  price_at_enable?: number | null
+}
+
+export interface ClientSubscription {
+  id: string
+  client_id: string
+  base_price: number
+  total_price: number
+  currency: string
+  status: 'active' | 'cancelled' | 'past_due'
+  current_period_start: string
+  current_period_end: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SubscriptionDetail {
+  subscription: ClientSubscription | null
+  plans: Plan[]
+}
+
+export interface ToggleFeatureResponse {
+  subscription: ClientSubscription
+  features: Record<string, boolean>
+}
+
+// ── E-commerce ────────────────────────────────────────────────────────────────
+
+export interface Product {
+  id: string
+  client_id: string
+  name: string
+  description: string | null
+  price: number
+  currency: string
+  stock_quantity: number   // -1 = unlimited
+  image_url: string | null
+  category: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled'
+
+export interface OrderItem {
+  product_id: string
+  name: string
+  price: number
+  quantity: number
+}
+
+export interface Order {
+  id: string
+  client_id: string
+  customer_phone: string
+  customer_name: string | null
+  status: OrderStatus
+  total_amount: number
+  items: OrderItem[]
+  payment_link: string | null
+  assigned_to: string | null
+  assigned_member: { id: string; name: string; avatar_color: string | null; role: string; role_label: string | null } | null
+  created_at: string
+  updated_at: string
 }

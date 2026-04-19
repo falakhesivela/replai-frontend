@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
 import { MessageSquare } from 'lucide-react'
-import { getClient, getKnowledgeFiles, getClientConversations } from '@/lib/api.server'
-import type { Client, KnowledgeFile, Conversation } from '@/lib/types'
+import { getClient, getKnowledgeFiles, getClientConversations, getClientSubscriptionDetail } from '@/lib/api.server'
+import type { Client, KnowledgeFile, Conversation, SubscriptionDetail } from '@/lib/types'
 import SystemPromptCard from './_components/system-prompt-card'
 import KnowledgeCard from './_components/knowledge-card'
+import SubscriptionCard from './_components/subscription-card'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -145,6 +146,7 @@ export default async function ClientDetailPage({
   let client: Client
   let files: KnowledgeFile[] = []
   let conversations: Conversation[] = []
+  let subscriptionDetail: SubscriptionDetail | null = null
 
   try {
     client = await getClient(id)
@@ -155,6 +157,7 @@ export default async function ClientDetailPage({
   await Promise.allSettled([
     getKnowledgeFiles(id).then((f) => { files = f }),
     getClientConversations(id).then((c) => { conversations = c }),
+    getClientSubscriptionDetail(id).then((s) => { subscriptionDetail = s }),
   ])
 
   return (
@@ -183,6 +186,11 @@ export default async function ClientDetailPage({
 
       {/* ── Knowledge base ── */}
       <KnowledgeCard clientId={id} initialFiles={files} />
+
+      {/* ── Subscription ── */}
+      {subscriptionDetail && (
+        <SubscriptionCard clientId={id} initialDetail={subscriptionDetail} />
+      )}
 
       {/* ── Conversations ── */}
       <ConversationsCard conversations={conversations} />

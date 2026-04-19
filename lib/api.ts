@@ -18,12 +18,17 @@ import type {
   ConversationNote,
   KnowledgeFile,
   Message,
+  Order,
+  OrderStatus,
   PortalCollaborationContext,
   PortalNotification,
   PortalTeamDirectory,
   PortalTeamInviteResult,
+  Product,
   Service,
   Slot,
+  SubscriptionDetail,
+  ToggleFeatureResponse,
 } from './types'
 
 // On the server (server actions, route handlers) use INTERNAL_API_URL which
@@ -119,6 +124,19 @@ export function updateMyAgentSettings(
   }
 ): Promise<Client> {
   return portalFetch('/portal/me/agent', token, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  })
+}
+
+// ── Reminder settings ────────────────────────────────────────────────────────
+
+export function updateMyReminderSettings(
+  token: string | TokenGetter,
+  settings: { reminder_enabled: boolean; reminder_hours_before: number }
+): Promise<Client> {
+  return portalFetch('/portal/me/reminders', token, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settings),
@@ -343,6 +361,42 @@ export function createMyBooking(
   })
 }
 
+export function rescheduleMyBooking(
+  token: string | TokenGetter,
+  bookingId: string,
+  slotId: string
+): Promise<Booking> {
+  return portalFetch(`/portal/me/bookings/${bookingId}/reschedule`, token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ slot_id: slotId }),
+  })
+}
+
+export function assignMyBooking(
+  token: string | TokenGetter,
+  bookingId: string,
+  memberId: string | null
+): Promise<Booking> {
+  return portalFetch(`/portal/me/bookings/${bookingId}/assign`, token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ member_id: memberId }),
+  })
+}
+
+export function getMyAssignedBookings(
+  token: string | TokenGetter
+): Promise<Booking[]> {
+  return portalFetch('/portal/me/bookings/mine', token)
+}
+
+export function getBookableMembers(
+  token: string | TokenGetter
+): Promise<import('./types').BookableMember[]> {
+  return portalFetch('/portal/me/team/members/bookable', token)
+}
+
 // ── Team (portal — owners + managers) ───────────────────────────────────────
 
 export function getPortalTeamDirectory(
@@ -353,7 +407,7 @@ export function getPortalTeamDirectory(
 
 export function invitePortalTeamMember(
   token: string | TokenGetter,
-  body: { name: string; email: string; role: 'manager' | 'agent' }
+  body: { name: string; email: string; role: 'manager' | 'agent'; custom_role_id?: string | null }
 ): Promise<PortalTeamInviteResult> {
   return portalFetch('/portal/me/team/members/invite', token, {
     method: 'POST',
@@ -365,12 +419,45 @@ export function invitePortalTeamMember(
 export function patchPortalTeamMember(
   token: string | TokenGetter,
   memberId: string,
-  body: { name?: string; role?: 'manager' | 'agent'; is_active?: boolean }
+  body: { name?: string; role?: 'manager' | 'agent'; is_active?: boolean; is_bookable?: boolean; custom_role_id?: string | null }
 ): Promise<Record<string, unknown>> {
   return portalFetch(`/portal/me/team/members/${encodeURIComponent(memberId)}`, token, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+  })
+}
+
+export function getClientRoles(token: string | TokenGetter): Promise<import('./types').CustomRole[]> {
+  return portalFetch('/portal/me/team/roles', token)
+}
+
+export function createClientRole(
+  token: string | TokenGetter,
+  body: { name: string; permissions: string[] }
+): Promise<import('./types').CustomRole> {
+  return portalFetch('/portal/me/team/roles', token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateClientRole(
+  token: string | TokenGetter,
+  roleId: string,
+  body: { name: string; permissions: string[] }
+): Promise<import('./types').CustomRole> {
+  return portalFetch(`/portal/me/team/roles/${encodeURIComponent(roleId)}`, token, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export function deleteClientRole(token: string | TokenGetter, roleId: string): Promise<void> {
+  return portalFetch(`/portal/me/team/roles/${encodeURIComponent(roleId)}`, token, {
+    method: 'DELETE',
   })
 }
 
@@ -622,6 +709,147 @@ export function markAfterHoursMessageRead(
   })
 }
 
+// ── Subscription ──────────────────────────────────────────────────────────────
+
+export function getMySubscription(
+  token: string | TokenGetter
+): Promise<SubscriptionDetail> {
+  return portalFetch('/portal/me/subscription', token)
+}
+
+export function toggleMyFeature(
+  token: string | TokenGetter,
+  plan_key: string,
+  enabled: boolean
+): Promise<ToggleFeatureResponse> {
+  return portalFetch('/portal/me/subscription/toggle', token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan_key, enabled }),
+  })
+}
+
+// ── E-commerce: products ──────────────────────────────────────────────────────
+
+export function getMyProducts(token: string | TokenGetter): Promise<Product[]> {
+  return portalFetch('/portal/me/ecommerce/products', token)
+}
+
+export function createMyProduct(
+  token: string | TokenGetter,
+  data: Omit<Product, 'id' | 'client_id' | 'created_at' | 'updated_at'>
+): Promise<Product> {
+  return portalFetch('/portal/me/ecommerce/products', token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+}
+
+export function updateMyProduct(
+  token: string | TokenGetter,
+  productId: string,
+  data: Partial<Omit<Product, 'id' | 'client_id' | 'created_at' | 'updated_at'>>
+): Promise<Product> {
+  return portalFetch(
+    `/portal/me/ecommerce/products/${encodeURIComponent(productId)}`,
+    token,
+    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }
+  )
+}
+
+export interface ProductImportResult {
+  created: number
+  failed: number
+  errors: string[]
+}
+
+export async function importMyProducts(
+  token: string | TokenGetter,
+  file: File
+): Promise<ProductImportResult> {
+  const t = typeof token === 'function' ? await token() : token
+  if (!t) throw new PortalAuthError(401, 'Not authenticated')
+  const body = new FormData()
+  body.append('file', file)
+  const res = await fetch(`${API_URL}/portal/me/ecommerce/products/import`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${t}` },
+    body,
+  })
+  if (res.status === 401 || res.status === 403)
+    throw new PortalAuthError(res.status, await res.text())
+  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`)
+  return res.json()
+}
+
+export async function deleteMyProduct(
+  token: string | TokenGetter,
+  productId: string
+): Promise<void> {
+  const t = typeof token === 'function' ? await token() : token
+  if (!t) throw new PortalAuthError(401, 'Not authenticated')
+  const res = await fetch(
+    `${API_URL}/portal/me/ecommerce/products/${encodeURIComponent(productId)}`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } }
+  )
+  if (res.status === 401 || res.status === 403)
+    throw new PortalAuthError(res.status, await res.text())
+  if (!res.ok && res.status !== 204)
+    throw new Error(`API error ${res.status}: ${await res.text()}`)
+}
+
+// ── E-commerce: orders ────────────────────────────────────────────────────────
+
+export function getMyOrders(
+  token: string | TokenGetter,
+  status?: OrderStatus
+): Promise<Order[]> {
+  const params = status ? `?status=${encodeURIComponent(status)}` : ''
+  return portalFetch(`/portal/me/ecommerce/orders${params}`, token)
+}
+
+export function getMyOrder(
+  token: string | TokenGetter,
+  orderId: string
+): Promise<Order> {
+  return portalFetch(`/portal/me/ecommerce/orders/${encodeURIComponent(orderId)}`, token)
+}
+
+export function getMyOrdersByPhone(
+  token: string | TokenGetter,
+  customerPhone: string
+): Promise<Order[]> {
+  return portalFetch(
+    `/portal/me/ecommerce/orders?customer_phone=${encodeURIComponent(customerPhone)}`,
+    token
+  )
+}
+
+export function updateMyOrderStatus(
+  token: string | TokenGetter,
+  orderId: string,
+  status: OrderStatus
+): Promise<Order> {
+  return portalFetch(
+    `/portal/me/ecommerce/orders/${encodeURIComponent(orderId)}/status`,
+    token,
+    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }
+  )
+}
+
+export function assignMyOrder(
+  token: string | TokenGetter,
+  orderId: string,
+  memberId: string | null
+): Promise<Order> {
+  return portalFetch(
+    `/portal/me/ecommerce/orders/${encodeURIComponent(orderId)}/assign`,
+    token,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ member_id: memberId }) }
+  )
+}
+
 // Re-export types so callers can import from one place
 export type {
   ActivityLogEntry,
@@ -638,11 +866,17 @@ export type {
   Client,
   ClientCreate,
   ClientCreateResponse,
+  ClientSubscription,
   ClosedDate,
   Conversation,
   ConversationNote,
   KnowledgeFile,
   Message,
+  Order,
+  OrderItem,
+  OrderStatus,
+  Plan,
+  Product,
   PortalCollaborationContext,
   PortalNotification,
   PortalTeamDirectory,
@@ -650,4 +884,6 @@ export type {
   PortalTeamRow,
   Service,
   Slot,
+  SubscriptionDetail,
+  ToggleFeatureResponse,
 } from './types'

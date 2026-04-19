@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Menu } from 'lucide-react'
+import Image from 'next/image'
 import PortalSidebar from './sidebar'
 
 interface PortalShellProps {
@@ -59,7 +60,14 @@ export default function PortalShell({
           >
             <Menu size={20} strokeWidth={1.75} />
           </button>
-          <span className="text-sm font-semibold text-gray-900 truncate">{businessName}</span>
+          <Image
+            src="/images/replai_logo.png"
+            alt="Replai"
+            width={80}
+            height={24}
+            className="object-contain object-left"
+            priority
+          />
         </header>
 
         <main className="flex-1 p-4 md:p-6">

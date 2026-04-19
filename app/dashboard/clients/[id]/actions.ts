@@ -5,10 +5,11 @@ import { revalidatePath } from 'next/cache'
 import {
   deleteKnowledge,
   getKnowledgeFiles,
+  toggleClientFeatureAdmin,
   updateSystemPrompt,
   uploadKnowledge,
 } from '@/lib/api.server'
-import type { KnowledgeFile } from '@/lib/types'
+import type { ClientSubscription, KnowledgeFile } from '@/lib/types'
 
 export type SystemPromptState = {
   success?: boolean
@@ -69,6 +70,26 @@ export async function clearKnowledgeAction(
     return {
       ok: false,
       error: err instanceof Error ? err.message : 'Failed to clear files.',
+    }
+  }
+}
+
+// ── Subscription actions ──────────────────────────────────────────────────────
+
+export async function toggleClientFeatureAction(
+  clientId: string,
+  planKey: string,
+  enabled: boolean
+): Promise<{ subscription: ClientSubscription; features: Record<string, boolean>; error?: string }> {
+  try {
+    const result = await toggleClientFeatureAdmin(clientId, planKey, enabled)
+    revalidatePath(`/dashboard/clients/${clientId}`)
+    return result
+  } catch (err) {
+    return {
+      subscription: {} as ClientSubscription,
+      features: {},
+      error: err instanceof Error ? err.message : 'Failed to update feature.',
     }
   }
 }
