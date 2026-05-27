@@ -228,11 +228,24 @@ export default function WidgetChat({ widgetId, config }: Props) {
     postHost('ready', { side: isRight ? 'right' : 'left' })
   }, [isRight])
 
+  // Track the previous "opened" state so we can defer the shrink message until
+  // the panel's 200ms exit animation completes. Otherwise the host iframe
+  // resizes instantly and clips the panel mid-transition.
+  const wasOpenRef = useRef(false)
   useEffect(() => {
     const side = isRight ? 'right' : 'left'
-    if (open) postHost('opened', { side })
-    else if (showPrechat) postHost('prechat', { side })
-    else postHost('closed', { side })
+    if (open) {
+      postHost('opened', { side })
+      wasOpenRef.current = true
+      return
+    }
+    const next = showPrechat ? 'prechat' : 'closed'
+    if (wasOpenRef.current) {
+      wasOpenRef.current = false
+      const t = window.setTimeout(() => postHost(next, { side }), 220)
+      return () => window.clearTimeout(t)
+    }
+    postHost(next, { side })
   }, [open, showPrechat, isRight])
 
   function dismissPrechat() {
