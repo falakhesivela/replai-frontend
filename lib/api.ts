@@ -5,6 +5,8 @@
 import type {
   ActivityLogEntry,
   AfterHoursMessage,
+  Department,
+  DepartmentMember,
   AvailabilitySchedule,
   Booking,
   Broadcast,
@@ -29,6 +31,7 @@ import type {
   Slot,
   SubscriptionDetail,
   ToggleFeatureResponse,
+  WidgetConfig,
 } from './types'
 
 // On the server (server actions, route handlers) use INTERNAL_API_URL which
@@ -64,7 +67,8 @@ export type TokenGetter = () => Promise<string | null> | string | null
 async function portalFetch<T>(
   path: string,
   tokenOrGetter: string | TokenGetter,
-  init: RequestInit = {}
+  init: RequestInit = {},
+  _attempt = 0
 ): Promise<T> {
   const token =
     typeof tokenOrGetter === 'function' ? await tokenOrGetter() : tokenOrGetter
@@ -80,6 +84,13 @@ async function portalFetch<T>(
       ...init.headers,
     },
   })
+
+  // On a backend 401 with a TokenGetter, retry once. This recovers from the
+  // brief window during token rotation where autoRefreshToken is in-flight and
+  // the cached access token has just expired.
+  if (res.status === 401 && _attempt === 0 && typeof tokenOrGetter === 'function') {
+    return portalFetch(path, tokenOrGetter, init, 1)
+  }
 
   if (res.status === 401 || res.status === 403) {
     throw new PortalAuthError(res.status, await res.text())
@@ -130,6 +141,25 @@ export function updateMyAgentSettings(
   })
 }
 
+export function toggleMyAI(token: string | TokenGetter, ai_enabled: boolean): Promise<Client> {
+  return portalFetch('/portal/me/ai', token, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ai_enabled }),
+  })
+}
+
+export function updateMyNotificationPrefs(
+  token: string | TokenGetter,
+  prefs: { notify_new_conversation_email?: boolean; notify_escalation_email?: boolean },
+): Promise<Client> {
+  return portalFetch('/portal/me/notifications', token, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(prefs),
+  })
+}
+
 // ── Reminder settings ────────────────────────────────────────────────────────
 
 export function updateMyReminderSettings(
@@ -174,6 +204,17 @@ export function getMyKnowledgeFiles(
   token: string | TokenGetter
 ): Promise<KnowledgeFile[]> {
   return portalFetch('/portal/me/knowledge', token)
+}
+
+export function scrapeWebsiteKnowledge(
+  token: string | TokenGetter,
+  url: string
+): Promise<{ chunks: number; pages_crawled: number }> {
+  return portalFetch('/portal/me/knowledge/website', token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  })
 }
 
 // ── Conversations ────────────────────────────────────────────────────────────
@@ -729,6 +770,42 @@ export function toggleMyFeature(
   })
 }
 
+export function setMyPlan(
+  token: string | TokenGetter,
+  plan_key: string,
+  billing_cycle: 'monthly' | 'annual' = 'monthly'
+): Promise<ToggleFeatureResponse> {
+  return portalFetch('/portal/me/subscription/plan', token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan_key, billing_cycle }),
+  })
+}
+
+// ── Self-serve signup (public, no token) ─────────────────────────────────────
+
+export async function signupPortal(payload: {
+  business_name: string
+  email: string
+  password: string
+}): Promise<{ ok: boolean; client_id: string }> {
+  const res = await fetch(`${API_URL}/portal/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    let detail = 'Signup failed. Please try again.'
+    try {
+      detail = (await res.json()).detail ?? detail
+    } catch {
+      /* non-JSON error body */
+    }
+    throw new Error(detail)
+  }
+  return res.json()
+}
+
 // ── E-commerce: products ──────────────────────────────────────────────────────
 
 export function getMyProducts(token: string | TokenGetter): Promise<Product[]> {
@@ -850,6 +927,202 @@ export function assignMyOrder(
   )
 }
 
+// ── Conversation department routing ───────────────────────────────────────────
+
+export function updateConversationDepartment(
+  token: string | TokenGetter,
+  customerPhone: string,
+  departmentId: string | null
+): Promise<Conversation> {
+  return portalFetch(`/portal/me/conversations/${encodeURIComponent(customerPhone)}/department`, token, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ department_id: departmentId }),
+  })
+}
+
+// ── Departments ───────────────────────────────────────────────────────────────
+
+export function getDepartments(token: string | TokenGetter): Promise<Department[]> {
+  return portalFetch('/portal/me/departments', token)
+}
+
+export function createDepartment(
+  token: string | TokenGetter,
+  body: { name: string; description: string }
+): Promise<Department> {
+  return portalFetch('/portal/me/departments', token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateDepartment(
+  token: string | TokenGetter,
+  id: string,
+  body: { name?: string; description?: string; is_active?: boolean }
+): Promise<Department> {
+  return portalFetch(`/portal/me/departments/${id}`, token, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export async function deleteDepartment(
+  token: string | TokenGetter,
+  id: string
+): Promise<void> {
+  const t = typeof token === 'function' ? await token() : token
+  if (!t) throw new PortalAuthError(401, 'Not authenticated')
+  const res = await fetch(`${API_URL}/portal/me/departments/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${t}` },
+  })
+  if (res.status === 401 || res.status === 403) throw new PortalAuthError(res.status, await res.text())
+  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`)
+}
+
+export function getDepartmentMembers(
+  token: string | TokenGetter,
+  departmentId: string
+): Promise<DepartmentMember[]> {
+  return portalFetch(`/portal/me/departments/${departmentId}/members`, token)
+}
+
+export function setDepartmentMembers(
+  token: string | TokenGetter,
+  departmentId: string,
+  memberIds: string[]
+): Promise<DepartmentMember[]> {
+  return portalFetch(`/portal/me/departments/${departmentId}/members`, token, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ member_ids: memberIds }),
+  })
+}
+
+export async function getSlaCsatMetrics(token: string): Promise<import('./types').SlaCsatMetrics> {
+  return portalFetch('/portal/me/metrics/sla-csat', token)
+}
+
+// ── Chatbot widget (authenticated — dashboard settings) ───────────────────────
+
+export function getMyWidgetConfig(token: string | TokenGetter): Promise<WidgetConfig> {
+  return portalFetch('/portal/me/widget', token)
+}
+
+export function saveMyWidgetConfig(
+  token: string | TokenGetter,
+  config: Omit<WidgetConfig, 'widget_id'>
+): Promise<WidgetConfig> {
+  return portalFetch('/portal/me/widget', token, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config),
+  })
+}
+
+export async function uploadMyWidgetAvatar(
+  tokenOrGetter: string | TokenGetter,
+  file: File
+): Promise<{ url: string }> {
+  const token =
+    typeof tokenOrGetter === 'function' ? await tokenOrGetter() : tokenOrGetter
+  if (!token) throw new PortalAuthError(401, 'Not authenticated')
+  const form = new FormData()
+  form.append('file', file, file.name)
+  const res = await fetch(`${API_URL}/portal/me/widget/avatar`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  })
+  if (res.status === 401 || res.status === 403) {
+    throw new PortalAuthError(res.status, await res.text())
+  }
+  if (!res.ok) throw new Error(`Upload failed (${res.status}): ${await res.text()}`)
+  return res.json() as Promise<{ url: string }>
+}
+
+// ── Chatbot widget (public — no auth, used by the embedded widget) ────────────
+
+async function publicFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, init)
+  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`)
+  return res.json() as Promise<T>
+}
+
+export function getPublicWidgetConfig(widgetId: string): Promise<WidgetConfig> {
+  return publicFetch(`/public/widget/${encodeURIComponent(widgetId)}/config`)
+}
+
+export function startWidgetConversation(
+  widgetId: string,
+  visitor?: { name: string; email: string }
+): Promise<{ conversation_id: string }> {
+  return publicFetch(`/public/widget/${encodeURIComponent(widgetId)}/conversations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ visitor: visitor ?? null }),
+  })
+}
+
+export interface WidgetAttachment {
+  url: string
+  name: string
+  size: number
+  mime_type: string
+}
+
+export function sendWidgetMessage(
+  widgetId: string,
+  conversationId: string,
+  message: string,
+  attachments: WidgetAttachment[] = []
+): Promise<{ reply: string }> {
+  return publicFetch(
+    `/public/widget/${encodeURIComponent(widgetId)}/conversations/${encodeURIComponent(conversationId)}/messages`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, attachments }),
+    }
+  )
+}
+
+export async function uploadWidgetAttachment(
+  widgetId: string,
+  conversationId: string,
+  file: File
+): Promise<WidgetAttachment> {
+  const form = new FormData()
+  form.append('file', file, file.name)
+  const res = await fetch(
+    `${API_URL}/public/widget/${encodeURIComponent(widgetId)}/conversations/${encodeURIComponent(conversationId)}/attachments`,
+    { method: 'POST', body: form }
+  )
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Upload failed (${res.status}): ${text}`)
+  }
+  return res.json() as Promise<WidgetAttachment>
+}
+
+// ── Playground ────────────────────────────────────────────────────────────────
+
+export function playgroundChat(
+  token: string | TokenGetter,
+  message: string,
+  history: { role: 'user' | 'assistant'; content: string }[]
+): Promise<{ reply: string }> {
+  return portalFetch('/portal/me/playground/chat', token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, history }),
+  })
+}
+
 // Re-export types so callers can import from one place
 export type {
   ActivityLogEntry,
@@ -879,6 +1152,8 @@ export type {
   Product,
   PortalCollaborationContext,
   PortalNotification,
+  Department,
+  DepartmentMember,
   PortalTeamDirectory,
   PortalTeamInviteResult,
   PortalTeamRow,
@@ -886,4 +1161,5 @@ export type {
   Slot,
   SubscriptionDetail,
   ToggleFeatureResponse,
+  WidgetConfig,
 } from './types'

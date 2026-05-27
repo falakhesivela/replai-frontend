@@ -16,15 +16,15 @@ import {
   Clock,
   ChevronRight,
 } from 'lucide-react'
-import { changePasswordAction, updateCredentialsAction, type PasswordState, type CredentialsState } from '../actions'
+import { changePasswordAction, updateCredentialsAction, saveNotificationPrefsAction, type PasswordState, type CredentialsState } from '../actions'
 import { useToast } from '@/components/toast'
 import { usePermissions } from '@/hooks/usePermissions'
 import type { Client } from '@/lib/types'
-
+import { Card, buttonClasses } from '@/components/ui'
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 const inputClass =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]'
+  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent'
 
 const readonlyClass =
   'flex items-center gap-2.5 rounded-md border border-gray-200 bg-gray-50 px-3 py-2'
@@ -59,8 +59,8 @@ function Toggle({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 ${
-          checked ? 'bg-[#1E0B6F]' : 'bg-gray-200'
+        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+          checked ? 'bg-brand' : 'bg-gray-200'
         }`}
       >
         <span
@@ -124,7 +124,7 @@ function PasswordSaveButton() {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex items-center gap-2 rounded-md bg-[#1E0B6F] px-3 py-2 text-sm font-medium text-white hover:bg-[#2d1499] focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      className={buttonClasses()}
     >
       {pending ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} strokeWidth={2} />}
       {pending ? 'Updating…' : 'Update password'}
@@ -147,7 +147,7 @@ function ChangePasswordSection() {
   }, [state]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6">
+    <Card>
       <h3 className="mb-1 text-sm font-semibold text-gray-900">Change password</h3>
       <p className="mb-5 text-xs text-gray-500">Choose a strong password at least 8 characters long.</p>
 
@@ -195,7 +195,7 @@ function ChangePasswordSection() {
           <PasswordSaveButton />
         </div>
       </form>
-    </section>
+    </Card>
   )
 }
 
@@ -207,7 +207,7 @@ function CredentialsSaveButton() {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex items-center gap-2 rounded-md bg-[#1E0B6F] px-3 py-2 text-sm font-medium text-white hover:bg-[#2d1499] focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      className={buttonClasses()}
     >
       {pending ? <Loader2 size={13} className="animate-spin" /> : null}
       {pending ? 'Saving…' : 'Save credentials'}
@@ -265,7 +265,7 @@ function UpdateCredentialsModal({ onClose }: { onClose: () => void }) {
               required
               rows={4}
               placeholder="Paste your access token here…"
-              className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8] font-mono text-xs"
+              className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent font-mono text-xs"
             />
             <p className="mt-1 text-xs text-gray-400">
               Find this in Meta for Developers → WhatsApp → API Setup.
@@ -304,7 +304,7 @@ function WhatsAppSection({ client }: { client: Client }) {
     <>
       {modalOpen && <UpdateCredentialsModal onClose={() => setModalOpen(false)} />}
 
-      <section className="rounded-lg border border-gray-200 bg-white p-6">
+      <Card>
         <div className="flex items-start justify-between mb-5">
           <div>
             <h3 className="text-sm font-semibold text-gray-900">WhatsApp connection</h3>
@@ -359,36 +359,52 @@ function WhatsAppSection({ client }: { client: Client }) {
             </div>
           </div>
         </div>
-      </section>
+      </Card>
     </>
   )
 }
 
 // ── Notifications section ─────────────────────────────────────────────────────
 
-function NotificationsSection() {
+function NotificationsSection({
+  initialNewConversation,
+  initialEscalation,
+}: {
+  initialNewConversation: boolean
+  initialEscalation: boolean
+}) {
   const { toast } = useToast()
-  const [escalation, setEscalation] = useState(true)
+  const [newConversation, setNewConversation] = useState(initialNewConversation)
+  const [escalation, setEscalation] = useState(initialEscalation)
   const [dailySummary, setDailySummary] = useState(false)
   const [saving, setSaving] = useState(false)
 
   async function handleSave() {
     setSaving(true)
-    // UI-only: simulate a short save delay
-    await new Promise((r) => setTimeout(r, 600))
+    const res = await saveNotificationPrefsAction({
+      notify_new_conversation_email: newConversation,
+      notify_escalation_email: escalation,
+    })
     setSaving(false)
-    toast.success('Notification preferences saved.')
+    if (res.error) toast.error(res.error)
+    else toast.success('Notification preferences saved.')
   }
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6">
+    <Card>
       <h3 className="mb-1 text-sm font-semibold text-gray-900">Notifications</h3>
       <p className="mb-4 text-xs text-gray-500">Choose when you'd like to receive email alerts.</p>
 
       <div className="divide-y divide-gray-50">
         <Toggle
-          label="Email me when AI escalates to human"
-          description="Get notified when a customer needs human support."
+          label="Email me when a new conversation starts"
+          description="Get an email each time a customer messages you for the first time."
+          checked={newConversation}
+          onChange={setNewConversation}
+        />
+        <Toggle
+          label="Email me when a chat is escalated to a human"
+          description="Get an email when the AI hands a conversation to your team."
           checked={escalation}
           onChange={setEscalation}
         />
@@ -404,13 +420,13 @@ function NotificationsSection() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 rounded-md bg-[#1E0B6F] px-3 py-2 text-sm font-medium text-white hover:bg-[#2d1499] focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className={buttonClasses()}
         >
           {saving && <Loader2 size={13} className="animate-spin" />}
           {saving ? 'Saving…' : 'Save preferences'}
         </button>
       </div>
-    </section>
+    </Card>
   )
 }
 
@@ -428,7 +444,7 @@ export default function SettingsForm({
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <div>
-        <h2 className="text-base font-semibold text-gray-900">Settings</h2>
+        <h1 className="text-xl font-semibold text-gray-900">Settings</h1>
         <p className="mt-0.5 text-sm text-gray-500">
           {isAgent
             ? 'Your account and password.'
@@ -437,7 +453,7 @@ export default function SettingsForm({
       </div>
 
       {/* Section 1 — Account */}
-      <section className="rounded-lg border border-gray-200 bg-white p-6">
+      <Card>
         <h3 className="mb-1 text-sm font-semibold text-gray-900">Account</h3>
         <p className="mb-5 text-xs text-gray-500">Your login details.</p>
 
@@ -451,14 +467,19 @@ export default function SettingsForm({
             To change your email address, contact support.
           </p>
         </div>
-      </section>
+      </Card>
 
       {/* Section 1b — Change password */}
       <ChangePasswordSection />
 
       {isOwner && <WhatsAppSection client={client} />}
 
-      {!isAgent && <NotificationsSection />}
+      {!isAgent && (
+        <NotificationsSection
+          initialNewConversation={client.notify_new_conversation_email ?? true}
+          initialEscalation={client.notify_escalation_email ?? true}
+        />
+      )}
 
       {/* Business hours — owners and managers */}
       {!isAgent && (

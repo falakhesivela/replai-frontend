@@ -4,6 +4,9 @@ import PortalShell from '../_components/portal-shell'
 import { ToastProvider } from '@/components/toast'
 import { getCurrentTeamMember, getEffectivePortalRole } from '@/lib/team-auth'
 import { PORTAL_NAV_ACCESS, portalNavEntryAllowsRole } from '@/lib/portal-nav'
+import SubscriptionPaywall from './_components/subscription-paywall'
+import { lockedHrefs as computeLockedHrefs } from '@/lib/entitlements'
+import { buildEntitlementInput } from '@/lib/entitlements.server'
 
 export default async function PortalLayout({
   children,
@@ -55,30 +58,43 @@ export default async function PortalLayout({
     }
   }
 
-  // Fetch enabled features so we can hide feature-gated nav items when the
-  // addon is not active. Falls back to empty (hides feature items) on error.
-  let enabledFeatures: string[] = []
+  // ── Subscription gate + feature entitlements.
+  // Read the subscription directly via RLS (like client_features above) rather
+  // than through a server-side token + backend call — getSession() is unreliable
+  // in Server Components and made the gate fail closed for valid trials.
+  let lockedHrefs: string[] = []
   if (clientId) {
-    const { data: featureRows } = await supabase
-      .from('client_features')
-      .select('plan_key')
+    const { data: sub } = await supabase
+      .from('client_subscriptions')
+      .select('status, trial_ends_at, plan_key')
       .eq('client_id', clientId)
-      .eq('enabled', true)
-    enabledFeatures = featureRows?.map((r: { plan_key: string }) => r.plan_key) ?? []
+      .maybeSingle()
+
+    let entitled = false
+    if (sub) {
+      const trialOk =
+        sub.status === 'trialing' &&
+        (!sub.trial_ends_at ||
+          new Date(sub.trial_ends_at).getTime() > Date.now())
+      entitled = sub.status === 'active' || trialOk
+    }
+
+    if (!entitled) {
+      const isOwner = !!ownerClient?.id && ownerClient.id === clientId
+      return (
+        <ToastProvider>
+          <SubscriptionPaywall isOwner={isOwner} />
+        </ToastProvider>
+      )
+    }
+
+    // Feature-gated nav items the subscription doesn't unlock stay visible but
+    // are shown locked with an upsell (see sidebar).
+    const entInput = await buildEntitlementInput(supabase, clientId, sub?.plan_key ?? null)
+    lockedHrefs = computeLockedHrefs(roleAllowedHrefs, entInput)
   }
 
-  // Hrefs that require a specific addon to be enabled.
-  const FEATURE_GATED: Record<string, string[]> = {
-    bookings:  ['/portal/bookings', '/portal/my-bookings'],
-    broadcasts: ['/portal/broadcasts'],
-    ecommerce: ['/portal/ecommerce/products', '/portal/ecommerce/orders'],
-  }
-
-  const allowedHrefs = Object.entries(FEATURE_GATED).reduce(
-    (hrefs, [feature, gated]) =>
-      enabledFeatures.includes(feature) ? hrefs : hrefs.filter((h) => !gated.includes(h)),
-    roleAllowedHrefs
-  )
+  const allowedHrefs = roleAllowedHrefs
 
   const teamMember = await getCurrentTeamMember()
 
@@ -88,6 +104,7 @@ export default async function PortalLayout({
         businessName={businessName ?? 'My Business'}
         email={user.email ?? ''}
         allowedHrefs={allowedHrefs}
+        lockedHrefs={lockedHrefs}
         teamMemberId={teamMember?.id ?? null}
       >
         {children}

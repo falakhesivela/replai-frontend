@@ -1,14 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Menu } from 'lucide-react'
-import Image from 'next/image'
 import PortalSidebar from './sidebar'
+import MobileTopBar from '@/components/mobile-top-bar'
 
 interface PortalShellProps {
   businessName: string
   email: string
   allowedHrefs: string[]
+  lockedHrefs?: string[]
   teamMemberId: string | null
   children: React.ReactNode
 }
@@ -17,6 +17,7 @@ export default function PortalShell({
   businessName,
   email,
   allowedHrefs,
+  lockedHrefs = [],
   teamMemberId,
   children,
 }: PortalShellProps) {
@@ -38,6 +39,7 @@ export default function PortalShell({
         businessName={businessName}
         email={email}
         allowedHrefs={allowedHrefs}
+        lockedHrefs={lockedHrefs}
         teamMemberId={teamMemberId}
         collapsed={collapsed}
         onCollapsedChange={setCollapsed}
@@ -50,25 +52,7 @@ export default function PortalShell({
           collapsed ? 'md:ml-14' : 'md:ml-60'
         }`}
       >
-        {/* Mobile top bar */}
-        <header className="flex h-14 items-center gap-3 border-b border-gray-200 bg-white px-4 md:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            className="rounded-md p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Open menu"
-          >
-            <Menu size={20} strokeWidth={1.75} />
-          </button>
-          <Image
-            src="/images/replai_logo.png"
-            alt="Replai"
-            width={80}
-            height={24}
-            className="object-contain object-left"
-            priority
-          />
-        </header>
+        <MobileTopBar onMenuClick={() => setMobileOpen(true)} />
 
         <main className="flex-1 p-4 md:p-6">
           {children}

@@ -1,12 +1,16 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Calendar, CheckCircle2, Circle, MessageSquare, BookOpen, Zap, Clock, ArrowUpRight, PhoneCall } from 'lucide-react'
+import { Calendar, CheckCircle2, Circle, MessageSquare, BookOpen, Zap, Clock, ArrowUpRight, PhoneCall, Star, ShieldAlert } from 'lucide-react'
 import { getClientProfile, createClient } from '@/lib/supabase/server'
-import { getMyKnowledgeFiles, getMyConversations } from '@/lib/api'
-import type { Booking, KnowledgeFile, Conversation } from '@/lib/types'
+import { getMyKnowledgeFiles, getMyConversations, getSlaCsatMetrics } from '@/lib/api'
+import type { Booking, KnowledgeFile, Conversation, SlaCsatMetrics } from '@/lib/types'
+import { Card } from '@/components/ui'
 
-function formatRelativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
+function formatRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—'
+  const ts = new Date(dateStr).getTime()
+  if (isNaN(ts)) return '—'
+  const diff = Date.now() - ts
   const minutes = Math.floor(diff / 60_000)
   if (minutes < 60) return `${minutes}m ago`
   const hours = Math.floor(minutes / 60)
@@ -24,7 +28,7 @@ function AgentStatusCard({
   waPhoneNumber: string
 }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
+    <Card>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Agent status</p>
@@ -58,28 +62,59 @@ function AgentStatusCard({
           ? 'Your AI agent is live and handling messages.'
           : 'Your AI agent is currently inactive. Contact us to enable it.'}
       </p>
-    </div>
+    </Card>
   )
 }
 
 // ── Quick Stats Row ──────────────────────────────────────────────────────────
 
-function QuickStatsRow() {
+function formatResponseTime(minutes: number | null): string {
+  if (minutes === null) return '—'
+  if (minutes < 60) return `${Math.round(minutes)}m`
+  const h = Math.floor(minutes / 60)
+  const m = Math.round(minutes % 60)
+  return m > 0 ? `${h}h ${m}m` : `${h}h`
+}
+
+function QuickStatsRow({ metrics }: { metrics: SlaCsatMetrics | null }) {
+  const avgResponse = metrics?.avg_first_response_minutes ?? null
+  const breachRate = metrics?.sla_breach_rate ?? null
+  const csatScore = metrics?.avg_csat_score ?? null
+
   const stats = [
-    { label: 'Messages handled today', value: '0', icon: MessageSquare },
-    { label: 'Avg. response time', value: '—', icon: Clock },
-    { label: 'Escalations this week', value: '0', icon: ArrowUpRight },
+    {
+      label: 'Avg. first response',
+      value: formatResponseTime(avgResponse),
+      sub: metrics?.total_sla_responses ? `${metrics.total_sla_responses} responses` : 'No data yet',
+      icon: Clock,
+      alert: false,
+    },
+    {
+      label: 'SLA breach rate',
+      value: breachRate !== null ? `${breachRate}%` : '—',
+      sub: breachRate !== null && breachRate > 20 ? 'Needs attention' : 'Within target',
+      icon: ShieldAlert,
+      alert: breachRate !== null && breachRate > 20,
+    },
+    {
+      label: 'Avg. CSAT score',
+      value: csatScore !== null ? `${csatScore}/5` : '—',
+      sub: metrics?.total_csat_responses ? `${metrics.total_csat_responses} ratings` : 'No ratings yet',
+      icon: Star,
+      alert: false,
+    },
   ]
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      {stats.map(({ label, value, icon: Icon }) => (
-        <div key={label} className="rounded-lg border border-gray-200 bg-white p-5">
+      {stats.map(({ label, value, sub, icon: Icon, alert }) => (
+        <div key={label} className={`rounded-lg border bg-white p-5 ${alert ? 'border-red-200' : 'border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
-            <Icon size={14} strokeWidth={1.75} className="text-gray-300" />
+            <Icon size={14} strokeWidth={1.75} className={alert ? 'text-red-400' : 'text-gray-300'} />
           </div>
-          <p className="mt-2 text-2xl font-semibold text-gray-900">{value}</p>
+          <p className={`mt-2 text-2xl font-semibold ${alert ? 'text-red-600' : 'text-gray-900'}`}>{value}</p>
+          <p className="mt-0.5 text-xs text-gray-400">{sub}</p>
         </div>
       ))}
     </div>
@@ -90,7 +125,7 @@ function QuickStatsRow() {
 
 function KnowledgeStatusCard({ files }: { files: KnowledgeFile[] }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
+    <Card>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Knowledge base</p>
@@ -110,7 +145,7 @@ function KnowledgeStatusCard({ files }: { files: KnowledgeFile[] }) {
           Add documents
         </Link>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -118,7 +153,7 @@ function KnowledgeStatusCard({ files }: { files: KnowledgeFile[] }) {
 
 function RecentActivityCard({ conversations }: { conversations: Conversation[] }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
+    <Card>
       <div className="flex items-center justify-between mb-4">
         <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Recent activity</p>
         {conversations.length > 0 && (
@@ -153,13 +188,13 @@ function RecentActivityCard({ conversations }: { conversations: Conversation[] }
                 </div>
               </div>
               <span className="ml-4 shrink-0 text-xs text-gray-400">
-                {formatRelativeTime(conv.updated_at)}
+                {formatRelativeTime(conv.last_message_at ?? conv.updated_at)}
               </span>
             </li>
           ))}
         </ul>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -173,7 +208,7 @@ function TodaysBookingsCard({ bookings }: { bookings: Booking[] }) {
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
+    <Card>
       <div className="flex items-start justify-between mb-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Today&apos;s bookings</p>
@@ -212,7 +247,7 @@ function TodaysBookingsCard({ bookings }: { bookings: Booking[] }) {
           View all bookings
         </Link>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -238,7 +273,7 @@ function SetupChecklist({
   const completedCount = items.filter((i) => i.done).length
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
+    <Card>
       <div className="flex items-center justify-between mb-4">
         <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Quick setup</p>
         <span className="text-xs text-gray-400">{completedCount}/{items.length} complete</span>
@@ -266,7 +301,7 @@ function SetupChecklist({
           </li>
         ))}
       </ul>
-    </div>
+    </Card>
   )
 }
 
@@ -290,6 +325,7 @@ export default async function PortalOverviewPage() {
   let conversations: Conversation[] = []
   let needsAttentionCount = 0
   let todaysBookings: Booking[] = []
+  let slaCsatMetrics: SlaCsatMetrics | null = null
 
   const todayStr = new Date().toISOString().slice(0, 10)
 
@@ -304,6 +340,9 @@ export default async function PortalOverviewPage() {
           ).length
           conversations = all.slice(0, 5)
         })
+      : Promise.resolve(),
+    token
+      ? getSlaCsatMetrics(token).then((m) => { slaCsatMetrics = m }).catch(() => {})
       : Promise.resolve(),
     supabase
       .from('bookings')
@@ -332,13 +371,13 @@ export default async function PortalOverviewPage() {
       )}
 
       <div>
-        <h2 className="text-base font-semibold text-gray-900">Welcome back</h2>
+        <h1 className="text-xl font-semibold text-gray-900">Welcome back</h1>
         <p className="mt-0.5 text-sm text-gray-500">{client.business_name}</p>
       </div>
 
       <AgentStatusCard isActive={client.is_active} waPhoneNumber={client.wa_phone_number} />
 
-      <QuickStatsRow />
+      <QuickStatsRow metrics={slaCsatMetrics} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <KnowledgeStatusCard files={files} />

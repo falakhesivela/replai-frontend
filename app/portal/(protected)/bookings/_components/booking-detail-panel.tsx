@@ -136,7 +136,7 @@ function ReschedulePanel({
             onChange={(e) => setSlotId(e.target.value)}
             required
             disabled={slots.length === 0}
-            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] disabled:opacity-50"
+            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
           >
             <option value="">{slots.length === 0 ? 'No slots available' : 'Select a slot…'}</option>
             {Object.entries(slotsByDate).map(([label, daySlots]) => (
@@ -154,7 +154,7 @@ function ReschedulePanel({
               Cancel
             </button>
             <button type="submit" disabled={!slotId || submitting}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-[#3D6BF8] px-3 py-2 text-xs font-medium text-white hover:bg-[#2d1499] transition-colors disabled:opacity-40">
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-2 text-xs font-medium text-white hover:bg-brand-hover transition-colors disabled:opacity-40">
               {submitting && <Loader2 size={12} className="animate-spin" />}
               Confirm
             </button>
@@ -200,12 +200,12 @@ function SendMessagePanel({ customerPhone, token }: { customerPhone: string; tok
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type a WhatsApp message…"
           rows={3}
-          className="w-full resize-none rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
+          className="w-full resize-none rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-accent"
         />
         {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
         {sent && <p className="rounded-md bg-green-50 px-3 py-2 text-xs text-green-700">Message sent.</p>}
         <button type="submit" disabled={!message.trim() || sending}
-          className="flex items-center gap-1.5 rounded-md bg-[#1E0B6F] px-4 py-2 text-xs font-medium text-white hover:bg-[#2d1499] transition-colors disabled:opacity-40">
+          className="flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-xs font-medium text-white hover:bg-brand-hover transition-colors disabled:opacity-40">
           {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} strokeWidth={2} />}
           Send
         </button>
@@ -284,7 +284,7 @@ function AssignSection({
             value={booking.assigned_to ?? ''}
             onChange={(e) => handleAssign(e.target.value || null)}
             disabled={busy}
-            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] disabled:opacity-50"
+            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
           >
             <option value="">Unassigned</option>
             {members.map((m) => (
@@ -468,7 +468,7 @@ export default function BookingDetailPanel({
                 {!showReschedule ? (
                   <div className="flex flex-col gap-2">
                     <button onClick={() => setShowReschedule(true)}
-                      className="flex items-center justify-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-medium text-blue-700 hover:bg-indigo-100 transition-colors">
+                      className="flex items-center justify-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-medium text-blue-700 hover:bg-accent-soft transition-colors">
                       <Calendar size={12} strokeWidth={2} /> Reschedule
                     </button>
                     <div className="flex gap-2">

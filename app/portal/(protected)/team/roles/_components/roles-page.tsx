@@ -22,6 +22,7 @@ import {
   type TokenGetter,
 } from '@/lib/api'
 import type { CustomRole } from '@/lib/types'
+import { Card } from '@/components/ui'
 
 const getFreshToken: TokenGetter = async () => {
   const supabase = createClient()
@@ -105,7 +106,7 @@ function RoleForm({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-5">
+    <Card padding="sm" className="space-y-5">
       <div>
         <label className="mb-1 block text-xs font-medium text-gray-600">Role name</label>
         <input
@@ -113,7 +114,7 @@ function RoleForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Receptionist"
-          className="w-full max-w-xs rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
+          className="w-full max-w-xs rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
 
@@ -132,7 +133,7 @@ function RoleForm({
                     onClick={() => toggle(key)}
                     className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
                       perms.has(key)
-                        ? 'border-[#3D6BF8] bg-[#1E0B6F]'
+                        ? 'border-accent bg-brand'
                         : 'border-gray-300 bg-white'
                     }`}
                   >
@@ -158,13 +159,13 @@ function RoleForm({
         <button
           onClick={() => onSave(name.trim(), Array.from(perms))}
           disabled={!name.trim() || saving}
-          className="flex items-center gap-1.5 rounded-md bg-[#1E0B6F] px-4 py-2 text-xs font-medium text-white hover:bg-[#2d1499] transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-xs font-medium text-white hover:bg-brand-hover transition-colors disabled:opacity-40"
         >
           {saving && <Loader2 size={12} className="animate-spin" />}
           Save role
         </button>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -185,7 +186,7 @@ function RoleCard({
   deleting: boolean
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <Card padding="sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100">
@@ -221,7 +222,7 @@ function RoleCard({
       ) : (
         <p className="mt-3 text-xs text-gray-400">No permissions assigned.</p>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -314,7 +315,7 @@ export default function RolesPage() {
         {!showCreate && (
           <button
             onClick={() => { setShowCreate(true); setEditingId(null); setSaveError(null) }}
-            className="flex items-center gap-1.5 rounded-md bg-[#1E0B6F] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2d1499] transition-colors"
+            className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover transition-colors"
           >
             <Plus size={13} strokeWidth={2} /> New role
           </button>
@@ -340,7 +341,7 @@ export default function RolesPage() {
           )}
 
           {roles.length === 0 && !showCreate ? (
-            <div className="rounded-xl border border-dashed border-gray-200 py-14 text-center">
+            <div className="rounded-lg border border-dashed border-gray-200 py-14 text-center">
               <Shield size={24} className="mx-auto mb-2 text-gray-200" />
               <p className="text-sm text-gray-400">No custom roles yet.</p>
               <button

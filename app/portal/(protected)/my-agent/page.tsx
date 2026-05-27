@@ -17,6 +17,7 @@ export default async function MyAgentPage() {
       initialUseEmoji={client.agent_use_emoji ?? false}
       initialSignOff={client.agent_sign_off ?? true}
       initialResponseStyle={client.agent_response_style ?? 'friendly'}
+      initialAiEnabled={client.ai_enabled ?? true}
     />
   )
 }

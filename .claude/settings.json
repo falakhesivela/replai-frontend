@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/bin/ls app *)",
+      "Bash(grep -v '^$')",
+      "Bash(gcloud services *)",
+      "Bash(gcloud run *)",
+      "Bash(chmod +x deploy.sh)",
+      "Bash(jobs -l)",
+      "Bash(.venv/bin/python -m py_compile app/main.py)",
+      "Bash(uv lock *)",
+      "Bash(uv sync *)"
+    ]
+  }
+}

@@ -1,26 +1,40 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ── Design tokens ──────────────────────────────────────────────────────────
+   Single source of truth for brand color. Every brand value in the app should
+   reference these via Tailwind utilities (bg-brand, text-accent, …) rather
+   than hardcoded hex literals, so a rebrand is a one-file change.
+
+   Brand    — deep purple. Primary actions (buttons, key emphasis).
+   Accent   — vivid blue.  Active states, links, focus rings, selected tabs.
+   Semantic — success / warning / danger reuse Tailwind's green/amber/red.
+   Neutrals — Tailwind's gray scale (already used app-wide) is kept as-is. */
+@theme {
+  --color-brand: #1e0b6f;
+  --color-brand-hover: #2d1499;
+  --color-brand-foreground: #ffffff;
+  --color-brand-soft: #ede9fb;
+
+  --color-accent: #3d6bf8;
+  --color-accent-hover: #2f57d6;
+  --color-accent-foreground: #ffffff;
+  --color-accent-soft: #eef2ff;
+
+  --color-background: #ffffff;
+  --color-foreground: #171717;
 }
 
+/* Map the Geist fonts loaded in app/layout.tsx onto Tailwind's font tokens.
+   `inline` keeps the CSS-variable reference (set on <html>) instead of
+   snapshotting it at build time. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  /* Was hardcoded to Arial, which silently overrode the loaded Geist font. */
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }

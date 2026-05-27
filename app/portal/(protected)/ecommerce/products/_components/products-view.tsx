@@ -15,6 +15,7 @@ import {
 } from '@/lib/api'
 import type { Product } from '@/lib/types'
 import type { PortalRole } from '@/lib/portal-permissions'
+import { Card } from '@/components/ui'
 
 const getFreshToken: TokenGetter = async () => {
   const supabase = createClient()
@@ -70,7 +71,7 @@ function ProductForm({ initial, onSave, onCancel, saving }: ProductFormProps) {
             value={form.name}
             onChange={(e) => set('name', e.target.value)}
             placeholder="e.g. Wireless Earbuds"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
+            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
         <div>
@@ -82,7 +83,7 @@ function ProductForm({ initial, onSave, onCancel, saving }: ProductFormProps) {
             value={form.price}
             onChange={(e) => set('price', e.target.value)}
             placeholder="0.00"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
+            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
         <div>
@@ -95,7 +96,7 @@ function ProductForm({ initial, onSave, onCancel, saving }: ProductFormProps) {
             value={form.stock_quantity}
             onChange={(e) => set('stock_quantity', e.target.value)}
             placeholder="0"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
+            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
         <div>
@@ -105,7 +106,7 @@ function ProductForm({ initial, onSave, onCancel, saving }: ProductFormProps) {
             value={form.category}
             onChange={(e) => set('category', e.target.value)}
             placeholder="e.g. Electronics"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
+            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
         <div>
@@ -115,7 +116,7 @@ function ProductForm({ initial, onSave, onCancel, saving }: ProductFormProps) {
             value={form.image_url}
             onChange={(e) => set('image_url', e.target.value)}
             placeholder="https://..."
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
+            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
         <div className="sm:col-span-2">
@@ -125,7 +126,7 @@ function ProductForm({ initial, onSave, onCancel, saving }: ProductFormProps) {
             value={form.description}
             onChange={(e) => set('description', e.target.value)}
             placeholder="Brief product description..."
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] resize-none"
+            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent resize-none"
           />
         </div>
         <div className="sm:col-span-2 flex items-center gap-2">
@@ -144,7 +145,7 @@ function ProductForm({ initial, onSave, onCancel, saving }: ProductFormProps) {
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          className="rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
         >
           Cancel
         </button>
@@ -152,7 +153,7 @@ function ProductForm({ initial, onSave, onCancel, saving }: ProductFormProps) {
           type="button"
           onClick={() => onSave(form)}
           disabled={saving || !form.name.trim() || !form.price}
-          className="flex items-center gap-2 rounded-lg bg-[#1E0B6F] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d1499] transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover transition-colors disabled:opacity-50"
         >
           {saving && <Loader2 size={13} className="animate-spin" />}
           {initial ? 'Save changes' : 'Add product'}
@@ -298,12 +299,12 @@ export default function ProductsView({ role }: { role: PortalRole }) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Products</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-0.5 text-sm text-gray-500">
             Products your AI can present and sell via WhatsApp.
           </p>
         </div>
@@ -319,7 +320,7 @@ export default function ProductsView({ role }: { role: PortalRole }) {
             <button
               onClick={downloadTemplate}
               title="Download CSV template"
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
             >
               <Download size={14} />
               Template
@@ -327,7 +328,7 @@ export default function ProductsView({ role }: { role: PortalRole }) {
             <button
               onClick={() => csvInputRef.current?.click()}
               disabled={importing}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               {importing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
               Import CSV
@@ -335,7 +336,7 @@ export default function ProductsView({ role }: { role: PortalRole }) {
             {!showForm && (
               <button
                 onClick={() => { setShowForm(true); setEditingProduct(null); setFormError(null) }}
-                className="flex items-center gap-1.5 rounded-lg bg-[#1E0B6F] px-3 py-2 text-sm font-medium text-white hover:bg-[#2d1499] transition-colors"
+                className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-hover transition-colors"
               >
                 <Plus size={14} />
                 Add product
@@ -380,7 +381,7 @@ export default function ProductsView({ role }: { role: PortalRole }) {
 
       {/* Form panel */}
       {showForm && canEdit && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <Card padding="sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-medium text-gray-900">
               {editingProduct ? 'Edit product' : 'New product'}
@@ -398,12 +399,12 @@ export default function ProductsView({ role }: { role: PortalRole }) {
             onCancel={closeForm}
             saving={saving}
           />
-        </div>
+        </Card>
       )}
 
       {/* Product list */}
       {products.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 py-16 text-center">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-16 text-center">
           <Package size={32} className="mb-3 text-gray-300" />
           <p className="text-sm font-medium text-gray-500">No products yet</p>
           <p className="mt-1 text-xs text-gray-400">
@@ -411,7 +412,7 @@ export default function ProductsView({ role }: { role: PortalRole }) {
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">

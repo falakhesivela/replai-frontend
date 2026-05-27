@@ -14,6 +14,7 @@ import {
 } from '@/lib/api'
 import type { CustomRole, PortalTeamDirectory, PortalTeamRow } from '@/lib/types'
 import { usePermissions } from '@/hooks/usePermissions'
+import { buttonClasses } from '@/components/ui'
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -93,7 +94,7 @@ export function TeamMembersPage() {
   return (
     <div className="max-w-5xl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Team Members</h1>
+        <h1 className="text-xl font-semibold text-gray-900">Team Members</h1>
         <div className="flex items-center gap-2">
           {canManageTeam && (
             <button
@@ -108,7 +109,7 @@ export function TeamMembersPage() {
             <button
               type="button"
               onClick={() => setInviteOpen(true)}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-[#1E0B6F] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d1499] focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2"
+              className={buttonClasses()}
             >
               <UserPlus size={16} strokeWidth={1.75} />
               Invite member
@@ -274,7 +275,7 @@ function TeamRowView({
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium text-gray-900">{row.name || '—'}</span>
           {row.is_self && (
-            <span className="rounded-full bg-[#1E0B6F] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
               You
             </span>
           )}
@@ -283,7 +284,7 @@ function TeamRowView({
       <td className="px-4 py-3 text-gray-600">{row.email || '—'}</td>
       <td className="px-4 py-3">
         {row.custom_role ? (
-          <span className="inline-flex rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium ring-1 ring-indigo-200 text-indigo-700">
+          <span className="inline-flex rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium ring-1 ring-brand/15 text-brand">
             {row.custom_role.name}
           </span>
         ) : (
@@ -324,7 +325,7 @@ function TeamRowView({
                   disabled={busy}
                   value={row.custom_role?.id ?? (row.role === 'agent' ? 'agent' : 'manager')}
                   onChange={(e) => void onRoleChange(e.target.value)}
-                  className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8] disabled:opacity-50"
+                  className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
                 >
                   {customRoles.length > 0 && (
                     <optgroup label="Custom roles">
@@ -483,7 +484,7 @@ function InviteModal({
             <button
               type="button"
               onClick={onSuccess}
-              className="w-full rounded-md bg-[#1E0B6F] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d1499]"
+              className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
             >
               Done
             </button>
@@ -497,7 +498,7 @@ function InviteModal({
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 placeholder="Full name"
               />
             </div>
@@ -508,7 +509,7 @@ function InviteModal({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 placeholder="colleague@company.com"
               />
             </div>
@@ -517,7 +518,7 @@ function InviteModal({
               <select
                 value={roleValue}
                 onChange={(e) => setRoleValue(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
               >
                 {customRoles.length > 0 && (
                   <optgroup label="Custom roles">
@@ -548,7 +549,7 @@ function InviteModal({
               <button
                 type="submit"
                 disabled={pending}
-                className="flex-1 rounded-md bg-[#1E0B6F] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d1499] disabled:opacity-50"
+                className="flex-1 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
               >
                 {pending ? 'Sending…' : 'Send invite'}
               </button>

@@ -2,29 +2,31 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   LayoutDashboard,
   Bot,
   BookOpen,
-  Bookmark,
   Calendar,
   ChevronDown,
   ChevronLeft,
+  Code2,
   CreditCard,
+  FlaskConical,
   Megaphone,
   MessageSquare,
   Package,
-  ShieldCheck,
   ShoppingBag,
   Target,
   Users2,
   Sliders,
   Settings,
   LogOut,
+  Lock,
   X,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { featureForHref } from '@/lib/entitlements'
 import PortalNotificationsBell from './portal-notifications-bell'
 
 // ── Nav structure ─────────────────────────────────────────────────────────────
@@ -37,7 +39,7 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: 'Inbox',
+    label: 'Messaging',
     items: [
       { href: '/portal/conversations', label: 'Conversations', icon: MessageSquare },
       { href: '/portal/leads', label: 'Leads', icon: Target },
@@ -49,28 +51,25 @@ const NAV_GROUPS = [
     items: [
       { href: '/portal/my-agent', label: 'My Agent', icon: Bot },
       { href: '/portal/knowledge-base', label: 'Knowledge Base', icon: BookOpen },
+      { href: '/portal/playground', label: 'Playground', icon: FlaskConical },
+      { href: '/portal/chatbot-widget', label: 'Chatbot Widget', icon: Code2 },
     ],
   },
   {
-    label: 'Shop',
-    items: [
-      { href: '/portal/ecommerce/products', label: 'Products', icon: Package },
-      { href: '/portal/ecommerce/orders', label: 'Orders', icon: ShoppingBag },
-    ],
-  },
-  {
-    label: 'Scheduling',
+    // Booking flow first, commerce second — co-located because both are
+    // operational business-data CRUD (replaces two 2-item groups: Shop + Scheduling).
+    label: 'Operations',
     items: [
       { href: '/portal/bookings', label: 'Bookings', icon: Calendar },
-      { href: '/portal/my-bookings', label: 'My Bookings', icon: Bookmark },
       { href: '/portal/setup', label: 'Services', icon: Sliders },
+      { href: '/portal/ecommerce/products', label: 'Products', icon: Package },
+      { href: '/portal/ecommerce/orders', label: 'Orders', icon: ShoppingBag },
     ],
   },
   {
     label: 'Workspace',
     items: [
       { href: '/portal/team', label: 'Team', icon: Users2 },
-      { href: '/portal/team/roles', label: 'Roles', icon: ShieldCheck },
       { href: '/portal/settings', label: 'Settings', icon: Settings },
       { href: '/portal/subscription', label: 'Subscription', icon: CreditCard },
     ],
@@ -83,6 +82,7 @@ interface PortalSidebarProps {
   businessName: string
   email: string
   allowedHrefs: string[]
+  lockedHrefs?: string[]
   teamMemberId: string | null
   collapsed: boolean
   onCollapsedChange: (c: boolean) => void
@@ -94,6 +94,7 @@ export default function PortalSidebar({
   businessName,
   email,
   allowedHrefs,
+  lockedHrefs = [],
   teamMemberId,
   collapsed,
   onCollapsedChange,
@@ -104,12 +105,38 @@ export default function PortalSidebar({
   const router = useRouter()
 
   const allowed = new Set(allowedHrefs.length > 0 ? allowedHrefs : ALL_HREFS)
+  const locked = new Set(lockedHrefs)
 
-  // Track which labeled groups are collapsed. Default: all expanded.
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({
-    Shop: true,
-    Scheduling: true,
+  const defaultCollapsed: Record<string, boolean> = { Operations: true }
+
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(() => {
+    const initial = { ...defaultCollapsed }
+    for (const group of NAV_GROUPS) {
+      if (group.label && initial[group.label]) {
+        if (group.items.some((item) => pathname.startsWith(item.href))) {
+          initial[group.label] = false
+        }
+      }
+    }
+    return initial
   })
+
+  // Auto-expand a group when the user navigates into one of its routes.
+  useEffect(() => {
+    setCollapsedGroups((prev) => {
+      const next = { ...prev }
+      let changed = false
+      for (const group of NAV_GROUPS) {
+        if (group.label && next[group.label]) {
+          if (group.items.some((item) => pathname.startsWith(item.href))) {
+            next[group.label] = false
+            changed = true
+          }
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [pathname])
 
   function toggleGroup(label: string) {
     setCollapsedGroups((prev) => ({ ...prev, [label]: !prev[label] }))
@@ -151,13 +178,18 @@ export default function PortalSidebar({
           </button>
         ) : (
           <>
-            <div className="flex flex-1 min-w-0 items-center">
+            <div className="flex flex-1 min-w-0 flex-col justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/replai_logo.png"
                 alt="Replai"
-                className="h-6 w-auto object-contain"
+                className="h-8 w-auto object-contain object-left"
               />
+              {businessName && (
+                <span className="truncate text-[10px] text-gray-400 leading-tight mt-0.5">
+                  {businessName}
+                </span>
+              )}
             </div>
             <button
               type="button"
@@ -218,6 +250,32 @@ export default function PortalSidebar({
                 <div className="mt-0.5 space-y-0.5">
                   {visibleItems.map(({ href, label, icon: Icon }) => {
                     const active = pathname.startsWith(href)
+                    const isLocked = locked.has(href)
+
+                    // Locked feature: keep it visible but route to the
+                    // subscription page (upsell) instead of the gated page.
+                    if (isLocked) {
+                      return (
+                        <Link
+                          key={href}
+                          href={`/portal/subscription?feature=${featureForHref(href) ?? ''}`}
+                          title={collapsed ? `${label} — upgrade to unlock` : undefined}
+                          onClick={onMobileClose}
+                          className={`group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 ${
+                            collapsed ? 'md:justify-center' : 'gap-3 px-3'
+                          }`}
+                        >
+                          <Icon size={16} strokeWidth={1.75} className="shrink-0" />
+                          <span className={`flex-1 ${collapsed ? 'md:hidden' : ''}`}>{label}</span>
+                          <Lock
+                            size={12}
+                            strokeWidth={2}
+                            className={`shrink-0 text-gray-300 group-hover:text-gray-400 ${collapsed ? 'md:hidden' : ''}`}
+                          />
+                        </Link>
+                      )
+                    }
+
                     return (
                       <Link
                         key={href}
@@ -228,7 +286,7 @@ export default function PortalSidebar({
                           collapsed ? 'md:justify-center' : 'gap-3 px-3'
                         } ${
                           active
-                            ? 'bg-indigo-50 text-indigo-700'
+                            ? 'bg-brand-soft text-brand'
                             : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                       >
@@ -240,12 +298,9 @@ export default function PortalSidebar({
                 </div>
               )}
 
-              {/* When collapsed: show dot indicator if group has active item and is collapsed */}
+              {/* When a group is collapsed but contains the active route, show a subtle indicator */}
               {groupCollapsed && !collapsed && hasActiveItem && (
-                <div className="flex items-center gap-3 px-3 py-1.5">
-                  <div className="h-1 w-1 rounded-full bg-gray-400" />
-                  <span className="text-xs text-gray-400 italic">hidden</span>
-                </div>
+                <div className="mx-3 my-0.5 h-0.5 rounded-full bg-accent" />
               )}
             </div>
           )

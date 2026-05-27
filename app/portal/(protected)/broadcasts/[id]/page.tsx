@@ -161,7 +161,7 @@ export default function BroadcastDetailPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">{broadcast.name}</h1>
+          <h1 className="text-xl font-semibold text-gray-900">{broadcast.name}</h1>
           <p className="text-xs text-gray-400 mt-0.5">
             {broadcast.sent_at
               ? `Sent ${formatDateTime(broadcast.sent_at)}`
@@ -208,13 +208,13 @@ export default function BroadcastDetailPage() {
           </div>
           <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
             <div
-              className="h-full rounded-full bg-[#1E0B6F] transition-all duration-500"
+              className="h-full rounded-full bg-brand transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
           {broadcast.status === 'sending' && (
             <p className="text-[11px] text-blue-500 mt-1.5 flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#3D6BF8] animate-pulse inline-block" />
+              <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse inline-block" />
               Sending in progress…
             </p>
           )}

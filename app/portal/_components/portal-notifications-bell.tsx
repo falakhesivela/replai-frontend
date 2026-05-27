@@ -32,7 +32,13 @@ export default function PortalNotificationsBell({ teamMemberId }: { teamMemberId
       setItems(list)
     } catch (e) {
       if (e instanceof PortalAuthError && e.status === 401) {
-        router.replace('/portal/login')
+        // Only redirect if the session is actually gone — a transient 401
+        // during initial mount can fire while the session is still settling.
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          router.replace('/portal/login')
+        }
       }
     }
   }, [getToken, router])

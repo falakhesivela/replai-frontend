@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { Users, Settings, LogOut, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -35,7 +36,14 @@ export default function Sidebar({ email, mobileOpen, onMobileClose }: SidebarPro
     >
       {/* Logo + mobile close button */}
       <div className="flex h-14 items-center justify-between px-5 border-b border-gray-100">
-        <span className="text-lg font-semibold tracking-tight text-gray-900">Replai</span>
+        <Image
+          src="/images/replai_logo.png"
+          alt="Replai"
+          width={80}
+          height={24}
+          className="object-contain object-left"
+          priority
+        />
         <button
           type="button"
           onClick={onMobileClose}
@@ -57,7 +65,7 @@ export default function Sidebar({ email, mobileOpen, onMobileClose }: SidebarPro
               onClick={onMobileClose}
               className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                 active
-                  ? 'bg-gray-100 text-gray-900'
+                  ? 'bg-brand-soft text-brand'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >

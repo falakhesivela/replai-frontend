@@ -21,6 +21,7 @@ import {
 } from '@/lib/api'
 import type { Booking, PortalTeamRow } from '@/lib/types'
 import { usePermissions } from '@/hooks/usePermissions'
+import { Card } from '@/components/ui'
 
 const getFreshToken = async () => {
   const supabase = createClient()
@@ -131,7 +132,7 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
 
   if (error || !member) {
     return (
-      <div className="max-w-4xl space-y-4">
+      <div className="mx-auto max-w-3xl space-y-4">
         <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors">
           <ArrowLeft size={14} /> Back
         </button>
@@ -161,7 +162,7 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
         {/* Left column: profile + bookable */}
         <div className="space-y-4 lg:col-span-1">
           {/* Profile card */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6">
+          <Card>
             <div className="flex items-start gap-4">
               <div
                 className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white shadow-sm"
@@ -171,15 +172,15 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-lg font-semibold text-gray-900">{member.name || '—'}</h1>
+                  <h1 className="text-xl font-semibold text-gray-900">{member.name || '—'}</h1>
                   {member.is_self && (
-                    <span className="rounded-full bg-[#1E0B6F] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                    <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
                       You
                     </span>
                   )}
                 </div>
-                <span className={`mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${roleBadgeClasses(member.role)}`}>
-                  {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                <span className={`mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${member.custom_role ? 'bg-brand-soft text-brand ring-brand/15' : roleBadgeClasses(member.role)}`}>
+                  {member.custom_role?.name ?? (member.role.charAt(0).toUpperCase() + member.role.slice(1))}
                 </span>
                 <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
                   <Mail size={13} strokeWidth={1.75} className="shrink-0" />
@@ -212,11 +213,11 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
           {/* Bookable toggle */}
           {member.role !== 'owner' && (
-            <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <Card padding="sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Bookmark size={16} strokeWidth={1.75} className="text-gray-400" />
@@ -248,7 +249,7 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
                   </span>
                 )}
               </div>
-            </div>
+            </Card>
           )}
         </div>
 
@@ -256,12 +257,12 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
         <div className="lg:col-span-2 space-y-3">
           <h2 className="text-sm font-semibold text-gray-700">Assigned bookings</h2>
           {assignedBookings.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-200 py-16 text-center">
+            <div className="rounded-lg border border-dashed border-gray-200 py-16 text-center">
               <Calendar size={24} className="mx-auto mb-2 text-gray-200" />
               <p className="text-sm text-gray-400">No bookings assigned yet.</p>
             </div>
           ) : (
-            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { isOwner } from '@/lib/team-auth'
+import { updateMyNotificationPrefs } from '@/lib/api'
 
 export type PasswordState = {
   success?: boolean
@@ -76,4 +77,21 @@ export async function updateCredentialsAction(
   if (error) return { error: error.message }
 
   return { success: true }
+}
+
+export async function saveNotificationPrefsAction(
+  prefs: { notify_new_conversation_email: boolean; notify_escalation_email: boolean }
+): Promise<{ success?: boolean; error?: string }> {
+  const supabase = await createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return { error: 'Not authenticated.' }
+
+  try {
+    await updateMyNotificationPrefs(session.access_token, prefs)
+    return { success: true }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to save changes.' }
+  }
 }

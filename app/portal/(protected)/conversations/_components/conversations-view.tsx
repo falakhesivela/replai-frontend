@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useRouter } from 'next/navigation'
 import {
   Bot,
+  Building2,
   ChevronDown,
   ChevronLeft,
   Loader2,
@@ -20,12 +21,14 @@ import {
   assignPortalConversation,
   createPortalConversationNote,
   deletePortalConversationNote,
+  getDepartments,
   getMyConversations,
   getMyMessages,
   getPortalCollaborationContext,
   getPortalConversationNotes,
   PortalAuthError,
   sendReply,
+  updateConversationDepartment,
   updateConversationStatus,
   type TokenGetter,
 } from '@/lib/api'
@@ -33,6 +36,7 @@ import type {
   Conversation,
   ConversationAssignee,
   ConversationNote,
+  Department,
   Message,
 } from '@/lib/types'
 
@@ -183,10 +187,12 @@ function ConversationItem({
   conv,
   selected,
   onClick,
+  departments,
 }: {
   conv: Conversation
   selected: boolean
   onClick: () => void
+  departments: Department[]
 }) {
   const hasUnread = (conv.unread_count ?? 0) > 0
   const timeStr = formatListTime(conv.last_message_at ?? conv.updated_at)
@@ -253,6 +259,28 @@ function ConversationItem({
               })()}
               <StatusBadge status={conv.status} />
             </div>
+          </div>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {conv.department_id && departments.length > 0 && (() => {
+              const dept = departments.find((d) => d.id === conv.department_id)
+              if (!dept) return null
+              return (
+                <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-medium text-accent ring-1 ring-accent/20">
+                  <Building2 size={9} />
+                  {dept.name}
+                </span>
+              )
+            })()}
+            {conv.csat_score != null && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-amber-100">
+                ★ {conv.csat_score}/5
+              </span>
+            )}
+            {conv.sla_breached && (
+              <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-600 ring-1 ring-red-100">
+                SLA breached
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -430,7 +458,7 @@ function TabBar({
           onClick={() => onChange(tab)}
           className={`relative flex items-center gap-1.5 px-2.5 py-2 text-[11px] font-medium transition-colors ${
             active === tab
-              ? 'text-[#1E0B6F] border-b-2 border-[#3D6BF8] -mb-px'
+              ? 'text-brand border-b-2 border-accent -mb-px'
               : 'text-gray-400 hover:text-gray-600'
           }`}
         >
@@ -476,6 +504,10 @@ export default function ConversationsView({
   >([])
   const [assignOpen, setAssignOpen] = useState(false)
   const [assigning, setAssigning] = useState(false)
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [deptOpen, setDeptOpen] = useState(false)
+  const [deptAssigning, setDeptAssigning] = useState(false)
+  const [deptFilter, setDeptFilter] = useState<string | null>(null)
   const [notes, setNotes] = useState<ConversationNote[]>([])
   const [loadingNotes, setLoadingNotes] = useState(false)
   const [noteText, setNoteText] = useState('')
@@ -540,8 +572,11 @@ export default function ConversationsView({
   }, [refreshConversations])
 
   useEffect(() => {
-    getPortalCollaborationContext(getFreshToken)
-      .then((ctx) => {
+    Promise.all([
+      getPortalCollaborationContext(getFreshToken),
+      getDepartments(getFreshToken),
+    ])
+      .then(([ctx, depts]) => {
         setViewerMemberId(ctx.viewer_member_id ?? null)
         setAssignableMembers(
           ctx.members.map((m) => ({
@@ -550,6 +585,7 @@ export default function ConversationsView({
             avatar_color: m.avatar_color ?? null,
           }))
         )
+        setDepartments(depts.filter((d) => d.is_active))
       })
       .catch(() => {
         /* no collaboration access */
@@ -688,6 +724,9 @@ export default function ConversationsView({
     } else if (tab === 'resolved') {
       list = list.filter((c) => c.status === 'resolved')
     }
+    if (deptFilter) {
+      list = list.filter((c) => c.department_id === deptFilter)
+    }
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(
@@ -696,7 +735,7 @@ export default function ConversationsView({
       )
     }
     return list
-  }, [conversations, tab, search, viewerMemberId])
+  }, [conversations, tab, search, viewerMemberId, deptFilter])
 
   const handleSelectConversation = useCallback((phone: string) => {
     setSelectedPhone(phone)
@@ -705,6 +744,7 @@ export default function ConversationsView({
     setMentionPick(null)
     setThreadTab('messages')
     setAssignOpen(false)
+    setDeptOpen(false)
   }, [])
 
   const handleReply = useCallback(async () => {
@@ -776,6 +816,27 @@ export default function ConversationsView({
       }
     },
     [selectedPhone, assigning, getFreshToken, assignableMembers, handleApiError]
+  )
+
+  const doDeptRoute = useCallback(
+    async (departmentId: string | null) => {
+      if (!selectedPhone || deptAssigning) return
+      setDeptAssigning(true)
+      try {
+        const updated = await updateConversationDepartment(getFreshToken, selectedPhone, departmentId)
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.customer_phone === selectedPhone ? { ...c, department_id: updated.department_id } : c
+          )
+        )
+        setDeptOpen(false)
+      } catch (err) {
+        handleApiError(err, 'Failed to route conversation')
+      } finally {
+        setDeptAssigning(false)
+      }
+    },
+    [selectedPhone, deptAssigning, getFreshToken, handleApiError]
   )
 
   const submitNote = useCallback(async () => {
@@ -869,7 +930,7 @@ export default function ConversationsView({
         )}
 
         {!isEmpty && listLoaded && (
-          <div className="border-b border-gray-100 px-3 py-2.5">
+          <div className="border-b border-gray-100 px-3 py-2.5 space-y-2">
             <div className="relative">
               <Search
                 size={13}
@@ -884,6 +945,18 @@ export default function ConversationsView({
                 className="w-full rounded-md border border-gray-200 bg-gray-50 py-1.5 pl-7 pr-3 text-xs text-gray-700 placeholder-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-0"
               />
             </div>
+            {departments.length > 0 && (
+              <select
+                value={deptFilter ?? ''}
+                onChange={(e) => setDeptFilter(e.target.value || null)}
+                className="w-full rounded-md border border-gray-200 bg-gray-50 py-1.5 px-2.5 text-xs text-gray-700 focus:border-gray-400 focus:outline-none"
+              >
+                <option value="">All departments</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 
@@ -903,6 +976,7 @@ export default function ConversationsView({
                 conv={conv}
                 selected={conv.customer_phone === selectedPhone}
                 onClick={() => handleSelectConversation(conv.customer_phone)}
+                departments={departments}
               />
             ))
           )}
@@ -939,46 +1013,99 @@ export default function ConversationsView({
                 </div>
                 <p className="text-xs text-gray-400 mt-0.5">{selectedConv.customer_phone}</p>
 
-                <div className="relative mt-3">
-                  <button
-                    type="button"
-                    onClick={() => setAssignOpen((v) => !v)}
-                    disabled={assigning}
-                    className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-left text-xs hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    <AssigneeAvatar assignee={headerAssignee} size="md" />
-                    <span className="font-medium text-gray-800">
-                      {headerAssignee ? headerAssignee.name : 'Unassigned'}
-                    </span>
-                    {assigning ? (
-                      <Loader2 size={12} className="animate-spin text-gray-400" />
-                    ) : (
-                      <ChevronDown size={14} className="text-gray-400" />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {/* Member assignment */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => { setAssignOpen((v) => !v); setDeptOpen(false) }}
+                      disabled={assigning}
+                      className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-left text-xs hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      <AssigneeAvatar assignee={headerAssignee} size="md" />
+                      <span className="font-medium text-gray-800">
+                        {headerAssignee ? headerAssignee.name : 'Unassigned'}
+                      </span>
+                      {assigning ? (
+                        <Loader2 size={12} className="animate-spin text-gray-400" />
+                      ) : (
+                        <ChevronDown size={14} className="text-gray-400" />
+                      )}
+                    </button>
+                    {assignOpen && (
+                      <div className="absolute left-0 top-full z-30 mt-1 min-w-[220px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                          onClick={() => void doAssign(null)}
+                        >
+                          Unassign
+                        </button>
+                        {assignableMembers.map((m) => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-50"
+                            onClick={() => void doAssign(m.id)}
+                          >
+                            <AssigneeAvatar
+                              assignee={{ id: m.id, name: m.name, avatar_color: m.avatar_color }}
+                              size="sm"
+                            />
+                            <span className="text-gray-800">{m.name}</span>
+                          </button>
+                        ))}
+                      </div>
                     )}
-                  </button>
-                  {assignOpen && (
-                    <div className="absolute left-0 top-full z-30 mt-1 min-w-[220px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                  </div>
+
+                  {/* Department routing */}
+                  {departments.length > 0 && (
+                    <div className="relative">
                       <button
                         type="button"
-                        className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
-                        onClick={() => void doAssign(null)}
+                        onClick={() => { setDeptOpen((v) => !v); setAssignOpen(false) }}
+                        disabled={deptAssigning}
+                        className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-left text-xs hover:bg-gray-50 disabled:opacity-50"
                       >
-                        Unassign
+                        <Building2 size={13} className="text-gray-400" />
+                        <span className="font-medium text-gray-800">
+                          {selectedConv.department_id
+                            ? (departments.find((d) => d.id === selectedConv.department_id)?.name ?? 'Department')
+                            : 'Route to team'}
+                        </span>
+                        {deptAssigning ? (
+                          <Loader2 size={12} className="animate-spin text-gray-400" />
+                        ) : (
+                          <ChevronDown size={14} className="text-gray-400" />
+                        )}
                       </button>
-                      {assignableMembers.map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-50"
-                          onClick={() => void doAssign(m.id)}
-                        >
-                          <AssigneeAvatar
-                            assignee={{ id: m.id, name: m.name, avatar_color: m.avatar_color }}
-                            size="sm"
-                          />
-                          <span className="text-gray-800">{m.name}</span>
-                        </button>
-                      ))}
+                      {deptOpen && (
+                        <div className="absolute left-0 top-full z-30 mt-1 min-w-[200px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                          {selectedConv.department_id && (
+                            <button
+                              type="button"
+                              className="w-full px-3 py-2 text-left text-xs text-gray-500 hover:bg-gray-50"
+                              onClick={() => void doDeptRoute(null)}
+                            >
+                              Remove from team
+                            </button>
+                          )}
+                          {departments.map((d) => (
+                            <button
+                              key={d.id}
+                              type="button"
+                              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-50 ${
+                                selectedConv.department_id === d.id ? 'text-accent font-medium' : 'text-gray-800'
+                              }`}
+                              onClick={() => void doDeptRoute(d.id)}
+                            >
+                              <Building2 size={12} className="text-gray-400 shrink-0" />
+                              {d.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1037,7 +1164,7 @@ export default function ConversationsView({
                 onClick={() => setThreadTab('messages')}
                 className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
                   threadTab === 'messages'
-                    ? 'border-[#3D6BF8] text-[#1E0B6F]'
+                    ? 'border-accent text-brand'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -1049,7 +1176,7 @@ export default function ConversationsView({
                 onClick={() => setThreadTab('notes')}
                 className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
                   threadTab === 'notes'
-                    ? 'border-[#3D6BF8] text-[#1E0B6F]'
+                    ? 'border-accent text-brand'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -1176,7 +1303,7 @@ export default function ConversationsView({
                       type="button"
                       onClick={() => void submitNote()}
                       disabled={!noteText.trim() || noteSubmitting}
-                      className="rounded-md bg-[#1E0B6F] px-4 py-1.5 text-xs font-medium text-white hover:bg-[#2d1499] disabled:opacity-40"
+                      className="rounded-md bg-brand px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-40"
                     >
                       {noteSubmitting ? 'Adding…' : 'Add note'}
                     </button>

@@ -5,6 +5,7 @@ import { FileText, Trash2, Upload, Loader2, FolderOpen } from 'lucide-react'
 import type { KnowledgeFile } from '@/lib/types'
 import { clearKnowledgeAction, uploadKnowledgeAction } from '../actions'
 import { Toast, type ToastData } from './toast'
+import { Card } from '@/components/ui'
 
 function formatBytes(bytes?: number) {
   if (!bytes) return null
@@ -86,7 +87,7 @@ export default function KnowledgeCard({
   }
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6">
+    <Card>
       {/* Card header */}
       <div className="mb-5 flex items-center justify-between">
         <div>
@@ -194,6 +195,6 @@ export default function KnowledgeCard({
           onDismiss={() => setToast(null)}
         />
       )}
-    </section>
+    </Card>
   )
 }

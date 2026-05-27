@@ -142,10 +142,10 @@ function relativeTime(iso: string): string {
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 const inputClass =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8] disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed'
+  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed'
 
 const btnPrimary =
-  'inline-flex items-center gap-2 rounded-md bg-[#1E0B6F] px-3 py-2 text-sm font-medium text-white hover:bg-[#2d1499] focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+  'inline-flex items-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
 
 const btnGhost =
   'inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
@@ -183,8 +183,8 @@ function DayToggle({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 ${
-        checked ? 'bg-[#1E0B6F]' : 'bg-gray-200'
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+        checked ? 'bg-brand' : 'bg-gray-200'
       }`}
     >
       <span
@@ -394,7 +394,7 @@ function TempClosureCard({
             placeholder="e.g. We're in a meeting until 3pm. We'll get back to you shortly."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]"
+            className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <p className="mt-1 text-xs text-gray-400">
             Customers will see this message and be asked if they want to leave a message for you.
@@ -548,7 +548,7 @@ function ClosedDatesSection({
                 className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
                   already
                     ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'border-gray-300 bg-white text-gray-700 hover:border-[#3D6BF8] hover:bg-gray-50'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-accent hover:bg-gray-50'
                 }`}
               >
                 {already && <Check size={10} className="inline mr-1 text-gray-400" />}
@@ -713,7 +713,7 @@ function AfterHoursSection({
       <div className="flex items-center gap-2 mb-4">
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-            count > 0 ? 'bg-[#1E0B6F] text-white' : 'bg-gray-100 text-gray-500'
+            count > 0 ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500'
           }`}
         >
           <MessageSquare size={11} />
@@ -876,7 +876,7 @@ export default function BusinessHoursForm({
   const timezone = client.timezone ?? 'Africa/Johannesburg'
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="mx-auto max-w-2xl space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link
@@ -887,7 +887,7 @@ export default function BusinessHoursForm({
           <ArrowLeft size={16} strokeWidth={2} />
         </Link>
         <div>
-          <h2 className="text-base font-semibold text-gray-900">Business Hours</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Business Hours</h2>
           <p className="text-sm text-gray-500">Manage when your AI responds and collects messages.</p>
         </div>
       </div>

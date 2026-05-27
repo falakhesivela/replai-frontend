@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   FileText,
+  Globe,
   Upload,
   Trash2,
   Loader2,
@@ -12,9 +13,10 @@ import {
   X,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { getMyKnowledgeFiles, deleteMyKnowledge, deleteMyKnowledgeFile } from '@/lib/api'
+import { getMyKnowledgeFiles, deleteMyKnowledge, deleteMyKnowledgeFile, scrapeWebsiteKnowledge } from '@/lib/api'
 import { useToast } from '@/components/toast'
 import type { KnowledgeFile } from '@/lib/types'
+import { Card } from '@/components/ui'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!
 
@@ -127,7 +129,7 @@ function TipsCard() {
   const bad = ['Confidential documents', 'Files over 10 MB']
 
   return (
-    <aside className="rounded-lg border border-gray-200 bg-white p-5 h-fit">
+    <Card padding="sm" className="h-fit">
       <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">
         What to upload
       </p>
@@ -152,7 +154,7 @@ function TipsCard() {
           the better your agent's answers. Include real questions your customers ask.
         </p>
       </div>
-    </aside>
+    </Card>
   )
 }
 
@@ -176,6 +178,9 @@ export default function KnowledgeBasePage() {
   >(null)
   const [deletingFile, setDeletingFile] = useState<string | null>(null)
   const [clearingAll, setClearingAll] = useState(false)
+
+  const [websiteUrl, setWebsiteUrl] = useState('')
+  const [isCrawling, setIsCrawling] = useState(false)
 
   // Load files on mount
   useEffect(() => {
@@ -268,6 +273,26 @@ export default function KnowledgeBasePage() {
     }
   }
 
+  async function handleCrawl(e: React.FormEvent) {
+    e.preventDefault()
+    const url = websiteUrl.trim()
+    if (!url) return
+    setIsCrawling(true)
+    try {
+      const token = await getToken()
+      if (!token) throw new Error('Not authenticated.')
+      const result = await scrapeWebsiteKnowledge(token, url)
+      const updated = await getMyKnowledgeFiles(token)
+      setFiles(updated)
+      toast.success(`Indexed ${result.chunks} chunks from ${result.pages_crawled} pages.`)
+      setWebsiteUrl('')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to crawl website.')
+    } finally {
+      setIsCrawling(false)
+    }
+  }
+
   const isUploading = uploadProgress !== null
 
   return (
@@ -291,9 +316,9 @@ export default function KnowledgeBasePage() {
         />
       )}
 
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-5xl">
         <div className="mb-5">
-          <h2 className="text-base font-semibold text-gray-900">Knowledge Base</h2>
+          <h1 className="text-xl font-semibold text-gray-900">Knowledge Base</h1>
           <p className="mt-0.5 text-sm text-gray-500">
             Upload documents your AI agent can reference when answering customer questions.
           </p>
@@ -304,7 +329,7 @@ export default function KnowledgeBasePage() {
           <div className="space-y-4">
 
             {/* Section 1 — Upload zone */}
-            <section className="rounded-lg border border-gray-200 bg-white p-6">
+            <Card>
               <h3 className="mb-4 text-sm font-semibold text-gray-900">Upload document</h3>
 
               {/* Drop zone */}
@@ -367,19 +392,60 @@ export default function KnowledgeBasePage() {
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
                     <div
-                      className="h-full rounded-full bg-[#1E0B6F] transition-all duration-150"
+                      className="h-full rounded-full bg-brand transition-all duration-150"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
                 </div>
               )}
-            </section>
+            </Card>
 
-            {/* Section 2 — Files table */}
+            {/* Section 2 — Website crawl */}
+            <Card>
+              <h3 className="mb-1 text-sm font-semibold text-gray-900">Crawl your website</h3>
+              <p className="mb-4 text-xs text-gray-400">
+                We'll visit your site, follow internal links, and index the content automatically.
+              </p>
+              <form onSubmit={handleCrawl} className="flex gap-2">
+                <input
+                  type="url"
+                  placeholder="https://your-site.com"
+                  value={websiteUrl}
+                  onChange={(e) => setWebsiteUrl(e.target.value)}
+                  disabled={isCrawling}
+                  required
+                  className="flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+                />
+                <button
+                  type="submit"
+                  disabled={isCrawling || !websiteUrl.trim()}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isCrawling ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      Crawling…
+                    </>
+                  ) : (
+                    <>
+                      <Globe size={14} />
+                      Crawl
+                    </>
+                  )}
+                </button>
+              </form>
+              {isCrawling && (
+                <p className="mt-2 text-xs text-gray-400">
+                  This may take a minute for larger sites…
+                </p>
+              )}
+            </Card>
+
+            {/* Section 3 — Files table */}
             <section className="rounded-lg border border-gray-200 bg-white">
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-900">
-                  Uploaded documents
+                  Knowledge sources
                   {files.length > 0 && (
                     <span className="ml-2 text-xs font-normal text-gray-400">({files.length})</span>
                   )}
@@ -417,21 +483,37 @@ export default function KnowledgeBasePage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {files.map((file) => (
+                      {files.map((file) => {
+                        const isWebsite = file.filename.startsWith('website:')
+                        const displayName = isWebsite
+                          ? file.filename.slice('website:'.length)
+                          : file.filename
+                        return (
                         <tr key={file.filename} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-3">
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <FileText
-                                size={14}
-                                strokeWidth={1.75}
-                                className="shrink-0 text-gray-400"
-                              />
+                              {isWebsite ? (
+                                <Globe
+                                  size={14}
+                                  strokeWidth={1.75}
+                                  className="shrink-0 text-blue-400"
+                                />
+                              ) : (
+                                <FileText
+                                  size={14}
+                                  strokeWidth={1.75}
+                                  className="shrink-0 text-gray-400"
+                                />
+                              )}
                               <div className="min-w-0">
                                 <p className="truncate font-medium text-gray-800">
-                                  {file.filename}
+                                  {displayName}
                                 </p>
-                                {file.size && (
+                                {!isWebsite && file.size && (
                                   <p className="text-xs text-gray-400">{formatBytes(file.size)}</p>
+                                )}
+                                {isWebsite && (
+                                  <p className="text-xs text-gray-400">Website</p>
                                 )}
                               </div>
                             </div>
@@ -459,7 +541,8 @@ export default function KnowledgeBasePage() {
                             </button>
                           </td>
                         </tr>
-                      ))}
+                        )
+                      })}
                     </tbody>
                   </table>
                   </div>

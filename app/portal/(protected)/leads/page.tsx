@@ -28,10 +28,10 @@ export default function LeadsPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Leads</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-xl font-semibold text-gray-900">Leads</h1>
+          <p className="mt-0.5 text-sm text-gray-500">
             Prospects from your channels. This view will sync with your backend once connected.
           </p>
         </div>
@@ -51,7 +51,7 @@ export default function LeadsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/80 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+              <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-medium text-gray-500">
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Source</th>

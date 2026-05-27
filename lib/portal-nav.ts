@@ -10,6 +10,8 @@ export const PORTAL_NAV_ACCESS: readonly PortalNavEntry[] = [
   /** Agents use read-only My Agent; editing requires `manage_agent`. */
   { href: '/portal/my-agent', permission: 'view_conversations' },
   { href: '/portal/knowledge-base', permission: 'manage_agent' },
+  { href: '/portal/playground', permission: 'manage_agent' },
+  { href: '/portal/chatbot-widget', permission: 'manage_agent' },
   { href: '/portal/conversations', permission: 'view_conversations' },
   { href: '/portal/leads', permission: 'view_leads' },
   { href: '/portal/bookings', permission: 'view_bookings' },

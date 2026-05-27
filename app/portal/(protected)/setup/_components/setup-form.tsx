@@ -11,7 +11,7 @@ import {
 } from '@/lib/api'
 import { useToast } from '@/components/toast'
 import type { AvailabilitySchedule, Service } from '@/lib/types'
-
+import { Card, buttonClasses } from '@/components/ui'
 // Always pull a fresh Supabase JWT — captured-at-mount tokens go stale.
 const getFreshToken: TokenGetter = async () => {
   const supabase = createSupabaseClient()
@@ -101,10 +101,10 @@ function weeklyHours(rows: DayRow[]): number {
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 const inputClass =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]'
+  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent'
 
 const selectClass =
-  'rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]'
+  'rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent'
 
 function Section({
   title,
@@ -116,12 +116,12 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6">
+    <Card>
       <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
       {description && <p className="mt-0.5 mb-5 text-xs text-gray-500">{description}</p>}
       {!description && <div className="mb-5" />}
       {children}
-    </section>
+    </Card>
   )
 }
 
@@ -147,8 +147,8 @@ function Toggle({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 ${
-          checked ? 'bg-[#1E0B6F]' : 'bg-gray-200'
+        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+          checked ? 'bg-brand' : 'bg-gray-200'
         }`}
       >
         <span
@@ -177,7 +177,7 @@ function PrimaryButton({
       type="button"
       onClick={onClick}
       disabled={disabled || loading}
-      className="inline-flex items-center gap-2 rounded-md bg-[#1E0B6F] px-3 py-2 text-sm font-medium text-white hover:bg-[#2d1499] focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+      className={buttonClasses()}
     >
       {loading && <Loader2 size={13} className="animate-spin" />}
       {children}
@@ -328,7 +328,7 @@ function ServicesSection({
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               placeholder="Brief description for customers…"
               rows={2}
-              className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]"
+              className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
 
@@ -417,8 +417,8 @@ function AvailabilitySection({
               role="switch"
               aria-checked={row.enabled}
               onClick={() => updateRow(row.day_of_week, { enabled: !row.enabled })}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-1 ${
-                row.enabled ? 'bg-[#1E0B6F]' : 'bg-gray-200'
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-1 ${
+                row.enabled ? 'bg-brand' : 'bg-gray-200'
               }`}
             >
               <span
@@ -576,7 +576,7 @@ export default function SetupForm({
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <div>
-        <h2 className="text-base font-semibold text-gray-900">Booking Setup</h2>
+        <h1 className="text-xl font-semibold text-gray-900">Booking Setup</h1>
         <p className="mt-0.5 text-sm text-gray-500">
           Configure your services, availability, and booking preferences.
         </p>

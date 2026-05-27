@@ -2,16 +2,19 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { ChevronDown, ChevronUp, Loader2, Save, RotateCcw, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Loader2, Save, RotateCcw, X, LayoutTemplate } from 'lucide-react'
 import {
   saveSystemPromptAction,
   saveAgentNameAction,
   saveAgentSettingsAction,
+  toggleAIAction,
   type ActionState,
 } from '../actions'
 import { useToast } from '@/components/toast'
 import { usePermissions } from '@/hooks/usePermissions'
-
+import TemplatePicker from './template-picker'
+import type { IndustryTemplate } from '@/lib/types'
+import { Card, buttonClasses } from '@/components/ui'
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const readonlyBoxClass =
@@ -37,7 +40,7 @@ function SaveButton({ label = 'Save changes' }: { label?: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex items-center gap-2 rounded-md bg-[#1E0B6F] px-3 py-2 text-sm font-medium text-white hover:bg-[#2d1499] focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      className={buttonClasses()}
     >
       {pending ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} strokeWidth={2} />}
       {pending ? 'Saving…' : label}
@@ -57,12 +60,12 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6">
+    <Card>
       <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
       {description && <p className="mt-0.5 mb-5 text-xs text-gray-500">{description}</p>}
       {!description && <div className="mb-5" />}
       {children}
-    </section>
+    </Card>
   )
 }
 
@@ -90,8 +93,8 @@ function Toggle({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 ${
-          checked ? 'bg-[#1E0B6F]' : 'bg-gray-200'
+        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+          checked ? 'bg-brand' : 'bg-gray-200'
         }`}
       >
         <span
@@ -159,6 +162,7 @@ export default function AgentForm({
   initialUseEmoji,
   initialSignOff,
   initialResponseStyle,
+  initialAiEnabled,
 }: {
   initialPrompt: string
   initialAgentName: string
@@ -166,6 +170,7 @@ export default function AgentForm({
   initialUseEmoji: boolean
   initialSignOff: boolean
   initialResponseStyle: 'formal' | 'friendly' | 'casual'
+  initialAiEnabled: boolean
 }) {
   const { toast } = useToast()
   const { can } = usePermissions()
@@ -182,10 +187,16 @@ export default function AgentForm({
   const [promptState, promptAction] = useActionState(saveSystemPromptAction, {} as ActionState)
   const [currentPrompt, setCurrentPrompt] = useState(initialPrompt)
   const [exampleOpen, setExampleOpen] = useState(false)
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
   useEffect(() => {
     if (promptState.success) toast.success('System prompt saved.')
     else if (promptState.error) toast.error(promptState.error)
   }, [promptState]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleApplyTemplate(template: IndustryTemplate) {
+    setCurrentPrompt(template.system_prompt)
+    toast.info(`Template applied. Edit it to match your business, then save.`)
+  }
 
   // Section 3 — Behaviour settings
   const [settingsState, settingsAction] = useActionState(saveAgentSettingsAction, {} as ActionState)
@@ -198,7 +209,15 @@ export default function AgentForm({
     else if (settingsState.error) toast.error(settingsState.error)
   }, [settingsState]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Section 4 — Danger zone
+  // Section 4 — AI toggle
+  const [aiToggleState, aiToggleAction] = useActionState(toggleAIAction, {} as ActionState)
+  const [aiEnabled, setAiEnabled] = useState(initialAiEnabled)
+  useEffect(() => {
+    if (aiToggleState.success) toast.success(aiEnabled ? 'AI replies enabled.' : 'AI replies disabled.')
+    else if (aiToggleState.error) toast.error(aiToggleState.error)
+  }, [aiToggleState]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Section 5 — Danger zone
   const [showResetDialog, setShowResetDialog] = useState(false)
 
   function handleReset() {
@@ -219,9 +238,16 @@ export default function AgentForm({
         />
       )}
 
+      {templatePickerOpen && (
+        <TemplatePicker
+          onApply={handleApplyTemplate}
+          onClose={() => setTemplatePickerOpen(false)}
+        />
+      )}
+
       <div className="mx-auto max-w-2xl space-y-5">
         <div>
-          <h2 className="text-base font-semibold text-gray-900">My Agent</h2>
+          <h2 className="text-xl font-semibold text-gray-900">My Agent</h2>
           <p className="mt-0.5 text-sm text-gray-500">
             {canManageAgent
               ? "Configure your AI assistant's identity and behaviour."
@@ -246,7 +272,7 @@ export default function AgentForm({
                   type="text"
                   defaultValue={initialAgentName}
                   placeholder="e.g. Sarah from Acme Support"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8]"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
               <div className="flex justify-end">
@@ -266,16 +292,26 @@ export default function AgentForm({
           {canManageAgent ? (
             <form action={promptAction} className="space-y-4">
               <div>
-                <label htmlFor="system_prompt" className="block text-sm font-medium text-gray-700 mb-1">
-                  System prompt
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label htmlFor="system_prompt" className="block text-sm font-medium text-gray-700">
+                    System prompt
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setTemplatePickerOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                  >
+                    <LayoutTemplate size={11} strokeWidth={2} />
+                    Browse templates
+                  </button>
+                </div>
                 <textarea
                   id="system_prompt"
                   name="system_prompt"
                   rows={10}
                   value={currentPrompt}
                   onChange={(e) => setCurrentPrompt(e.target.value)}
-                  className="w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8] font-mono"
+                  className="w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent font-mono"
                 />
                 <p className="mt-1.5 text-xs text-gray-400 leading-relaxed">
                   This tells your AI agent how to behave, what tone to use, and what topics to cover.
@@ -370,7 +406,7 @@ export default function AgentForm({
                     id="response_style"
                     value={responseStyle}
                     onChange={(e) => setResponseStyle(e.target.value as typeof responseStyle)}
-                    className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8] bg-white"
+                    className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent bg-white"
                   >
                     <option value="formal">Formal</option>
                     <option value="friendly">Friendly</option>
@@ -380,6 +416,30 @@ export default function AgentForm({
 
                 <div className="flex justify-end pt-4">
                   <SaveButton label="Save settings" />
+                </div>
+              </form>
+            </Section>
+
+            {/* ── Section 4: AI toggle ── */}
+            <Section
+              title="AI replies"
+              description="Turn off AI to handle all incoming messages yourself."
+            >
+              <form
+                action={(fd) => {
+                  fd.set('ai_enabled', String(aiEnabled))
+                  return aiToggleAction(fd)
+                }}
+                className="space-y-1"
+              >
+                <Toggle
+                  label="AI replies enabled"
+                  description="When off, incoming messages are saved to your inbox but the AI will not respond."
+                  checked={aiEnabled}
+                  onChange={setAiEnabled}
+                />
+                <div className="flex justify-end pt-2">
+                  <SaveButton label="Save" />
                 </div>
               </form>
             </Section>

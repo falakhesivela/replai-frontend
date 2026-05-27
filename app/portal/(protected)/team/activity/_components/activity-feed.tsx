@@ -148,7 +148,7 @@ export function ActivityFeed() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Activity</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Activity</h1>
           <p className="mt-1 text-sm text-gray-500">Last 7 days of team actions</p>
         </div>
 
@@ -156,7 +156,7 @@ export function ActivityFeed() {
         <select
           value={memberFilter}
           onChange={(e) => setMemberFilter(e.target.value)}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8] w-full sm:w-52"
+          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent w-full sm:w-52"
         >
           <option value="">All members</option>
           {members.map((m) => (

@@ -124,7 +124,7 @@ export default function MyBookingsView() {
       ) : error ? (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
           {/* Tab bar */}
           <div className="flex border-b border-gray-100 px-4">
             {TABS.map(({ value, label }) => (
@@ -133,7 +133,7 @@ export default function MyBookingsView() {
                 onClick={() => setTab(value)}
                 className={`relative px-4 py-2.5 text-xs font-medium transition-colors ${
                   tab === value
-                    ? 'border-b-2 border-[#3D6BF8] text-[#1E0B6F] -mb-px'
+                    ? 'border-b-2 border-accent text-brand -mb-px'
                     : 'text-gray-400 hover:text-gray-600'
                 }`}
               >

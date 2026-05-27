@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom'
 import { Loader2, Save } from 'lucide-react'
 import { saveSystemPromptAction } from '../actions'
 import { Toast, type ToastData } from './toast'
+import { Card } from '@/components/ui'
 
 function SaveButton() {
   const { pending } = useFormStatus()
@@ -43,7 +44,7 @@ export default function SystemPromptCard({
   }, [state])
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6">
+    <Card>
       <h3 className="mb-1 text-sm font-semibold text-gray-900">AI Configuration</h3>
       <p className="mb-5 text-xs text-gray-500">
         Define the personality and behaviour of the AI agent for this client.
@@ -81,6 +82,6 @@ export default function SystemPromptCard({
           onDismiss={() => setToast(null)}
         />
       )}
-    </section>
+    </Card>
   )
 }

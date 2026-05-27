@@ -19,6 +19,9 @@ export interface Client {
   agent_response_style?: 'formal' | 'friendly' | 'casual'
   reminder_enabled?: boolean
   reminder_hours_before?: number
+  ai_enabled?: boolean
+  notify_new_conversation_email?: boolean
+  notify_escalation_email?: boolean
 }
 
 export interface BusinessHoursItem {
@@ -78,6 +81,7 @@ export interface Conversation {
   id: string
   client_id: string
   customer_phone: string
+  channel?: 'whatsapp' | 'web'
   status: 'ai' | 'human' | 'resolved'
   last_message?: string
   last_message_at?: string
@@ -91,8 +95,15 @@ export interface Conversation {
   updated_at: string
   assigned_to?: string | null
   assigned_at?: string | null
+  department_id?: string | null
   /** FK embed from API — object or array depending on PostgREST shape */
   team_members?: ConversationAssignee | ConversationAssignee[] | null
+  first_response_at?: string | null
+  resolved_at?: string | null
+  sla_breached?: boolean | null
+  csat_sent_at?: string | null
+  csat_score?: number | null
+  csat_responded_at?: string | null
 }
 
 export interface ConversationNote {
@@ -132,13 +143,21 @@ export interface PortalCollaborationContext {
   members: PortalCollaborationMember[]
 }
 
+export interface MessageAttachment {
+  url: string
+  name: string
+  size: number
+  mime_type: string
+}
+
 export interface Message {
   id: string
   client_id: string
   customer_phone: string
   role: 'user' | 'assistant' | 'human_agent' | 'system'
   content: string
-  message_type?: 'text' | 'voice' | 'image'
+  message_type?: 'text' | 'voice' | 'image' | 'file'
+  attachments?: MessageAttachment[]
   created_at: string
 }
 
@@ -294,6 +313,49 @@ export interface PortalTeamInviteResult {
   email_sent?: boolean
 }
 
+// ── Industry templates ────────────────────────────────────────────────────────
+
+export interface IndustryTemplate {
+  id: string
+  name: string
+  description: string
+  emoji: string
+  tags: string[]
+  system_prompt: string
+  suggested_agent_name: string
+  features: ('bookings' | 'ecommerce')[]
+}
+
+// ── SLA + CSAT ────────────────────────────────────────────────────────────────
+
+export interface SlaCsatMetrics {
+  avg_first_response_minutes: number | null
+  sla_breach_rate: number | null
+  total_sla_responses: number
+  avg_csat_score: number | null
+  csat_response_rate: number | null
+  total_csat_responses: number
+}
+
+// ── Departments ───────────────────────────────────────────────────────────────
+
+export interface Department {
+  id: string
+  client_id: string
+  name: string
+  description: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface DepartmentMember {
+  id: string
+  name: string
+  avatar_color: string | null
+  role: 'owner' | 'manager' | 'agent'
+}
+
 // ── Subscription & feature toggles ───────────────────────────────────────────
 
 export interface Plan {
@@ -304,6 +366,16 @@ export interface Plan {
   price: number
   currency: string
   is_active: boolean
+  /** Channel-model fields */
+  kind?: 'channel' | 'addon'
+  price_annual?: number | null
+  included_conversations?: number | null
+  overage_rate_usd?: number | null
+  paddle_price_id_monthly?: string | null
+  paddle_price_id_annual?: string | null
+  /** WhatsApp / Meta (Tech-Provider billing) */
+  included_wa_messages?: number | null
+  wa_overage_rate_usd?: number | null
   /** Annotated fields — present when returned from get_subscription_detail */
   enabled?: boolean
   enabled_at?: string | null
@@ -316,21 +388,92 @@ export interface ClientSubscription {
   base_price: number
   total_price: number
   currency: string
-  status: 'active' | 'cancelled' | 'past_due'
+  status: 'trialing' | 'active' | 'past_due' | 'paused' | 'cancelled'
   current_period_start: string
   current_period_end: string
   created_at: string
   updated_at: string
+  /** Channel-model + Paddle fields */
+  plan_key?: string | null
+  billing_cycle?: 'monthly' | 'annual'
+  included_conversations?: number | null
+  overage_rate_usd?: number | null
+  period_conversations?: number
+  overage_conversations?: number
+  overage_accrued_usd?: number
+  trial_ends_at?: string | null
+  paddle_customer_id?: string | null
+  paddle_subscription_id?: string | null
+  /** WhatsApp / Meta (Tech-Provider billing) */
+  included_wa_messages?: number | null
+  wa_overage_rate_usd?: number | null
+  period_wa_messages?: number
+  wa_overage_messages?: number
+  wa_overage_accrued_usd?: number
 }
 
 export interface SubscriptionDetail {
   subscription: ClientSubscription | null
   plans: Plan[]
+  usage?: ClientUsageBilling
 }
 
 export interface ToggleFeatureResponse {
   subscription: ClientSubscription
   features: Record<string, boolean>
+}
+
+// ── AI cost telemetry (admin only) ────────────────────────────────────────────
+
+export interface UsageCallType {
+  call_type: string
+  calls: number
+  cost_usd: number
+  input_tokens: number
+  cached_input_tokens: number
+  output_tokens: number
+}
+
+export interface ClientUsageBilling {
+  state: 'unlimited' | 'ok' | 'approaching' | 'over' | 'no_subscription'
+  used: number
+  included: number | null
+  pct: number | null
+  overage_conversations: number
+  overage_accrued_usd: number
+  overage_rate_usd?: number
+  /** WhatsApp / Meta usage in the same period */
+  wa_used?: number
+  wa_included?: number | null
+  wa_overage_messages?: number
+  wa_overage_accrued_usd?: number
+  wa_overage_rate_usd?: number
+  period_start: string
+  period_end: string
+  plan_key?: string | null
+  status?: string | null
+}
+
+export interface ClientUsage {
+  period_days: number
+  total_cost_usd: number
+  conversations: number
+  cost_per_conversation_usd: number
+  by_call_type: UsageCallType[]
+  billing?: ClientUsageBilling
+}
+
+// ── Chatbot widget ────────────────────────────────────────────────────────────
+
+export interface WidgetConfig {
+  widget_id: string
+  welcome_message: string
+  brand_color: string        // hex, e.g. "#6366f1"
+  position: 'bottom-right' | 'bottom-left'
+  collect_lead: boolean
+  agent_name: string
+  agent_tagline: string
+  agent_avatar_url: string | null
 }
 
 // ── E-commerce ────────────────────────────────────────────────────────────────

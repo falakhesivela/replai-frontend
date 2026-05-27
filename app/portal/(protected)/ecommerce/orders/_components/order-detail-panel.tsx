@@ -33,7 +33,7 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
   pending: 'bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200',
   confirmed: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
   processing: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
-  shipped: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200',
+  shipped: 'bg-accent-soft text-accent ring-1 ring-accent/20',
   delivered: 'bg-green-50 text-green-700 ring-1 ring-green-200',
   cancelled: 'bg-gray-100 text-gray-400',
 }
@@ -96,14 +96,14 @@ function SendMessagePanel({ customerPhone, token }: { customerPhone: string; tok
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type a WhatsApp message…"
           rows={3}
-          className="w-full resize-none rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
+          className="w-full resize-none rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-accent"
         />
         {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
         {sent && <p className="rounded-md bg-green-50 px-3 py-2 text-xs text-green-700">Message sent.</p>}
         <button
           type="submit"
           disabled={!message.trim() || sending}
-          className="flex items-center gap-1.5 rounded-md bg-[#1E0B6F] px-4 py-2 text-xs font-medium text-white hover:bg-[#2d1499] transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-xs font-medium text-white hover:bg-brand-hover transition-colors disabled:opacity-40"
         >
           {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} strokeWidth={2} />}
           Send
@@ -347,7 +347,7 @@ export default function OrderDetailPanel({
                         disabled={updatingStatus}
                         className={`rounded-md border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-40 ${
                           order.status === s
-                            ? 'border-[#3D6BF8] bg-[#1E0B6F] text-white'
+                            ? 'border-accent bg-brand text-white'
                             : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                         }`}
                       >

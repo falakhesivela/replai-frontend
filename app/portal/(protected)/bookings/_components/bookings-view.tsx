@@ -326,7 +326,7 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
           onClick={() => onChange(value)}
           className={`relative px-4 py-2.5 text-xs font-medium transition-colors ${
             active === value
-              ? 'border-b-2 border-[#3D6BF8] text-[#1E0B6F] -mb-px'
+              ? 'border-b-2 border-accent text-brand -mb-px'
               : 'text-gray-400 hover:text-gray-600'
           }`}
         >
@@ -431,11 +431,11 @@ function CalendarView({
               disabled={count === 0}
               className={`h-16 flex flex-col items-center border-b border-r border-gray-50 pt-2 transition-colors last:border-r-0 ${
                 isWeekend ? 'bg-gray-50/50' : ''
-              } ${count > 0 ? 'hover:bg-indigo-50 cursor-pointer' : 'cursor-default'}`}
+              } ${count > 0 ? 'hover:bg-accent-soft cursor-pointer' : 'cursor-default'}`}
             >
               <span
                 className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                  isToday ? 'bg-[#1E0B6F] text-white' : 'text-gray-700'
+                  isToday ? 'bg-brand text-white' : 'text-gray-700'
                 }`}
               >
                 {day}
@@ -553,7 +553,7 @@ function NewBookingModal({
                 value={serviceId}
                 onChange={(e) => setServiceId(e.target.value)}
                 required
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-accent"
               >
                 <option value="">Select a service…</option>
                 {services.map((s) => (
@@ -578,7 +578,7 @@ function NewBookingModal({
                 onChange={(e) => setSlotId(e.target.value)}
                 required
                 disabled={!serviceId || slots.length === 0}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] disabled:opacity-50"
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
               >
                 <option value="">
                   {!serviceId
@@ -609,7 +609,7 @@ function NewBookingModal({
               onChange={(e) => setCustomerName(e.target.value)}
               required
               placeholder="Jane Smith"
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
+              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
 
@@ -622,7 +622,7 @@ function NewBookingModal({
               onChange={(e) => setCustomerPhone(e.target.value)}
               required
               placeholder="+27821234567"
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3D6BF8]"
+              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
 
@@ -642,7 +642,7 @@ function NewBookingModal({
             <button
               type="submit"
               disabled={!canSubmit || submitting}
-              className="flex items-center gap-1.5 rounded-md bg-[#1E0B6F] px-4 py-2 text-xs font-medium text-white hover:bg-[#2d1499] transition-colors disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-xs font-medium text-white hover:bg-brand-hover transition-colors disabled:opacity-40"
             >
               {submitting && <Loader2 size={12} className="animate-spin" />}
               Create Booking
@@ -744,13 +744,13 @@ export default function BookingsView({
       {/* Heading */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-gray-900">Bookings</h2>
+          <h1 className="text-xl font-semibold text-gray-900">Bookings</h1>
           <p className="mt-0.5 text-sm text-gray-500">{bookings.length} total</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowNewBooking(true)}
-            className="flex items-center gap-1.5 rounded-md bg-[#1E0B6F] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2d1499] transition-colors"
+            className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover transition-colors"
           >
             <Plus size={13} strokeWidth={2} />
             New Booking
@@ -759,7 +759,7 @@ export default function BookingsView({
             onClick={() => setView((v) => (v === 'list' ? 'calendar' : 'list'))}
             className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
               view === 'calendar'
-                ? 'border-[#3D6BF8] bg-[#1E0B6F] text-white'
+                ? 'border-accent bg-brand text-white'
                 : 'border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >

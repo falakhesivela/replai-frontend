@@ -92,7 +92,7 @@ function SuccessPanel({
         <div className="flex items-center gap-3 mb-6">
           <CheckCircle2 size={22} strokeWidth={1.75} className="text-green-500 shrink-0" />
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Client created</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Client created</h2>
             <p className="text-sm text-gray-500">Share the login details below with your client.</p>
           </div>
         </div>
@@ -154,7 +154,7 @@ export default function NewClientPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6">
-        <h2 className="text-base font-semibold text-gray-900">New client</h2>
+        <h2 className="text-xl font-semibold text-gray-900">New client</h2>
         <p className="mt-1 text-sm text-gray-500">
           Fill in the details below to onboard a new client.
         </p>

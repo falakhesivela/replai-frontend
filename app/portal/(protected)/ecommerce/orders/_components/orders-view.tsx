@@ -35,7 +35,7 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
   confirmed: 'bg-blue-100 text-blue-700',
   processing: 'bg-purple-100 text-purple-700',
-  shipped: 'bg-indigo-100 text-indigo-700',
+  shipped: 'bg-accent-soft text-accent',
   delivered: 'bg-green-100 text-green-700',
   cancelled: 'bg-gray-100 text-gray-400',
 }
@@ -179,7 +179,7 @@ export default function OrdersView({ role }: { role: PortalRole }) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       {selectedOrder && (
         <OrderDetailPanel
           order={selectedOrder}
@@ -192,7 +192,7 @@ export default function OrdersView({ role }: { role: PortalRole }) {
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Orders</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-0.5 text-sm text-gray-500">
           Customer orders placed via WhatsApp.
         </p>
       </div>
@@ -209,14 +209,14 @@ export default function OrdersView({ role }: { role: PortalRole }) {
               onClick={() => setActiveTab(tab.value)}
               className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.value
-                  ? 'border-[#3D6BF8] text-[#1E0B6F]'
+                  ? 'border-accent text-brand'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               {tab.label}
               {count > 0 && (
                 <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                  activeTab === tab.value ? 'bg-[#1E0B6F] text-white' : 'bg-gray-100 text-gray-500'
+                  activeTab === tab.value ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500'
                 }`}>
                   {count}
                 </span>
@@ -228,7 +228,7 @@ export default function OrdersView({ role }: { role: PortalRole }) {
 
       {/* Orders table */}
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 py-16 text-center">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-16 text-center">
           <ShoppingBag size={32} className="mb-3 text-gray-300" />
           <p className="text-sm font-medium text-gray-500">No orders yet</p>
           <p className="mt-1 text-xs text-gray-400">
@@ -236,7 +236,7 @@ export default function OrdersView({ role }: { role: PortalRole }) {
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">

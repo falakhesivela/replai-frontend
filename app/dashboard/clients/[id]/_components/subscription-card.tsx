@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { CreditCard, Loader2, ToggleLeft, ToggleRight } from 'lucide-react'
 import type { ClientSubscription, Plan, SubscriptionDetail } from '@/lib/types'
 import { toggleClientFeatureAction } from '../actions'
+import { Card } from '@/components/ui'
 
 function fmt(amount: number, currency: string) {
-  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency }).format(amount)
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount)
 }
 
 export default function SubscriptionCard({
@@ -23,7 +24,7 @@ export default function SubscriptionCard({
   const [togglingKey, setTogglingKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const currency = subscription?.currency ?? 'ZAR'
+  const currency = subscription?.currency ?? 'USD'
 
   async function handleToggle(planKey: string, enabled: boolean) {
     setTogglingKey(planKey)
@@ -44,10 +45,10 @@ export default function SubscriptionCard({
     setTogglingKey(null)
   }
 
-  const addons = plans.filter((p) => p.key !== 'base')
+  const addons = plans.filter((p) => p.kind === 'addon')
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6">
+    <Card>
       {/* Header */}
       <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -60,7 +61,16 @@ export default function SubscriptionCard({
               {fmt(subscription.total_price, currency)}
               <span className="text-xs font-normal text-gray-400">/mo</span>
             </p>
-            <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
+            <p className="text-[11px] text-gray-400">
+              {subscription.plan_key
+                ? `${subscription.plan_key}${
+                    subscription.billing_cycle
+                      ? ` · ${subscription.billing_cycle}`
+                      : ''
+                  }`
+                : 'no plan selected'}
+            </p>
+            <span className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
               subscription.status === 'active'
                 ? 'bg-green-100 text-green-700'
                 : subscription.status === 'past_due'
@@ -90,7 +100,7 @@ export default function SubscriptionCard({
                 +{fmt(plan.price, currency)}/mo
                 {plan.enabled && plan.enabled_at && (
                   <span className="ml-2 text-gray-300">
-                    since {new Date(plan.enabled_at).toLocaleDateString('en-ZA', {
+                    since {new Date(plan.enabled_at).toLocaleDateString('en-US', {
                       day: 'numeric', month: 'short', year: 'numeric',
                     })}
                   </span>
@@ -116,6 +126,6 @@ export default function SubscriptionCard({
           </div>
         ))}
       </div>
-    </section>
+    </Card>
   )
 }

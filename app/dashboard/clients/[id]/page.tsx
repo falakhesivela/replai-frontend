@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation'
 import { MessageSquare } from 'lucide-react'
-import { getClient, getKnowledgeFiles, getClientConversations, getClientSubscriptionDetail } from '@/lib/api.server'
-import type { Client, KnowledgeFile, Conversation, SubscriptionDetail } from '@/lib/types'
+import { getClient, getKnowledgeFiles, getClientConversations, getClientSubscriptionDetail, getClientUsage } from '@/lib/api.server'
+import type { Client, KnowledgeFile, Conversation, SubscriptionDetail, ClientUsage } from '@/lib/types'
 import SystemPromptCard from './_components/system-prompt-card'
 import KnowledgeCard from './_components/knowledge-card'
 import SubscriptionCard from './_components/subscription-card'
+import UsageCostCard from './_components/usage-cost-card'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -147,17 +148,30 @@ export default async function ClientDetailPage({
   let files: KnowledgeFile[] = []
   let conversations: Conversation[] = []
   let subscriptionDetail: SubscriptionDetail | null = null
+  let usage: ClientUsage = {
+    period_days: 30,
+    total_cost_usd: 0,
+    conversations: 0,
+    cost_per_conversation_usd: 0,
+    by_call_type: [],
+  }
 
   try {
     client = await getClient(id)
-  } catch {
-    notFound()
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[dashboard] getClient(%s) failed:', id, err)
+    // Distinguish a real 404 from upstream errors so we don't mask 500s as
+    // "not found" — only the real 404 calls notFound().
+    if (/API error 404/.test(msg)) notFound()
+    throw err
   }
 
   await Promise.allSettled([
     getKnowledgeFiles(id).then((f) => { files = f }),
     getClientConversations(id).then((c) => { conversations = c }),
     getClientSubscriptionDetail(id).then((s) => { subscriptionDetail = s }),
+    getClientUsage(id).then((u) => { usage = u }),
   ])
 
   return (
@@ -165,7 +179,7 @@ export default async function ClientDetailPage({
       {/* ── Header ── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-gray-900">{client.business_name}</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{client.business_name}</h2>
           {client.wa_phone_number && (
             <p className="mt-0.5 text-sm text-gray-500">{client.wa_phone_number}</p>
           )}
@@ -191,6 +205,9 @@ export default async function ClientDetailPage({
       {subscriptionDetail && (
         <SubscriptionCard clientId={id} initialDetail={subscriptionDetail} />
       )}
+
+      {/* ── AI cost (admin only) ── */}
+      <UsageCostCard usage={usage} />
 
       {/* ── Conversations ── */}
       <ConversationsCard conversations={conversations} />

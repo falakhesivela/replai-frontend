@@ -1,3 +1,6 @@
+
+import { Card } from '@/components/ui'
+
 export default function ClientDetailLoading() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 animate-pulse">
@@ -11,17 +14,17 @@ export default function ClientDetailLoading() {
       </div>
 
       {/* AI Configuration skeleton */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 space-y-4">
+      <Card className="space-y-4">
         <div className="h-4 w-36 rounded bg-gray-200" />
         <div className="h-3 w-64 rounded bg-gray-100" />
         <div className="h-52 w-full rounded-md bg-gray-100" />
         <div className="flex justify-end">
           <div className="h-9 w-28 rounded-md bg-gray-200" />
         </div>
-      </div>
+      </Card>
 
       {/* Knowledge base skeleton */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 space-y-4">
+      <Card className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-1.5">
             <div className="h-4 w-32 rounded bg-gray-200" />
@@ -34,7 +37,7 @@ export default function ClientDetailLoading() {
           ))}
         </div>
         <div className="h-28 w-full rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-      </div>
+      </Card>
     </div>
   )
 }

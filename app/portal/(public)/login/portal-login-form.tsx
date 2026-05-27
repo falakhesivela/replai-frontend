@@ -71,7 +71,6 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
     const destination =
       nextPath && nextPath.startsWith('/portal') ? nextPath : resolved.path
     router.push(destination)
-    router.refresh()
   }
 
   return (
@@ -86,7 +85,7 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
           priority
         />
         {/* Dark gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1E0B6F]/90 via-[#1E0B6F]/40 to-[#1E0B6F]/60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-brand/90 via-brand/40 to-brand/60" />
 
         <div className="relative z-10 w-full">
           <Image
@@ -104,7 +103,7 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
             Your AI-powered<br />customer assistant
           </h2>
           <p className="mt-3 text-blue-100 text-sm max-w-xs">
-            Automate conversations, manage bookings, and delight your customers — 24/7.
+            Automate conversations, manage bookings, sell products, and delight your customers — 24/7.
           </p>
         </div>
 
@@ -142,7 +141,7 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
                 type="email"
                 required
                 autoComplete="email"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8] bg-white"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent bg-white"
                 placeholder="you@example.com"
               />
             </div>
@@ -154,7 +153,7 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
                 </label>
                 <Link
                   href="/portal/forgot-password"
-                  className="text-xs text-[#3D6BF8] hover:text-[#1E0B6F] transition-colors"
+                  className="text-xs text-accent hover:text-brand transition-colors"
                 >
                   Forgot password?
                 </Link>
@@ -165,7 +164,7 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
                 type="password"
                 required
                 autoComplete="current-password"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-[#3D6BF8] focus:outline-none focus:ring-1 focus:ring-[#3D6BF8] bg-white"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent bg-white"
                 placeholder="••••••••"
               />
             </div>
@@ -185,7 +184,7 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
             <button
               type="submit"
               disabled={pending}
-              className="w-full rounded-lg bg-[#1E0B6F] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2d1499] focus:outline-none focus:ring-2 focus:ring-[#3D6BF8] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {pending ? 'Signing in…' : 'Sign in'}
             </button>

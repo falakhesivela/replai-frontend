@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Sidebar from './sidebar'
-import TopBar from './topbar'
+import MobileTopBar from '@/components/mobile-top-bar'
 
 interface DashboardShellProps {
   email: string
@@ -30,7 +30,7 @@ export default function DashboardShell({ email, children }: DashboardShellProps)
       />
 
       <div className="flex min-h-screen flex-col md:ml-60">
-        <TopBar onMenuClick={() => setMobileOpen(true)} />
+        <MobileTopBar onMenuClick={() => setMobileOpen(true)} />
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
     </div>

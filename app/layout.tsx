@@ -30,7 +30,23 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">{children}
+      {/* <iframe
+        src="http://localhost:3000/widget/6662a31eb9fc43469835f88949ec3e85"
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          width: "380px",
+          height: "580px",
+          border: "none",
+          zIndex: 9999,
+          borderRadius: "12px",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+        }}
+        allow="microphone"
+      ></iframe> */}
+      </body>
     </html>
   );
 }

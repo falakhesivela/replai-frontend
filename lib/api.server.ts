@@ -20,11 +20,13 @@ import type {
   SubscriptionDetail,
 } from './types'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+// Server-only: prefer the absolute INTERNAL_API_URL (bypasses the /api-proxy
+// rewrite, which is browser-only and unusable for Node fetch).
+const API_URL = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL
 const API_KEY = process.env.ADMIN_API_KEY
 
 if (!API_URL) {
-  throw new Error('NEXT_PUBLIC_API_URL is not set')
+  throw new Error('INTERNAL_API_URL or NEXT_PUBLIC_API_URL must be set')
 }
 if (!API_KEY) {
   throw new Error(
@@ -101,6 +103,15 @@ export function getClientConversations(id: string): Promise<Conversation[]> {
   return adminFetch(`/clients/${id}/conversations`)
 }
 
+// ── AI cost telemetry (admin only) ───────────────────────────────────────────
+
+export function getClientUsage(
+  id: string,
+  days = 30
+): Promise<import('./types').ClientUsage> {
+  return adminFetch(`/clients/${id}/usage?days=${days}`)
+}
+
 // ── Services & availability ──────────────────────────────────────────────────
 
 export function createClientService(
@@ -156,5 +167,27 @@ export function toggleClientFeatureAdmin(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ plan_key, enabled }),
+  })
+}
+
+// ── Trial config (god-view) ──────────────────────────────────────────────────
+
+export interface TrialConfig {
+  duration_days: number
+  channels: string[]
+  addons: string[]
+  included_conversations: number | null
+  is_active: boolean
+}
+
+export function getTrialConfig(): Promise<TrialConfig> {
+  return adminFetch('/admin/trial-config')
+}
+
+export function updateTrialConfig(body: Partial<TrialConfig>): Promise<TrialConfig> {
+  return adminFetch('/admin/trial-config', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   })
 }
