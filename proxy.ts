@@ -40,9 +40,48 @@ function applyPortalAccess(
   return null
 }
 
+const LEGACY_PAYSTACK_RETURN_PATHS = [
+  '/portal/integrations/paystack',
+  '/portal/settings/payments',
+]
+
+function isLegacyPaystackReturnPath(path: string): boolean {
+  return LEGACY_PAYSTACK_RETURN_PATHS.some(
+    (p) => path === p || path.startsWith(`${p}/`)
+  )
+}
+
+/** Copy query string to the public payment return page. */
+function toPaymentCompleteUrl(request: NextRequest): URL {
+  const dest = new URL('/payment/complete', request.url)
+  request.nextUrl.searchParams.forEach((value, key) => {
+    dest.searchParams.set(key, value)
+  })
+  return dest
+}
+
+/** Paystack return with ?reference= / ?trxref= (before auth check). */
+function redirectLegacyPaystackCallback(request: NextRequest): NextResponse | null {
+  if (!isLegacyPaystackReturnPath(request.nextUrl.pathname)) {
+    return null
+  }
+  const reference =
+    request.nextUrl.searchParams.get('reference') ??
+    request.nextUrl.searchParams.get('trxref')
+  if (!reference) {
+    return null
+  }
+  return NextResponse.redirect(toPaymentCompleteUrl(request))
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname: path } = request.nextUrl
   const isPortalRoute = path.startsWith('/portal')
+
+  const paystackReturn = redirectLegacyPaystackCallback(request)
+  if (paystackReturn) {
+    return paystackReturn
+  }
 
   if (
     path.startsWith('/portal/login') ||
@@ -81,6 +120,10 @@ export async function proxy(request: NextRequest) {
 
   if (!user) {
     if (isPortalRoute) {
+      // Customers returning from Paystack often hit the old portal URL with no session.
+      if (isLegacyPaystackReturnPath(path)) {
+        return NextResponse.redirect(toPaymentCompleteUrl(request))
+      }
       const loginUrl = new URL('/portal/login', request.url)
       loginUrl.searchParams.set('next', path)
       return NextResponse.redirect(loginUrl)
