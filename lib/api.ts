@@ -800,7 +800,7 @@ export function getMyPaymentAccount(
 
 export function getSettlementBanks(
   token: string | TokenGetter,
-  country = 'south_africa'
+  country = 'south africa'
 ): Promise<SettlementBank[]> {
   return portalFetch(`/portal/me/payments/banks?country=${encodeURIComponent(country)}`, token)
 }
@@ -1116,18 +1116,131 @@ export interface WidgetAttachment {
   mime_type: string
 }
 
+export interface WidgetQuickReply {
+  label: string
+  id?: string | null
+}
+
+export type WidgetAction =
+  | { type: 'add_to_cart'; product_id: string; quantity?: number }
+  | { type: 'checkout' }
+  | { type: 'view_cart' }
+  | { type: 'browse_services' }
+  | { type: 'select_service'; service_id: string }
+  | { type: 'select_date'; service_id: string; date: string }
+  | { type: 'select_time'; service_id: string; date: string; time: string }
+  | {
+      type: 'confirm_booking'
+      service_id: string
+      date: string
+      time: string
+      customer_name?: string | null
+    }
+
+export interface WidgetProductGridItem {
+  id: string
+  name: string
+  price: number
+  currency: string
+  image_url?: string | null
+  in_stock: boolean
+}
+
+export type WidgetComponent =
+  | { type: 'product_grid'; products: WidgetProductGridItem[] }
+  | {
+      type: 'cart_summary'
+      items: {
+        product_id: string
+        name: string
+        quantity: number
+        price: number
+        line_total: number
+      }[]
+      total: number
+      currency: string
+    }
+  | {
+      type: 'payment_cta'
+      url?: string | null
+      amount: number
+      currency: string
+      order_id: string
+      payment_status?: string | null
+    }
+  | {
+      type: 'actions'
+      actions: { id: string; label: string; variant?: 'primary' | 'secondary' }[]
+    }
+  | {
+      type: 'service_list'
+      services: {
+        id: string
+        name: string
+        duration_minutes: number
+        price?: number | null
+        currency: string
+        description?: string | null
+      }[]
+    }
+  | {
+      type: 'date_picker'
+      service_id: string
+      service_name: string
+      dates: { date: string; label: string }[]
+    }
+  | {
+      type: 'time_slots'
+      service_id: string
+      service_name: string
+      date: string
+      date_label: string
+      slots: { time: string; label: string }[]
+    }
+  | {
+      type: 'booking_confirmation'
+      status: 'preview' | 'confirmed'
+      service_id: string
+      service_name: string
+      date: string
+      date_label: string
+      time: string
+      time_label: string
+      booking_id?: string | null
+      price?: number | null
+      currency: string
+      payment_link?: string | null
+      payment_status?: string | null
+    }
+
+export interface WidgetReplyPayload {
+  reply: string
+  components?: WidgetComponent[]
+  reply_type: 'text' | 'button' | 'list'
+  buttons?: WidgetQuickReply[]
+  sections?: { title: string; items: WidgetQuickReply[] }[]
+  button_label?: string
+}
+
 export function sendWidgetMessage(
   widgetId: string,
   conversationId: string,
   message: string,
-  attachments: WidgetAttachment[] = []
-): Promise<{ reply: string }> {
+  attachments: WidgetAttachment[] = [],
+  action?: WidgetAction | null,
+  options?: { visitor_name?: string | null }
+): Promise<WidgetReplyPayload> {
   return publicFetch(
     `/public/widget/${encodeURIComponent(widgetId)}/conversations/${encodeURIComponent(conversationId)}/messages`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, attachments }),
+      body: JSON.stringify({
+        message,
+        attachments,
+        ...(action ? { action } : {}),
+        ...(options?.visitor_name ? { visitor_name: options.visitor_name } : {}),
+      }),
     }
   )
 }

@@ -32,7 +32,24 @@ export async function buildEntitlementInput(
 ): Promise<EntitlementInput> {
   if (planKey === 'trial') {
     const trial = await getTrialConfig(supabase)
-    return { planKey, enabledAddons: [], trialChannels: trial.channels, trialAddons: trial.addons }
+    const { data: featureRows } = await supabase
+      .from('client_features')
+      .select('plan_key, enabled')
+      .eq('client_id', clientId)
+    const toggles: Record<string, boolean> = {}
+    for (const row of (featureRows ?? []) as { plan_key: string; enabled: boolean }[]) {
+      toggles[row.plan_key] = row.enabled
+    }
+    // Eligible trial add-ons default on until explicitly disabled.
+    const enabledAddons = trial.addons.filter((key) =>
+      key in toggles ? toggles[key] : true
+    )
+    return {
+      planKey,
+      enabledAddons,
+      trialChannels: trial.channels,
+      trialAddons: trial.addons,
+    }
   }
   const { data: featureRows } = await supabase
     .from('client_features')

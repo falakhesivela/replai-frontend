@@ -205,7 +205,7 @@ export default function ProductsView({ role }: { role: PortalRole }) {
         name: form.name.trim(),
         description: form.description.trim() || null,
         price: parseFloat(form.price),
-        stock_quantity: form.stock_quantity !== '' ? parseInt(form.stock_quantity, 10) : 0,
+        stock_quantity: form.stock_quantity !== '' ? parseInt(form.stock_quantity, 10) : -1,
         category: form.category.trim() || null,
         image_url: form.image_url.trim() || null,
         is_active: form.is_active,

@@ -37,6 +37,7 @@ export default function PaystackIntegrationView({
 
   const [account, setAccount] = useState<PaymentAccountStatus | null>(null)
   const [banks, setBanks] = useState<SettlementBank[]>([])
+  const [banksError, setBanksError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState(false)
 
@@ -50,12 +51,23 @@ export default function PaystackIntegrationView({
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [acct, bankList] = await Promise.all([
-        getMyPaymentAccount(getFreshToken),
-        canManage ? getSettlementBanks(getFreshToken).catch(() => [] as SettlementBank[]) : Promise.resolve([]),
-      ])
+      const acct = await getMyPaymentAccount(getFreshToken)
       setAccount(acct)
-      setBanks(bankList)
+      setBanksError(null)
+      if (canManage) {
+        try {
+          setBanks(await getSettlementBanks(getFreshToken))
+        } catch (err) {
+          setBanks([])
+          setBanksError(
+            err instanceof Error
+              ? err.message
+              : 'Could not load banks from Paystack. Check server PAYSTACK_SECRET_KEY and redeploy.'
+          )
+        }
+      } else {
+        setBanks([])
+      }
     } catch {
       toast.error('Could not load Paystack integration.')
     } finally {
@@ -105,6 +117,12 @@ export default function PaystackIntegrationView({
         <p className="mt-1 text-sm text-gray-500">
           Customer payments for WhatsApp orders and paid bookings. Settlements go to your
           business bank account — separate from your Replai subscription.
+        </p>
+        <p className="mt-2 text-xs text-gray-400">
+          In Paystack, set <strong className="font-medium text-gray-500">Test callback URL</strong>{' '}
+          to your public page: <code className="text-gray-600">/payment/complete</code> on your app
+          domain (e.g. https://app.replai.co.za/payment/complete). Customers land there after paying
+          — no login required.
         </p>
       </div>
 
@@ -165,19 +183,28 @@ export default function PaystackIntegrationView({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Settlement bank</label>
-                  <select
-                    required
-                    value={settlement_bank}
-                    onChange={(e) => setSettlementBank(e.target.value)}
-                    className={inputClass}
-                  >
-                    <option value="">Select bank…</option>
-                    {banks.map((b) => (
-                      <option key={b.code} value={b.code}>
-                        {b.name}
+                  {banksError ? (
+                    <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+                      {banksError}
+                    </p>
+                  ) : (
+                    <select
+                      required
+                      value={settlement_bank}
+                      onChange={(e) => setSettlementBank(e.target.value)}
+                      className={inputClass}
+                      disabled={banks.length === 0}
+                    >
+                      <option value="">
+                        {banks.length === 0 ? 'Loading banks…' : 'Select bank…'}
                       </option>
-                    ))}
-                  </select>
+                      {banks.map((b) => (
+                        <option key={b.code} value={b.code}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Account number</label>
@@ -220,7 +247,7 @@ export default function PaystackIntegrationView({
                 </div>
                 <button
                   type="submit"
-                  disabled={connecting || !settlement_bank}
+                  disabled={connecting || !settlement_bank || !!banksError || banks.length === 0}
                   className={buttonClasses({ variant: 'primary' })}
                 >
                   {connecting ? (

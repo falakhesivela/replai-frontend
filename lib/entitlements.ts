@@ -84,7 +84,8 @@ export interface EntitlementInput {
 
 /** Whether a single feature is unlocked for this subscription.
  *
- * planKey === 'trial' resolves channels/add-ons from the admin trial config;
+ * planKey === 'trial' uses trialChannels for channels and enabledAddons
+ * intersected with trialAddons (admin pool + per-client toggles);
  * a paid planKey uses its fixed channels + the client's enabled add-ons;
  * no planKey means no access. */
 export function isFeatureAvailable(feature: FeatureKey, input: EntitlementInput): boolean {
@@ -96,7 +97,8 @@ export function isFeatureAvailable(feature: FeatureKey, input: EntitlementInput)
 
   if (planKey === 'trial') {
     channels = input.trialChannels ?? []
-    grantedAddons = input.trialAddons ?? []
+    const pool = new Set(input.trialAddons ?? [])
+    grantedAddons = (input.enabledAddons ?? []).filter((a) => pool.has(a))
   } else if (!planKey) {
     return false
   } else {

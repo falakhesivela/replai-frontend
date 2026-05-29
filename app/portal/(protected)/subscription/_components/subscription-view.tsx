@@ -48,6 +48,7 @@ export default function SubscriptionView() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyKey, setBusyKey] = useState<string | null>(null)
+  const [trialEligibleAddons, setTrialEligibleAddons] = useState<string[]>([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -57,6 +58,7 @@ export default function SubscriptionView() {
       setSubscription(detail.subscription)
       setPlans(detail.plans)
       setUsage(detail.usage ?? null)
+      setTrialEligibleAddons(detail.trial_eligible_addons ?? [])
       // Don't override a cycle the user just chose on the pricing page.
       if (!intendedCycle && detail.subscription?.billing_cycle) {
         setCycle(detail.subscription.billing_cycle)
@@ -162,9 +164,9 @@ export default function SubscriptionView() {
   const planPrice = (p: Plan) =>
     cycle === 'annual' ? (p.price_annual ?? p.price) : p.price
 
-  // Trial add-ons are admin-controlled (trial_config), so toggling here would
-  // have no effect — disable the toggles and tell the user.
   const isTrial = subscription?.status === 'trialing' || currentPlan === 'trial'
+  const addonEligibleOnTrial = (key: string) =>
+    trialEligibleAddons.includes(key)
   const channelPlan = channelPlans.find((p) => p.key === currentPlan) ?? null
   const enabledAddons = addons.filter((p) => p.enabled)
 
@@ -241,9 +243,9 @@ export default function SubscriptionView() {
                     </span>
                   </div>
                 ))}
-              {isTrial && (
+              {isTrial && enabledAddons.length > 0 && (
                 <p className="text-[11px] text-gray-400">
-                  Add-ons become available once you choose a paid plan.
+                  Trial add-ons: {enabledAddons.map((a) => a.name).join(', ')}.
                 </p>
               )}
               <div className="mt-1.5 flex items-center justify-between border-t border-gray-100 pt-2 text-sm font-semibold">
@@ -498,14 +500,17 @@ export default function SubscriptionView() {
                   +{fmt(plan.price, currency)}
                   <span className="text-xs font-normal text-gray-400">/mo</span>
                 </span>
-                {isTrial ? (
+                {isTrial && !addonEligibleOnTrial(plan.key) ? (
                   <span className="text-[11px] text-gray-400">
-                    Available on a paid plan
+                    Not available on trial
                   </span>
                 ) : (
                   <button
                     onClick={() => toggleAddon(plan.key, !plan.enabled)}
-                    disabled={busyKey === plan.key}
+                    disabled={
+                      busyKey === plan.key ||
+                      (isTrial && !plan.enabled && !addonEligibleOnTrial(plan.key))
+                    }
                     className="flex items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
                   >
                     {busyKey === plan.key ? (

@@ -150,6 +150,12 @@ export interface MessageAttachment {
   mime_type: string
 }
 
+/** Widget interactive UI snapshot stored on web chat assistant messages. */
+export type MessageWidgetComponent = {
+  type: string
+  [key: string]: unknown
+}
+
 export interface Message {
   id: string
   client_id: string
@@ -158,6 +164,8 @@ export interface Message {
   content: string
   message_type?: 'text' | 'voice' | 'image' | 'file'
   attachments?: MessageAttachment[]
+  /** Populated for web widget assistant replies (product grid, cart, booking, etc.). */
+  components?: MessageWidgetComponent[]
   created_at: string
 }
 
@@ -440,6 +448,8 @@ export interface SubscriptionDetail {
   subscription: ClientSubscription | null
   plans: Plan[]
   usage?: ClientUsageBilling
+  /** Add-on keys the admin included in the free trial (portal toggles). */
+  trial_eligible_addons?: string[]
 }
 
 export interface ToggleFeatureResponse {
@@ -498,6 +508,10 @@ export interface WidgetConfig {
   agent_name: string
   agent_tagline: string
   agent_avatar_url: string | null
+  features?: {
+    bookings?: boolean
+    shopping?: boolean
+  }
 }
 
 // ── E-commerce ────────────────────────────────────────────────────────────────

@@ -32,6 +32,7 @@ import {
   updateConversationStatus,
   type TokenGetter,
 } from '@/lib/api'
+import type { WidgetComponent } from '@/lib/api'
 import type {
   Conversation,
   ConversationAssignee,
@@ -39,6 +40,7 @@ import type {
   Department,
   Message,
 } from '@/lib/types'
+import { MessageComponentsPreview } from './message-component-preview'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -290,6 +292,15 @@ function ConversationItem({
 
 // ── Message bubble ─────────────────────────────────────────────────────────────
 
+function parseMessageComponents(message: Message): WidgetComponent[] {
+  const raw = message.components
+  if (!Array.isArray(raw) || raw.length === 0) return []
+  return raw.filter(
+    (c): c is WidgetComponent =>
+      !!c && typeof c === 'object' && typeof (c as { type?: string }).type === 'string',
+  ) as WidgetComponent[]
+}
+
 function MessageBubble({ message }: { message: Message }) {
   if (message.role === 'system') {
     return (
@@ -303,6 +314,7 @@ function MessageBubble({ message }: { message: Message }) {
 
   const isOutbound = message.role === 'assistant' || message.role === 'human_agent'
   const isHumanAgent = message.role === 'human_agent'
+  const componentPreviews = parseMessageComponents(message)
 
   return (
     <div className={`flex ${isOutbound ? 'justify-end' : 'justify-start'}`}>
@@ -321,6 +333,9 @@ function MessageBubble({ message }: { message: Message }) {
         >
           {message.content}
         </div>
+        {componentPreviews.length > 0 && (
+          <MessageComponentsPreview components={componentPreviews} />
+        )}
         {message.message_type === 'voice' && (
           <span className="mt-0.5 px-1 flex items-center gap-1 text-[11px] text-gray-400 italic">
             <Mic size={10} strokeWidth={1.75} />

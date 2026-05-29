@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertCircle,
+  Calendar,
   FileText,
   ImageIcon,
   Loader2,
@@ -20,14 +21,33 @@ import {
   sendWidgetMessage,
   startWidgetConversation,
   uploadWidgetAttachment,
+  type WidgetAction,
   type WidgetAttachment,
+  type WidgetComponent,
+  type WidgetReplyPayload,
 } from '@/lib/api'
+import {
+  bookingActionUserLabel,
+  inlineBookingComponents,
+  WidgetBookingMessageComponents,
+  type BookingConfirmationData,
+} from './widget-booking'
+import {
+  actionToWidgetAction,
+  actionUserLabel,
+  extractCartFromComponents,
+  inlineShoppingComponents,
+  StickyCartBar,
+  WidgetMessageComponents,
+  type CartSummaryData,
+} from './widget-shopping'
 import type { WidgetConfig } from '@/lib/types'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   attachments?: WidgetAttachment[]
+  components?: WidgetComponent[]
   failed?: boolean
 }
 
@@ -156,6 +176,7 @@ export default function WidgetChat({ widgetId, config }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [pendingRetry, setPendingRetry] = useState<string | null>(null)
   const [pending, setPending] = useState<PendingAttachment[]>([])
+  const [activeCart, setActiveCart] = useState<CartSummaryData | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -193,7 +214,7 @@ export default function WidgetChat({ widgetId, config }: Props) {
   // Auto-scroll on new content. Only when the panel is visible.
   useEffect(() => {
     if (open) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, sending, open, leadSubmitted])
+  }, [messages, sending, open, leadSubmitted, activeCart])
 
   // Auto-resize textarea up to a cap so it doesn't eat the panel.
   useEffect(() => {
@@ -353,6 +374,87 @@ export default function WidgetChat({ widgetId, config }: Props) {
     })
   }
 
+  const applyAssistantResponse = useCallback((data: WidgetReplyPayload) => {
+    const cart = extractCartFromComponents(data.components)
+    const placed = data.components?.some((c) => c.type === 'payment_cta')
+    if (placed) {
+      setActiveCart(null)
+    } else if (cart) {
+      setActiveCart(cart)
+    }
+
+    const inline = [
+      ...inlineShoppingComponents(data.components),
+      ...inlineBookingComponents(data.components),
+    ]
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: data.reply,
+        components: inline.length ? inline : undefined,
+      },
+    ])
+    setTimes((prev) => [...prev, new Date()])
+  }, [])
+
+  const bookingsEnabled = config.features?.bookings === true
+
+  const sendWidgetAction = useCallback(
+    async (action: WidgetAction, contextLabel?: string) => {
+      if (sending) return
+
+      const label =
+        actionUserLabel(action, contextLabel) ||
+        bookingActionUserLabel(action, contextLabel)
+      setMessages((prev) => [...prev, { role: 'user', content: label }])
+      setTimes((prev) => [...prev, new Date()])
+
+      setSending(true)
+      setError(null)
+      setPendingRetry(null)
+
+      const visitorName = leadName.trim() || undefined
+      let actionPayload = action
+      if (action.type === 'confirm_booking' && visitorName && !action.customer_name) {
+        actionPayload = { ...action, customer_name: visitorName }
+      }
+
+      try {
+        let convId = conversationId
+        if (!convId) {
+          convId = await startConversation()
+          setLeadSubmitted(true)
+        }
+        const data = await sendWidgetMessage(
+          widgetId,
+          convId,
+          '',
+          [],
+          actionPayload,
+          { visitor_name: visitorName },
+        )
+        applyAssistantResponse(data)
+      } catch {
+        setMessages((prev) => {
+          const copy = [...prev]
+          for (let i = copy.length - 1; i >= 0; i--) {
+            if (copy[i].role === 'user' && !copy[i].failed) {
+              copy[i] = { ...copy[i], failed: true }
+              break
+            }
+          }
+          return copy
+        })
+        setError('Action failed. Please try again.')
+      } finally {
+        setSending(false)
+      }
+    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sending, conversationId, widgetId, applyAssistantResponse, leadName],
+  )
+
   const sendMessage = useCallback(
     async (textOverride?: string) => {
       const text = (textOverride ?? input).trim()
@@ -401,9 +503,8 @@ export default function WidgetChat({ widgetId, config }: Props) {
           convId = await startConversation()
           setLeadSubmitted(true)
         }
-        const { reply } = await sendWidgetMessage(widgetId, convId, text, ready)
-        setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
-        setTimes((prev) => [...prev, new Date()])
+        const data = await sendWidgetMessage(widgetId, convId, text, ready)
+        applyAssistantResponse(data)
       } catch {
         // Mark the user message as failed so they can retry it. Attachments
         // aren't retried (they're already uploaded — only the message send failed).
@@ -425,7 +526,7 @@ export default function WidgetChat({ widgetId, config }: Props) {
     },
     // startConversation is stable-by-closure for this component lifetime; deps cover the inputs
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [input, sending, conversationId, widgetId, welcome_message, pending],
+    [input, sending, conversationId, widgetId, welcome_message, pending, applyAssistantResponse],
   )
 
   function handleRetry() {
@@ -662,18 +763,80 @@ export default function WidgetChat({ widgetId, config }: Props) {
                 const groupedBelow = next?.role === msg.role
                 const showTail = !groupedBelow
                 return (
-                  <MessageBubble
-                    key={i}
-                    role={msg.role}
-                    content={msg.content}
-                    attachments={msg.attachments}
-                    time={times[i] && !groupedBelow ? formatTime(times[i]) : null}
-                    brandColor={brand_color}
-                    onBrand={onBrand}
-                    showTail={showTail}
-                    grouped={groupedAbove}
-                    failed={msg.failed}
-                  />
+                  <div key={i}>
+                    <MessageBubble
+                      role={msg.role}
+                      content={msg.content}
+                      attachments={msg.attachments}
+                      time={times[i] && !groupedBelow ? formatTime(times[i]) : null}
+                      brandColor={brand_color}
+                      onBrand={onBrand}
+                      showTail={showTail}
+                      grouped={groupedAbove}
+                      failed={msg.failed}
+                    />
+                    {msg.role === 'assistant' &&
+                      msg.components &&
+                      msg.components.length > 0 &&
+                      !msg.failed && (
+                        <>
+                        <WidgetMessageComponents
+                          components={msg.components}
+                          brandColor={brand_color}
+                          onBrand={onBrand}
+                          disabled={sending}
+                          hasStickyCart={!!activeCart}
+                          onAddProduct={(id, name) =>
+                            void sendWidgetAction(
+                              { type: 'add_to_cart', product_id: id, quantity: 1 },
+                              name,
+                            )
+                          }
+                          onActionId={(actionId, label) => {
+                            const mapped = actionToWidgetAction(actionId)
+                            if (mapped) void sendWidgetAction(mapped, label)
+                          }}
+                        />
+                        <WidgetBookingMessageComponents
+                          components={msg.components}
+                          brandColor={brand_color}
+                          onBrand={onBrand}
+                          disabled={sending}
+                          busy={sending}
+                          onSelectService={(id, name) =>
+                            void sendWidgetAction(
+                              { type: 'select_service', service_id: id },
+                              name,
+                            )
+                          }
+                          onSelectDate={(serviceId, date) =>
+                            void sendWidgetAction({
+                              type: 'select_date',
+                              service_id: serviceId,
+                              date,
+                            })
+                          }
+                          onSelectTime={(serviceId, date, time) =>
+                            void sendWidgetAction({
+                              type: 'select_time',
+                              service_id: serviceId,
+                              date,
+                              time,
+                            })
+                          }
+                          onConfirmBooking={(comp: BookingConfirmationData) =>
+                            void sendWidgetAction({
+                              type: 'confirm_booking',
+                              service_id: comp.service_id,
+                              date: comp.date,
+                              time: comp.time,
+                              customer_name: leadName.trim() || undefined,
+                            })
+                          }
+                        />
+                        </>
+                      )}
+                  </div>
                 )
               })}
 
@@ -704,8 +867,31 @@ export default function WidgetChat({ widgetId, config }: Props) {
               </div>
             )}
 
+            {activeCart && activeCart.items.length > 0 && (
+              <StickyCartBar
+                cart={activeCart}
+                brandColor={brand_color}
+                onBrand={onBrand}
+                disabled={sending}
+                busy={sending}
+                onCheckout={() => void sendWidgetAction({ type: 'checkout' })}
+                onViewCart={() => void sendWidgetAction({ type: 'view_cart' })}
+              />
+            )}
+
             {/* Input */}
             <div className="shrink-0 border-t border-gray-100 bg-white px-3 pt-2.5 pb-3">
+              {bookingsEnabled && (
+                <button
+                  type="button"
+                  disabled={sending}
+                  onClick={() => void sendWidgetAction({ type: 'browse_services' })}
+                  className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <Calendar size={14} />
+                  Book appointment
+                </button>
+              )}
               {/* Pending attachment chips */}
               {pending.length > 0 && (
                 <div className="mb-2 flex flex-wrap gap-2">
