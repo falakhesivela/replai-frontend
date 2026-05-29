@@ -27,48 +27,70 @@ function formatMoney(amount: number, currency: string) {
   }
 }
 
-export default function PaymentCompleteView({ reference }: { reference: string }) {
+export default function PaymentCompleteView({ reference: referenceProp }: { reference: string }) {
+  const [resolvedRef, setResolvedRef] = useState(referenceProp.trim())
   const [data, setData] = useState<StatusResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(!!reference)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!reference) {
+    const params =
+      typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+    const effectiveRef =
+      referenceProp.trim() ||
+      params?.get('reference')?.trim() ||
+      params?.get('trxref')?.trim() ||
+      ''
+
+    setResolvedRef(effectiveRef)
+
+    if (!effectiveRef) {
       setLoading(false)
       return
     }
 
     let cancelled = false
+    let attempts = 0
+    const maxAttempts = 15
 
     async function load() {
+      let scheduleRetry = false
       try {
         const res = await fetch(
-          `${API_URL}/public/payments/status?reference=${encodeURIComponent(reference)}`
+          `${API_URL}/public/payments/status?reference=${encodeURIComponent(effectiveRef)}`
         )
         if (!res.ok) {
           const body = await res.json().catch(() => ({}))
           throw new Error(body.detail ?? 'Could not confirm payment status')
         }
         const json = (await res.json()) as StatusResponse
-        if (!cancelled) {
-          setData(json)
-          setError(null)
+        if (cancelled) return
+
+        setData(json)
+        setError(null)
+
+        if (json.payment_status === 'pending' && attempts < maxAttempts) {
+          attempts += 1
+          scheduleRetry = true
+          window.setTimeout(load, 2000)
         }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Something went wrong')
         }
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled && !scheduleRetry) setLoading(false)
       }
     }
 
+    setLoading(true)
     load()
     return () => {
       cancelled = true
     }
-  }, [reference])
+  }, [referenceProp])
 
+  const reference = resolvedRef
   const status = data?.payment_status ?? (error ? 'unknown' : 'pending')
 
   return (
@@ -78,8 +100,11 @@ export default function PaymentCompleteView({ reference }: { reference: string }
 
         {loading && (
           <>
-            <Loader2 className="mx-auto h-10 w-10 animate-spin text-gray-400" />
-            <p className="mt-4 text-sm text-gray-600">Confirming your payment…</p>
+            <Loader2 className="mx-auto h-10 w-10 animate-spin text-amber-500" />
+            <h1 className="mt-4 text-lg font-semibold text-gray-900">Confirming payment…</h1>
+            <p className="mt-4 text-sm text-gray-600">
+              This usually takes a few seconds. You can close this page and return to WhatsApp.
+            </p>
           </>
         )}
 
@@ -117,7 +142,7 @@ export default function PaymentCompleteView({ reference }: { reference: string }
             <h1 className="mt-4 text-lg font-semibold text-gray-900">Payment processing</h1>
             <p className="mt-2 text-sm text-gray-500">
               We are still confirming your payment. You can close this page and return to WhatsApp
-              — you will be notified once it is confirmed.
+              — the business will be notified once it is confirmed.
             </p>
           </>
         )}
