@@ -21,6 +21,7 @@ import {
   Users2,
   Sliders,
   Settings,
+  Plug,
   LogOut,
   Lock,
   X,
@@ -70,6 +71,7 @@ const NAV_GROUPS = [
     label: 'Workspace',
     items: [
       { href: '/portal/team', label: 'Team', icon: Users2 },
+      { href: '/portal/integrations', label: 'Integrations', icon: Plug },
       { href: '/portal/settings', label: 'Settings', icon: Settings },
       { href: '/portal/subscription', label: 'Subscription', icon: CreditCard },
     ],

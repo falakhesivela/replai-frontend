@@ -167,7 +167,9 @@ export interface Service {
   name: string
   duration_minutes: number
   description: string | null
-  is_active: boolean
+  price?: number | null
+  currency?: string
+  is_active?: boolean
   created_at: string
 }
 
@@ -187,6 +189,23 @@ export interface Slot {
   slot_id: string     // "YYYY-MM-DD-HH:MM"
 }
 
+export type PaymentStatus = 'not_required' | 'pending' | 'paid' | 'failed'
+
+export interface PaymentAccountStatus {
+  provider: string
+  status: 'not_connected' | 'pending' | 'active' | 'disabled'
+  paystack_configured: boolean
+  business_name?: string | null
+  settlement_bank?: string | null
+  account_number_last4?: string | null
+  subaccount_code?: string | null
+}
+
+export interface SettlementBank {
+  code: string
+  name: string
+}
+
 export interface Booking {
   id: string
   client_id: string
@@ -196,10 +215,15 @@ export interface Booking {
   booking_date: string  // "YYYY-MM-DD"
   booking_time: string  // "HH:MM"
   status: 'confirmed' | 'cancelled' | 'completed' | 'no_show'
+  total_amount?: number | null
+  currency?: string
+  payment_link?: string | null
+  payment_status?: PaymentStatus
+  payment_reference?: string | null
   assigned_to: string | null
   assigned_at: string | null
   created_at: string
-  services: { name: string; duration_minutes: number } | null
+  services: { name: string; duration_minutes: number; price?: number | null } | null
   assigned_member: { id: string; name: string; avatar_color: string | null; role: string; role_label: string | null } | null
 }
 
@@ -515,8 +539,11 @@ export interface Order {
   customer_name: string | null
   status: OrderStatus
   total_amount: number
+  currency?: string
   items: OrderItem[]
   payment_link: string | null
+  payment_status?: PaymentStatus
+  payment_reference?: string | null
   assigned_to: string | null
   assigned_member: { id: string; name: string; avatar_color: string | null; role: string; role_label: string | null } | null
   created_at: string

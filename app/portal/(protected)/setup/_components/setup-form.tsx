@@ -32,6 +32,7 @@ interface ServiceForm {
   name: string
   duration_minutes: number
   description: string
+  price: string
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -195,12 +196,12 @@ function ServicesSection({
   const { toast } = useToast()
   const [services, setServices] = useState<Service[]>(initial)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<ServiceForm>({ name: '', duration_minutes: 30, description: '' })
+  const [form, setForm] = useState<ServiceForm>({ name: '', duration_minutes: 30, description: '', price: '' })
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   function resetForm() {
-    setForm({ name: '', duration_minutes: 30, description: '' })
+    setForm({ name: '', duration_minutes: 30, description: '', price: '' })
     setShowForm(false)
   }
 
@@ -208,10 +209,13 @@ function ServicesSection({
     if (!form.name.trim()) return
     setSaving(true)
     try {
+      const priceNum = form.price.trim() ? parseFloat(form.price) : null
       const created = await createMyService(getFreshToken, {
         name: form.name.trim(),
         duration_minutes: form.duration_minutes,
         description: form.description.trim() || null,
+        price: priceNum != null && !Number.isNaN(priceNum) ? priceNum : null,
+        currency: 'ZAR',
       })
       setServices((prev) => [...prev, created])
       resetForm()
@@ -256,6 +260,11 @@ function ServicesSection({
                       <Clock size={11} strokeWidth={1.75} />
                       {dur}
                     </span>
+                    {svc.price != null && Number(svc.price) > 0 && (
+                      <span className="text-xs font-medium text-gray-600">
+                        R{Number(svc.price).toFixed(2)}
+                      </span>
+                    )}
                     {svc.description && (
                       <span className="truncate text-xs text-gray-400">{svc.description}</span>
                     )}
@@ -317,6 +326,21 @@ function ServicesSection({
                 <option key={value} value={value}>{label}</option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Price (ZAR) <span className="text-gray-400">(optional — leave empty for free)</span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.price}
+              onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+              placeholder="0.00"
+              className={inputClass}
+            />
           </div>
 
           <div>

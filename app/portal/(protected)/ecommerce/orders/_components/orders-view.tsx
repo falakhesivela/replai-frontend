@@ -8,6 +8,7 @@ import {
   PortalAuthError,
   type TokenGetter,
 } from '@/lib/api'
+import { PaymentStatusBadge } from '@/components/payment-status-badge'
 import type { Order, OrderStatus } from '@/lib/types'
 import type { PortalRole } from '@/lib/portal-permissions'
 import OrderDetailPanel from './order-detail-panel'
@@ -79,9 +80,12 @@ function OrderRow({
         {fmt(order.total_amount)}
       </td>
       <td className="px-4 py-3">
-        <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${STATUS_COLORS[order.status]}`}>
-          {STATUS_LABELS[order.status]}
-        </span>
+        <div className="flex flex-col items-start gap-1">
+          <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${STATUS_COLORS[order.status]}`}>
+            {STATUS_LABELS[order.status]}
+          </span>
+          <PaymentStatusBadge status={order.payment_status} />
+        </div>
       </td>
       <td className="px-4 py-3 hidden lg:table-cell">
         {order.assigned_member ? (

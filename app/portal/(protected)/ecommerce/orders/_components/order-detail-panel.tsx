@@ -19,6 +19,7 @@ import {
   updateMyOrderStatus,
   type TokenGetter,
 } from '@/lib/api'
+import { PaymentStatusBadge } from '@/components/payment-status-badge'
 import type { BookableMember, Order, OrderStatus } from '@/lib/types'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -317,16 +318,19 @@ export default function OrderDetailPanel({
                 </div>
               </div>
 
-              {order.payment_link && (
-                <a
-                  href={order.payment_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 transition-colors"
-                >
-                  <ExternalLink size={12} /> View payment link
-                </a>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <PaymentStatusBadge status={order.payment_status} />
+                {order.payment_link && (
+                  <a
+                    href={order.payment_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    <ExternalLink size={12} /> View payment link
+                  </a>
+                )}
+              </div>
             </div>
 
             {/* Assign */}

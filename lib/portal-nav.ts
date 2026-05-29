@@ -24,6 +24,7 @@ export const PORTAL_NAV_ACCESS: readonly PortalNavEntry[] = [
     href: '/portal/settings',
     anyPermission: ['manage_settings', 'view_settings'],
   },
+  { href: '/portal/integrations', permission: 'manage_subscription' },
   { href: '/portal/subscription', permission: 'manage_subscription' },
   { href: '/portal/ecommerce/products', permission: 'manage_ecommerce' },
   { href: '/portal/ecommerce/orders', permission: 'manage_ecommerce' },

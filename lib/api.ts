@@ -26,7 +26,9 @@ import type {
   PortalNotification,
   PortalTeamDirectory,
   PortalTeamInviteResult,
+  PaymentAccountStatus,
   Product,
+  SettlementBank,
   Service,
   Slot,
   SubscriptionDetail,
@@ -519,7 +521,13 @@ export function getMyServices(token: string | TokenGetter): Promise<Service[]> {
 
 export function createMyService(
   token: string | TokenGetter,
-  data: { name: string; duration_minutes: number; description?: string | null }
+  data: {
+    name: string
+    duration_minutes: number
+    description?: string | null
+    price?: number | null
+    currency?: string
+  }
 ): Promise<Service> {
   return portalFetch('/portal/me/services', token, {
     method: 'POST',
@@ -779,6 +787,39 @@ export function setMyPlan(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ plan_key, billing_cycle }),
+  })
+}
+
+// ── Client payments (Paystack — end-customer checkout) ───────────────────────
+
+export function getMyPaymentAccount(
+  token: string | TokenGetter
+): Promise<PaymentAccountStatus> {
+  return portalFetch('/portal/me/payments', token)
+}
+
+export function getSettlementBanks(
+  token: string | TokenGetter,
+  country = 'south_africa'
+): Promise<SettlementBank[]> {
+  return portalFetch(`/portal/me/payments/banks?country=${encodeURIComponent(country)}`, token)
+}
+
+export function connectPaystackSubaccount(
+  token: string | TokenGetter,
+  body: {
+    business_name: string
+    settlement_bank: string
+    account_number: string
+    primary_contact_email: string
+    primary_contact_name?: string | null
+    primary_contact_phone?: string | null
+  }
+): Promise<PaymentAccountStatus> {
+  return portalFetch('/portal/me/payments/connect', token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   })
 }
 

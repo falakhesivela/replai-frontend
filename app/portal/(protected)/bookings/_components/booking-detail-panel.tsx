@@ -12,6 +12,7 @@ import {
   Send,
   User,
   X,
+  ExternalLink,
 } from 'lucide-react'
 import {
   assignMyBooking,
@@ -22,6 +23,7 @@ import {
   updateMyBookingStatus,
   type TokenGetter,
 } from '@/lib/api'
+import { PaymentStatusBadge } from '@/components/payment-status-badge'
 import type { Booking, BookableMember, Slot } from '@/lib/types'
 import { usePermissions } from '@/hooks/usePermissions'
 
@@ -429,6 +431,33 @@ export default function BookingDetailPanel({
                 <span className="font-mono text-sm text-gray-700">{booking.customer_phone}</span>
               </div>
             </div>
+
+            {(booking.payment_status && booking.payment_status !== 'not_required') ||
+            booking.payment_link ||
+            (booking.total_amount != null && booking.total_amount > 0) ? (
+              <div className="space-y-2">
+                <SectionHeading>Payment</SectionHeading>
+                {booking.total_amount != null && booking.total_amount > 0 && (
+                  <p className="text-sm font-medium text-gray-900">
+                    {new Intl.NumberFormat('en-ZA', {
+                      style: 'currency',
+                      currency: booking.currency ?? 'ZAR',
+                    }).format(booking.total_amount)}
+                  </p>
+                )}
+                <PaymentStatusBadge status={booking.payment_status} />
+                {booking.payment_link && (
+                  <a
+                    href={booking.payment_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    <ExternalLink size={12} /> View payment link
+                  </a>
+                )}
+              </div>
+            ) : null}
 
             {/* Other bookings from this customer */}
             {otherBookings.length > 0 && (
