@@ -1,16 +1,24 @@
 'use client'
 
-import { useState } from 'react'
-import { Clock, Loader2, Plus, Save, Trash2, X } from 'lucide-react'
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
+import { Clock, Loader2, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import {
   createMyService,
   deleteMyService,
+  getMyBookingSettings,
   setMyAvailability,
+  updateMyBookingSettings,
+  updateMyService,
   type TokenGetter,
 } from '@/lib/api'
 import { useToast } from '@/components/toast'
-import type { AvailabilitySchedule, Service } from '@/lib/types'
+import type {
+  AvailabilitySchedule,
+  SchedulingMode,
+  Service,
+  ServiceBookingProfile,
+} from '@/lib/types'
 import { Card, buttonClasses } from '@/components/ui'
 // Always pull a fresh Supabase JWT — captured-at-mount tokens go stale.
 const getFreshToken: TokenGetter = async () => {
@@ -33,6 +41,100 @@ interface ServiceForm {
   duration_minutes: number
   description: string
   price: string
+  use_workspace_defaults: boolean
+  ask_guest_count: boolean
+  scheduling_mode: SchedulingMode
+  daily_capacity: string
+  max_guests_per_day: string
+}
+
+const EMPTY_SERVICE_FORM: ServiceForm = {
+  name: '',
+  duration_minutes: 30,
+  description: '',
+  price: '',
+  use_workspace_defaults: true,
+  ask_guest_count: false,
+  scheduling_mode: 'slot',
+  daily_capacity: '1',
+  max_guests_per_day: '',
+}
+
+function parseDailyCapacity(value: string): number {
+  const n = parseInt(value, 10)
+  if (Number.isNaN(n) || n < 1) return 1
+  return Math.min(99, n)
+}
+
+function parseMaxGuestsPerDay(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const n = parseInt(trimmed, 10)
+  if (Number.isNaN(n) || n < 1) return null
+  return Math.min(500, n)
+}
+
+function bookingProfilePayload(form: ServiceForm): ServiceBookingProfile {
+  if (form.use_workspace_defaults) {
+    return {
+      use_workspace_defaults: true,
+      ask_guest_count: false,
+    }
+  }
+  return {
+    use_workspace_defaults: false,
+    ask_guest_count: form.ask_guest_count,
+    scheduling_mode: form.scheduling_mode,
+    daily_capacity: parseDailyCapacity(form.daily_capacity),
+    max_guests_per_day: parseMaxGuestsPerDay(form.max_guests_per_day),
+  }
+}
+
+function serviceFormFromService(svc: Service): ServiceForm {
+  const bp = svc.booking_profile
+  return {
+    name: svc.name,
+    duration_minutes: svc.duration_minutes,
+    description: svc.description ?? '',
+    price: svc.price != null && Number(svc.price) > 0 ? String(svc.price) : '',
+    use_workspace_defaults: bp?.use_workspace_defaults ?? true,
+    ask_guest_count: bp?.ask_guest_count ?? false,
+    scheduling_mode:
+      bp?.scheduling_mode === 'date_range'
+        ? 'date_range'
+        : bp?.scheduling_mode === 'date_only'
+          ? 'date_only'
+          : 'slot',
+    daily_capacity: String(bp?.daily_capacity ?? 1),
+    max_guests_per_day:
+      bp?.max_guests_per_day != null ? String(bp.max_guests_per_day) : '',
+  }
+}
+
+function schedulingModeLabel(mode: SchedulingMode): string {
+  if (mode === 'date_range') return 'Overnight stays'
+  if (mode === 'date_only') return 'Full day'
+  return 'Appointments'
+}
+
+function serviceIntakeSummary(svc: Service): string {
+  const bp = svc.booking_profile
+  if (!bp || bp.use_workspace_defaults) return 'Uses workspace booking rules'
+  const mode: SchedulingMode =
+    bp.scheduling_mode === 'date_range'
+      ? 'date_range'
+      : bp.scheduling_mode === 'date_only'
+        ? 'date_only'
+        : 'slot'
+  const parts: string[] = [schedulingModeLabel(mode)]
+  if (bp.daily_capacity && bp.daily_capacity > 1) {
+    parts.push(`capacity ${bp.daily_capacity}/day`)
+  }
+  if (bp.max_guests_per_day && bp.max_guests_per_day > 0) {
+    parts.push(`max ${bp.max_guests_per_day} guests/day`)
+  }
+  if (bp.ask_guest_count) parts.push('asks for guest count')
+  return parts.join(', ')
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -52,6 +154,24 @@ const MIN_NOTICE_OPTIONS = [
   { value: '2hrs', label: '2 hours' },
   { value: '24hrs', label: '24 hours' },
   { value: '48hrs', label: '48 hours' },
+]
+
+const SCHEDULING_MODE_OPTIONS: { value: SchedulingMode; label: string; description: string }[] = [
+  {
+    value: 'slot',
+    label: 'Appointments',
+    description: 'Customers pick a date and time slot (salons, clinics).',
+  },
+  {
+    value: 'date_only',
+    label: 'Full day',
+    description: 'Customers pick a date only — one booking per day (tours, day passes).',
+  },
+  {
+    value: 'date_range',
+    label: 'Overnight stays',
+    description: 'Customers pick check-in and check-out dates (guesthouses, hotels).',
+  },
 ]
 
 const DAYS_AHEAD_OPTIONS = [
@@ -126,16 +246,50 @@ function Section({
   )
 }
 
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  disabled,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  options: { value: string; label: string }[]
+  disabled?: boolean
+}) {
+  return (
+    <div className="py-3">
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className={selectClass + ' w-full'}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
 function Toggle({
   label,
   description,
   checked,
   onChange,
+  disabled,
 }: {
   label: string
   description?: string
   checked: boolean
   onChange: (v: boolean) => void
+  disabled?: boolean
 }) {
   return (
     <div className="flex items-start justify-between gap-4 py-3">
@@ -147,10 +301,11 @@ function Toggle({
         type="button"
         role="switch"
         aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
-          checked ? 'bg-brand' : 'bg-gray-200'
-        }`}
+        disabled={disabled}
+        onClick={() => !disabled && onChange(!checked)}
+        className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
+          disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+        } ${checked ? 'bg-brand' : 'bg-gray-200'}`}
       >
         <span
           className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
@@ -186,6 +341,101 @@ function PrimaryButton({
   )
 }
 
+function ServiceBookingProfileFields({
+  form,
+  setForm,
+}: {
+  form: ServiceForm
+  setForm: Dispatch<SetStateAction<ServiceForm>>
+}) {
+  return (
+    <div className="space-y-2 rounded-md border border-gray-200 bg-white p-3">
+      <p className="text-xs font-medium text-gray-700">Booking questions</p>
+      <Toggle
+        label="Use workspace defaults"
+        description="Inherit guest-count and other rules from Booking settings below."
+        checked={form.use_workspace_defaults}
+        onChange={(v) =>
+          setForm((f) => ({
+            ...f,
+            use_workspace_defaults: v,
+            ask_guest_count: v ? false : f.ask_guest_count,
+          }))
+        }
+      />
+      {!form.use_workspace_defaults && (
+        <>
+          <SelectField
+            label="Scheduling"
+            value={form.scheduling_mode}
+            onChange={(v) =>
+              setForm((f) => ({ ...f, scheduling_mode: v as SchedulingMode }))
+            }
+            options={SCHEDULING_MODE_OPTIONS.map((o) => ({
+              value: o.value,
+              label: o.label,
+            }))}
+          />
+          <p className="text-[11px] text-gray-500">
+            {SCHEDULING_MODE_OPTIONS.find((o) => o.value === form.scheduling_mode)?.description}
+          </p>
+          <div className="py-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Daily capacity
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={99}
+              value={form.daily_capacity}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, daily_capacity: e.target.value }))
+              }
+              className={inputClass}
+            />
+            <p className="mt-1 text-[11px] text-gray-500">
+              Max bookings per day for full-day and stay services (e.g. 3 rooms).
+            </p>
+          </div>
+          {form.ask_guest_count && (
+            <div className="py-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Max guests per day
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={500}
+                placeholder="No limit"
+                value={form.max_guests_per_day}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, max_guests_per_day: e.target.value }))
+                }
+                className={inputClass}
+              />
+              <p className="mt-1 text-[11px] text-gray-500">
+                Total guests allowed across all bookings on the same day (leave empty for no limit).
+              </p>
+            </div>
+          )}
+          <Toggle
+            label="Ask for number of guests"
+            description="Require a guest count for this service only."
+            checked={form.ask_guest_count}
+            onChange={(v) =>
+              setForm((f) => ({
+                ...f,
+                ask_guest_count: v,
+                max_guests_per_day: v ? f.max_guests_per_day : '',
+              }))
+            }
+          />
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Services section ──────────────────────────────────────────────────────────
 
 function ServicesSection({
@@ -196,13 +446,27 @@ function ServicesSection({
   const { toast } = useToast()
   const [services, setServices] = useState<Service[]>(initial)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<ServiceForm>({ name: '', duration_minutes: 30, description: '', price: '' })
+  const [form, setForm] = useState<ServiceForm>(EMPTY_SERVICE_FORM)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<ServiceForm>(EMPTY_SERVICE_FORM)
   const [saving, setSaving] = useState(false)
+  const [savingEditId, setSavingEditId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   function resetForm() {
-    setForm({ name: '', duration_minutes: 30, description: '', price: '' })
+    setForm(EMPTY_SERVICE_FORM)
     setShowForm(false)
+  }
+
+  function startEdit(svc: Service) {
+    setEditingId(svc.id)
+    setEditForm(serviceFormFromService(svc))
+    setShowForm(false)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditForm(EMPTY_SERVICE_FORM)
   }
 
   async function handleAdd() {
@@ -216,6 +480,7 @@ function ServicesSection({
         description: form.description.trim() || null,
         price: priceNum != null && !Number.isNaN(priceNum) ? priceNum : null,
         currency: 'ZAR',
+        booking_profile: bookingProfilePayload(form),
       })
       setServices((prev) => [...prev, created])
       resetForm()
@@ -224,6 +489,28 @@ function ServicesSection({
       toast.error('Failed to add service.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleSaveEdit(serviceId: string) {
+    if (!editForm.name.trim()) return
+    setSavingEditId(serviceId)
+    try {
+      const priceNum = editForm.price.trim() ? parseFloat(editForm.price) : null
+      const updated = await updateMyService(getFreshToken, serviceId, {
+        name: editForm.name.trim(),
+        duration_minutes: editForm.duration_minutes,
+        description: editForm.description.trim() || null,
+        price: priceNum != null && !Number.isNaN(priceNum) ? priceNum : null,
+        booking_profile: bookingProfilePayload(editForm),
+      })
+      setServices((prev) => prev.map((s) => (s.id === serviceId ? updated : s)))
+      cancelEdit()
+      toast.success('Service updated.')
+    } catch {
+      toast.error('Failed to update service.')
+    } finally {
+      setSavingEditId(null)
     }
   }
 
@@ -251,38 +538,97 @@ function ServicesSection({
           {services.map((svc) => {
             const dur = DURATION_OPTIONS.find((d) => d.value === svc.duration_minutes)?.label
               ?? `${svc.duration_minutes} min`
+            const isEditing = editingId === svc.id
             return (
-              <li key={svc.id} className="flex items-center justify-between px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{svc.name}</p>
-                  <div className="mt-0.5 flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 text-xs text-gray-400">
-                      <Clock size={11} strokeWidth={1.75} />
-                      {dur}
-                    </span>
-                    {svc.price != null && Number(svc.price) > 0 && (
-                      <span className="text-xs font-medium text-gray-600">
-                        R{Number(svc.price).toFixed(2)}
-                      </span>
-                    )}
-                    {svc.description && (
-                      <span className="truncate text-xs text-gray-400">{svc.description}</span>
-                    )}
+              <li key={svc.id} className="px-4 py-3">
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      Edit service
+                    </p>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                      <input
+                        type="text"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Duration</label>
+                      <select
+                        value={editForm.duration_minutes}
+                        onChange={(e) =>
+                          setEditForm((f) => ({ ...f, duration_minutes: Number(e.target.value) }))
+                        }
+                        className={selectClass}
+                      >
+                        {DURATION_OPTIONS.map(({ value, label }) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <ServiceBookingProfileFields form={editForm} setForm={setEditForm} />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-white"
+                      >
+                        Cancel
+                      </button>
+                      <PrimaryButton
+                        onClick={() => handleSaveEdit(svc.id)}
+                        loading={savingEditId === svc.id}
+                        disabled={!editForm.name.trim()}
+                      >
+                        Save
+                      </PrimaryButton>
+                    </div>
                   </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(svc.id)}
-                  disabled={deletingId === svc.id}
-                  className="ml-4 shrink-0 rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 transition-colors"
-                  aria-label="Delete service"
-                >
-                  {deletingId === svc.id ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Trash2 size={14} strokeWidth={1.75} />
-                  )}
-                </button>
+                ) : (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{svc.name}</p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                          <Clock size={11} strokeWidth={1.75} />
+                          {dur}
+                        </span>
+                        {svc.price != null && Number(svc.price) > 0 && (
+                          <span className="text-xs font-medium text-gray-600">
+                            R{Number(svc.price).toFixed(2)}
+                          </span>
+                        )}
+                        <span className="text-xs text-indigo-600">{serviceIntakeSummary(svc)}</span>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(svc)}
+                        className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                        aria-label="Edit service"
+                      >
+                        <Pencil size={14} strokeWidth={1.75} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(svc.id)}
+                        disabled={deletingId === svc.id}
+                        className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 transition-colors"
+                        aria-label="Delete service"
+                      >
+                        {deletingId === svc.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={14} strokeWidth={1.75} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </li>
             )
           })}
@@ -355,6 +701,8 @@ function ServicesSection({
               className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
+
+          <ServiceBookingProfileFields form={form} setForm={setForm} />
 
           <div className="flex justify-end gap-2 pt-1">
             <button
@@ -514,14 +862,66 @@ function BookingSettingsSection() {
   const [minNotice, setMinNotice] = useState('2hrs')
   const [daysAhead, setDaysAhead] = useState('5')
   const [sendConfirmation, setSendConfirmation] = useState(true)
+  const [askGuestCount, setAskGuestCount] = useState(false)
+  const [schedulingMode, setSchedulingMode] = useState<SchedulingMode>('slot')
+  const [dailyCapacity, setDailyCapacity] = useState('1')
+  const [maxGuestsPerDay, setMaxGuestsPerDay] = useState('')
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const settings = await getMyBookingSettings(getFreshToken)
+        if (cancelled) return
+        setSameDayBookings(settings.same_day_allowed)
+        setMinNotice(settings.min_notice)
+        setDaysAhead(String(settings.days_ahead))
+        setSendConfirmation(settings.send_confirmation)
+        setAskGuestCount(settings.ask_guest_count)
+        setSchedulingMode(
+          settings.scheduling_mode === 'date_range'
+            ? 'date_range'
+            : settings.scheduling_mode === 'date_only'
+              ? 'date_only'
+              : 'slot',
+        )
+        setDailyCapacity(String(settings.daily_capacity ?? 1))
+        setMaxGuestsPerDay(
+          settings.max_guests_per_day != null ? String(settings.max_guests_per_day) : '',
+        )
+      } catch {
+        if (!cancelled) toast.error('Failed to load booking settings.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [toast])
 
   async function handleSave() {
     setSaving(true)
-    // UI-only for now — these settings would need a booking_settings table
-    await new Promise((r) => setTimeout(r, 400))
-    setSaving(false)
-    toast.success('Booking settings saved.')
+    try {
+      const days = parseInt(daysAhead, 10)
+      await updateMyBookingSettings(getFreshToken, {
+        same_day_allowed: sameDayBookings,
+        min_notice: minNotice,
+        days_ahead: Number.isNaN(days) ? 5 : days,
+        send_confirmation: sendConfirmation,
+        ask_guest_count: askGuestCount,
+        scheduling_mode: schedulingMode,
+        daily_capacity: parseDailyCapacity(dailyCapacity),
+        max_guests_per_day: askGuestCount ? parseMaxGuestsPerDay(maxGuestsPerDay) : null,
+      })
+      toast.success('Booking settings saved.')
+    } catch {
+      toast.error('Failed to save booking settings.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -535,13 +935,77 @@ function BookingSettingsSection() {
           description="Customers can book appointments for today."
           checked={sameDayBookings}
           onChange={setSameDayBookings}
+          disabled={loading}
         />
         <Toggle
-          label="Send confirmation message"
-          description="Send customers a WhatsApp confirmation when their booking is received."
+          label="Send confirmation email"
+          description="When the customer provides an email at checkout, send a booking confirmation message."
           checked={sendConfirmation}
           onChange={setSendConfirmation}
+          disabled={loading}
         />
+        <SelectField
+          label="Default scheduling"
+          value={schedulingMode}
+          onChange={(v) => setSchedulingMode(v as SchedulingMode)}
+          options={SCHEDULING_MODE_OPTIONS.map((o) => ({
+            value: o.value,
+            label: o.label,
+          }))}
+          disabled={loading}
+        />
+        <p className="px-5 pb-2 text-[11px] text-gray-500">
+          {SCHEDULING_MODE_OPTIONS.find((o) => o.value === schedulingMode)?.description}
+        </p>
+        <div className="px-5 pb-3">
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            Daily capacity
+          </label>
+          <input
+            type="number"
+            min={1}
+            max={99}
+            value={dailyCapacity}
+            onChange={(e) => setDailyCapacity(e.target.value)}
+            disabled={loading}
+            className={inputClass}
+          />
+          <p className="mt-1 text-[11px] text-gray-500">
+            For full-day and overnight services: how many bookings or rooms can be sold per day
+            (1 = exclusive).
+          </p>
+        </div>
+        <Toggle
+          label="Ask for number of guests"
+          description="Require customers to say how many people before confirming (guesthouses, tours, restaurants)."
+          checked={askGuestCount}
+          onChange={(v) => {
+            setAskGuestCount(v)
+            if (!v) setMaxGuestsPerDay('')
+          }}
+          disabled={loading}
+        />
+        {askGuestCount && (
+          <div className="px-5 pb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Max guests per day
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={500}
+              placeholder="No limit"
+              value={maxGuestsPerDay}
+              onChange={(e) => setMaxGuestsPerDay(e.target.value)}
+              disabled={loading}
+              className={inputClass}
+            />
+            <p className="mt-1 text-[11px] text-gray-500">
+              Sum of guest counts on the same calendar day (e.g. 40 for a restaurant).
+              Leave empty to only use booking/room capacity above.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -552,6 +1016,7 @@ function BookingSettingsSection() {
           <select
             value={minNotice}
             onChange={(e) => setMinNotice(e.target.value)}
+            disabled={loading}
             className={selectClass + ' w-full'}
           >
             {MIN_NOTICE_OPTIONS.map(({ value, label }) => (
@@ -568,6 +1033,7 @@ function BookingSettingsSection() {
           <select
             value={daysAhead}
             onChange={(e) => setDaysAhead(e.target.value)}
+            disabled={loading}
             className={selectClass + ' w-full'}
           >
             {DAYS_AHEAD_OPTIONS.map(({ value, label }) => (
@@ -579,7 +1045,7 @@ function BookingSettingsSection() {
       </div>
 
       <div className="mt-5 flex justify-end">
-        <PrimaryButton onClick={handleSave} loading={saving}>
+        <PrimaryButton onClick={handleSave} loading={saving} disabled={loading}>
           <Save size={13} strokeWidth={2} />
           {saving ? 'Saving…' : 'Save settings'}
         </PrimaryButton>

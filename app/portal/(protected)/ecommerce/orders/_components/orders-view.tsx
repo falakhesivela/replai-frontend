@@ -1,7 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { ChevronRight, ExternalLink, Loader2, ShoppingBag } from 'lucide-react'
+import { CommerceLookupBar } from '../../../_components/commerce-lookup-bar'
+import { CommerceReferenceLabel } from '../../../_components/commerce-reference-label'
+import { findByCommerceLookup, matchesCommerceLookup } from '@/lib/commerce-search'
 import { createClient } from '@/lib/supabase/client'
 import {
   getMyOrders,
@@ -54,6 +58,13 @@ const FILTER_TABS: Array<{ label: string; value: OrderStatus | 'all' }> = [
   { label: 'Cancelled', value: 'cancelled' },
 ]
 
+function fulfillmentLabel(order: Order): string {
+  if (order.status === 'pending' && order.payment_status === 'pending') {
+    return 'Awaiting payment'
+  }
+  return STATUS_LABELS[order.status]
+}
+
 function OrderRow({
   order,
   onSelect,
@@ -70,7 +81,8 @@ function OrderRow({
         <ChevronRight size={13} className="text-gray-300" />
       </td>
       <td className="px-4 py-3">
-        <p className="font-medium text-gray-900">{order.customer_name ?? '—'}</p>
+        <CommerceReferenceLabel id={order.id} className="block text-[10px] text-gray-400" />
+        <p className="mt-0.5 font-medium text-gray-900">{order.customer_name ?? '—'}</p>
         <p className="text-xs text-gray-400">{order.customer_phone}</p>
       </td>
       <td className="px-4 py-3 text-gray-500 hidden sm:table-cell text-xs">
@@ -82,7 +94,7 @@ function OrderRow({
       <td className="px-4 py-3">
         <div className="flex flex-col items-start gap-1">
           <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${STATUS_COLORS[order.status]}`}>
-            {STATUS_LABELS[order.status]}
+            {fulfillmentLabel(order)}
           </span>
           <PaymentStatusBadge status={order.payment_status} />
         </div>
@@ -131,11 +143,13 @@ function OrderRow({
 
 export default function OrdersView({ role }: { role: PortalRole }) {
   const canEdit = role === 'owner' || role === 'manager'
+  const searchParams = useSearchParams()
 
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<OrderStatus | 'all'>('all')
+  const [search, setSearch] = useState('')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
   const load = useCallback(async () => {
@@ -157,14 +171,34 @@ export default function OrdersView({ role }: { role: PortalRole }) {
 
   useEffect(() => { load() }, [load])
 
+  useEffect(() => {
+    const ref = searchParams.get('ref')?.trim()
+    if (ref) {
+      setSearch(ref)
+      setActiveTab('all')
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (!orders.length || selectedOrder) return
+    const ref = searchParams.get('ref')?.trim()
+    if (!ref) return
+    const match = findByCommerceLookup(orders, ref)
+    if (match) setSelectedOrder(match)
+  }, [orders, searchParams, selectedOrder])
+
   const handleOrderUpdate = useCallback((updated: Order) => {
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
     setSelectedOrder((prev) => (prev?.id === updated.id ? updated : prev))
   }, [])
 
-  const filtered = activeTab === 'all'
-    ? orders
-    : orders.filter((o) => o.status === activeTab)
+  const filtered = useMemo(() => {
+    let list = activeTab === 'all' ? orders : orders.filter((o) => o.status === activeTab)
+    if (search.trim()) {
+      list = list.filter((o) => matchesCommerceLookup(o, search))
+    }
+    return list
+  }, [orders, activeTab, search])
 
   if (loading) {
     return (
@@ -197,9 +231,11 @@ export default function OrdersView({ role }: { role: PortalRole }) {
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Orders</h1>
         <p className="mt-0.5 text-sm text-gray-500">
-          Customer orders placed via WhatsApp.
+          Look up orders by the reference number customers show at pickup.
         </p>
       </div>
+
+      <CommerceLookupBar value={search} onChange={setSearch} />
 
       {/* Filter tabs */}
       <div className="flex items-center gap-1 border-b border-gray-200 overflow-x-auto">
@@ -234,9 +270,13 @@ export default function OrdersView({ role }: { role: PortalRole }) {
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-16 text-center">
           <ShoppingBag size={32} className="mb-3 text-gray-300" />
-          <p className="text-sm font-medium text-gray-500">No orders yet</p>
+          <p className="text-sm font-medium text-gray-500">
+            {search.trim() ? 'No orders match your search' : 'No orders yet'}
+          </p>
           <p className="mt-1 text-xs text-gray-400">
-            Orders placed by customers via WhatsApp will appear here.
+            {search.trim()
+              ? 'Try the reference number, customer name, phone, or email.'
+              : 'Orders placed by customers via WhatsApp will appear here.'}
           </p>
         </div>
       ) : (

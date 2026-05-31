@@ -1,6 +1,7 @@
 'use client'
 
 import { Loader2, Package, ShoppingBag } from 'lucide-react'
+import { CommerceConfirmationReference } from '@/components/commerce-confirmation-reference'
 import type {
   WidgetAction,
   WidgetComponent,
@@ -35,8 +36,68 @@ export function inlineShoppingComponents(
   return components.filter(
     (c) =>
       c.type === 'product_grid' ||
+      c.type === 'cart_summary' ||
       c.type === 'payment_cta' ||
       (c.type === 'actions' && c.actions.length > 0),
+  )
+}
+
+export function CartDetailCard({
+  cart,
+  brandColor,
+  onBrand,
+  onCheckout,
+  checkoutBusy,
+}: {
+  cart: CartSummaryData
+  brandColor: string
+  onBrand: string
+  onCheckout?: () => void
+  checkoutBusy?: boolean
+}) {
+  if (!cart.items.length) return null
+  return (
+    <div className="mt-2 max-w-[95%] rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
+        Your cart
+      </p>
+      <ul className="mt-2 divide-y divide-gray-100">
+        {cart.items.map((line) => (
+          <li
+            key={line.product_id}
+            className="flex items-start justify-between gap-2 py-2 first:pt-0 last:pb-0"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900">{line.name}</p>
+              <p className="text-xs text-gray-500">
+                Qty {line.quantity} × {formatWidgetMoney(cart.currency, line.price)}
+              </p>
+            </div>
+            <p className="shrink-0 text-sm font-medium text-gray-800">
+              {formatWidgetMoney(cart.currency, line.line_total)}
+            </p>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-2 flex items-center justify-between border-t border-gray-100 pt-2">
+        <span className="text-sm font-semibold text-gray-900">Total</span>
+        <span className="text-sm font-bold text-gray-900">
+          {formatWidgetMoney(cart.currency, cart.total)}
+        </span>
+      </div>
+      {onCheckout && (
+        <button
+          type="button"
+          disabled={checkoutBusy}
+          onClick={onCheckout}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold transition-opacity disabled:opacity-50"
+          style={{ backgroundColor: brandColor, color: onBrand }}
+        >
+          {checkoutBusy ? <Loader2 size={16} className="animate-spin" /> : null}
+          Checkout
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -118,12 +179,15 @@ export function PaymentCtaCard({
   brandColor: string
   onBrand: string
 }) {
-  const shortId = orderId ? orderId.slice(0, 8) : ''
   return (
     <div className="mt-2 max-w-[95%] rounded-xl border border-emerald-100 bg-emerald-50/80 p-3 shadow-sm">
       <p className="text-sm font-medium text-gray-900">Order placed</p>
-      {shortId && (
-        <p className="mt-0.5 text-xs text-gray-500">Reference #{shortId}</p>
+      {orderId && (
+        <CommerceConfirmationReference
+          id={orderId}
+          kind="order"
+          arrivalHint="Show this QR code or reference when you collect your order"
+        />
       )}
       <p className="mt-1 text-sm text-gray-700">
         Total: {formatWidgetMoney(currency, amount)}
@@ -256,18 +320,26 @@ export function WidgetMessageComponents({
   brandColor,
   onBrand,
   disabled,
+  addDisabled,
   hasStickyCart,
   onAddProduct,
   onActionId,
+  onCheckoutCart,
+  checkoutBusy,
 }: {
   components: WidgetComponent[]
   brandColor: string
   onBrand: string
   disabled: boolean
+  /** When false, Add buttons stay enabled while checkout/booking actions may still be disabled. */
+  addDisabled?: boolean
   hasStickyCart: boolean
   onAddProduct: (productId: string, name: string) => void
   onActionId: (actionId: string, label: string) => void
+  onCheckoutCart?: () => void
+  checkoutBusy?: boolean
 }) {
+  const gridDisabled = addDisabled ?? disabled
   return (
     <>
       {components.map((comp, idx) => {
@@ -278,8 +350,20 @@ export function WidgetMessageComponents({
               products={comp.products}
               brandColor={brandColor}
               onBrand={onBrand}
-              disabled={disabled}
+              disabled={gridDisabled}
               onAdd={onAddProduct}
+            />
+          )
+        }
+        if (comp.type === 'cart_summary') {
+          return (
+            <CartDetailCard
+              key={`cart-${idx}`}
+              cart={comp}
+              brandColor={brandColor}
+              onBrand={onBrand}
+              onCheckout={onCheckoutCart}
+              checkoutBusy={checkoutBusy}
             />
           )
         }
@@ -296,11 +380,17 @@ export function WidgetMessageComponents({
             />
           )
         }
-        if (comp.type === 'actions' && !hasStickyCart) {
+        if (comp.type === 'actions') {
+          const actions = hasStickyCart
+            ? comp.actions.filter(
+                (a) => a.id !== 'checkout' && a.id !== 'view_cart',
+              )
+            : comp.actions
+          if (!actions.length) return null
           return (
             <ActionButtonsRow
               key={`act-${idx}`}
-              actions={comp.actions}
+              actions={actions}
               brandColor={brandColor}
               onBrand={onBrand}
               disabled={disabled}

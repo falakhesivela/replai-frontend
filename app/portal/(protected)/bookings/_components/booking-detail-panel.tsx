@@ -6,6 +6,7 @@ import {
   Calendar,
   Clock,
   Loader2,
+  Mail,
   MessageSquare,
   Phone,
   Scissors,
@@ -24,7 +25,9 @@ import {
   type TokenGetter,
 } from '@/lib/api'
 import { PaymentStatusBadge } from '@/components/payment-status-badge'
-import type { Booking, BookableMember, Slot } from '@/lib/types'
+import { formatBookingDetailRows, stayRangeFromBooking } from '@/lib/booking-details'
+import { formatCommerceReference } from '@/lib/commerce-search'
+import type { Booking, BookableMember, SchedulingMode, Slot } from '@/lib/types'
 import { usePermissions } from '@/hooks/usePermissions'
 
 type BookingStatus = Booking['status']
@@ -91,6 +94,7 @@ function ReschedulePanel({
   onCancel: () => void
 }) {
   const [slots, setSlots] = useState<Slot[]>([])
+  const [schedulingMode, setSchedulingMode] = useState<SchedulingMode>('slot')
   const [slotId, setSlotId] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -98,8 +102,11 @@ function ReschedulePanel({
 
   useEffect(() => {
     setLoading(true)
-    getMyAvailableSlots(token, booking.service_id, 14)
-      .then(setSlots)
+    getMyAvailableSlots(token, booking.service_id)
+      .then((res) => {
+        setSchedulingMode(res.scheduling_mode)
+        setSlots(res.slots)
+      })
       .catch(() => setError('Failed to load available slots'))
       .finally(() => setLoading(false))
   }, [booking.service_id, token])
@@ -126,7 +133,13 @@ function ReschedulePanel({
 
   return (
     <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-4">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-blue-700">Choose new slot</p>
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-blue-700">
+        {schedulingMode === 'date_range'
+          ? 'Choose new check-in'
+          : schedulingMode === 'date_only'
+            ? 'Choose new date'
+            : 'Choose new slot'}
+      </p>
       {loading ? (
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <Loader2 size={13} className="animate-spin" /> Loading slots…
@@ -363,6 +376,10 @@ export default function BookingDetailPanel({
   }
 
   const isActive = booking.status === 'confirmed'
+  const detailRows = formatBookingDetailRows(booking.booking_details)
+  const stayRange = stayRangeFromBooking(booking.booking_date, booking.booking_details)
+  const isAllDay =
+    booking.booking_time.startsWith('12:00') && !stayRange
 
   return (
     <>
@@ -372,7 +389,12 @@ export default function BookingDetailPanel({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <div className="flex items-center gap-3">
-            <h2 className="text-sm font-semibold text-gray-900">Booking</h2>
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Booking</h2>
+              <p className="font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">
+                {formatCommerceReference(booking.id)}
+              </p>
+            </div>
             <StatusBadge status={booking.status} />
           </div>
           <button onClick={onClose}
@@ -385,23 +407,53 @@ export default function BookingDetailPanel({
         <div className="flex-1 overflow-y-auto">
           {/* Appointment hero */}
           <div className="border-b border-gray-100 bg-gray-50 px-5 py-4 space-y-2">
-            <div className="flex items-center gap-2.5 text-sm font-medium text-gray-800">
-              <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
-              {formatDateLong(booking.booking_date)}
-            </div>
-            <div className="flex items-center gap-2.5 text-sm text-gray-700">
-              <Clock size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
-              {formatTime(booking.booking_time)}
-              {booking.services && (
-                <span className="text-xs text-gray-400">· {booking.services.duration_minutes} min</span>
-              )}
-            </div>
+            {stayRange ? (
+              <>
+                <div className="flex items-center gap-2.5 text-sm font-medium text-gray-800">
+                  <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+                  Check-in {stayRange.checkInLabel}
+                </div>
+                <div className="flex items-center gap-2.5 text-sm text-gray-700">
+                  <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+                  Check-out {stayRange.checkOutLabel}
+                </div>
+              </>
+            ) : isAllDay ? (
+              <div className="flex items-center gap-2.5 text-sm font-medium text-gray-800">
+                <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+                {formatDateLong(booking.booking_date)} · All day
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2.5 text-sm font-medium text-gray-800">
+                  <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+                  {formatDateLong(booking.booking_date)}
+                </div>
+                <div className="flex items-center gap-2.5 text-sm text-gray-700">
+                  <Clock size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+                  {formatTime(booking.booking_time)}
+                  {booking.services && (
+                    <span className="text-xs text-gray-400">· {booking.services.duration_minutes} min</span>
+                  )}
+                </div>
+              </>
+            )}
             {booking.services && (
               <div className="flex items-center gap-2.5 text-sm text-gray-700">
                 <Scissors size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
                 {booking.services.name}
               </div>
             )}
+            {detailRows.map((row) => (
+              <div key={row.label} className="flex items-center gap-2.5 text-sm text-gray-700">
+                <User size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+                <span>
+                  <span className="text-gray-500">{row.label}: </span>
+                  {row.value}
+                </span>
+              </div>
+            ))}
+            <p className="text-xs text-gray-500">Ask the customer for this reference when they arrive</p>
           </div>
 
           <div className="p-5 space-y-6">
@@ -430,6 +482,12 @@ export default function BookingDetailPanel({
                 <Phone size={13} strokeWidth={1.75} className="shrink-0 text-gray-400" />
                 <span className="font-mono text-sm text-gray-700">{booking.customer_phone}</span>
               </div>
+              {booking.customer_email && (
+                <div className="flex items-center gap-2.5">
+                  <Mail size={13} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+                  <span className="text-sm text-gray-700">{booking.customer_email}</span>
+                </div>
+              )}
             </div>
 
             {(booking.payment_status && booking.payment_status !== 'not_required') ||

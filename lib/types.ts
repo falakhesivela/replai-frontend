@@ -24,6 +24,30 @@ export interface Client {
   notify_escalation_email?: boolean
 }
 
+export interface BookingIntakeField {
+  key: string
+  type: 'integer' | 'text'
+  label: string
+  required: boolean
+  min?: number | null
+  max?: number | null
+}
+
+export type SchedulingMode = 'slot' | 'date_only' | 'date_range'
+
+export interface BookingSettings {
+  days_ahead: number
+  min_notice_minutes: number
+  min_notice: string
+  same_day_allowed: boolean
+  send_confirmation: boolean
+  ask_guest_count: boolean
+  intake_fields: BookingIntakeField[]
+  scheduling_mode: SchedulingMode
+  daily_capacity: number
+  max_guests_per_day: number | null
+}
+
 export interface BusinessHoursItem {
   id?: string
   client_id?: string
@@ -169,6 +193,14 @@ export interface Message {
   created_at: string
 }
 
+export interface ServiceBookingProfile {
+  use_workspace_defaults: boolean
+  ask_guest_count: boolean
+  scheduling_mode?: SchedulingMode | null
+  daily_capacity?: number | null
+  max_guests_per_day?: number | null
+}
+
 export interface Service {
   id: string
   client_id: string
@@ -178,6 +210,7 @@ export interface Service {
   price?: number | null
   currency?: string
   is_active?: boolean
+  booking_profile?: ServiceBookingProfile
   created_at: string
 }
 
@@ -195,6 +228,11 @@ export interface Slot {
   time: string        // "HH:MM"
   time_label: string  // "9:00 AM"
   slot_id: string     // "YYYY-MM-DD-HH:MM"
+}
+
+export interface BookingSlotsResponse {
+  scheduling_mode: SchedulingMode
+  slots: Slot[]
 }
 
 export type PaymentStatus = 'not_required' | 'pending' | 'paid' | 'failed'
@@ -219,6 +257,7 @@ export interface Booking {
   client_id: string
   customer_phone: string
   customer_name: string
+  customer_email?: string | null
   service_id: string
   booking_date: string  // "YYYY-MM-DD"
   booking_time: string  // "HH:MM"
@@ -231,6 +270,7 @@ export interface Booking {
   assigned_to: string | null
   assigned_at: string | null
   created_at: string
+  booking_details?: Record<string, unknown> | null
   services: { name: string; duration_minutes: number; price?: number | null } | null
   assigned_member: { id: string; name: string; avatar_color: string | null; role: string; role_label: string | null } | null
 }
@@ -551,6 +591,7 @@ export interface Order {
   client_id: string
   customer_phone: string
   customer_name: string | null
+  customer_email?: string | null
   status: OrderStatus
   total_amount: number
   currency?: string

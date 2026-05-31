@@ -9,6 +9,7 @@ import type {
   DepartmentMember,
   AvailabilitySchedule,
   Booking,
+  BookingSettings,
   Broadcast,
   BroadcastAudience,
   BroadcastAudiencePreview,
@@ -30,7 +31,9 @@ import type {
   Product,
   SettlementBank,
   Service,
+  ServiceBookingProfile,
   Slot,
+  BookingSlotsResponse,
   SubscriptionDetail,
   ToggleFeatureResponse,
   WidgetConfig,
@@ -382,20 +385,51 @@ export function updateMyBookingStatus(
   })
 }
 
+export function getMyBookingSettings(
+  token: string | TokenGetter
+): Promise<BookingSettings> {
+  return portalFetch('/portal/me/booking-settings', token)
+}
+
+export function updateMyBookingSettings(
+  token: string | TokenGetter,
+  settings: {
+    days_ahead?: number
+    min_notice?: string
+    same_day_allowed?: boolean
+    send_confirmation?: boolean
+    ask_guest_count?: boolean
+    scheduling_mode?: 'slot' | 'date_only' | 'date_range'
+    daily_capacity?: number
+    max_guests_per_day?: number | null
+  }
+): Promise<BookingSettings> {
+  return portalFetch('/portal/me/booking-settings', token, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  })
+}
+
 export function getMyAvailableSlots(
   token: string | TokenGetter,
-  serviceId: string,
-  daysAhead = 14
-): Promise<Slot[]> {
+  serviceId: string
+): Promise<BookingSlotsResponse> {
   return portalFetch(
-    `/portal/me/bookings/slots?service_id=${encodeURIComponent(serviceId)}&days_ahead=${daysAhead}`,
+    `/portal/me/bookings/slots?service_id=${encodeURIComponent(serviceId)}`,
     token
   )
 }
 
 export function createMyBooking(
   token: string | TokenGetter,
-  data: { customer_phone: string; customer_name: string; service_id: string; slot_id: string }
+  data: {
+    customer_phone: string
+    customer_name: string
+    service_id: string
+    slot_id: string
+    booking_details?: Record<string, string | number> | null
+  }
 ): Promise<Booking> {
   return portalFetch('/portal/me/bookings', token, {
     method: 'POST',
@@ -527,10 +561,30 @@ export function createMyService(
     description?: string | null
     price?: number | null
     currency?: string
+    booking_profile?: ServiceBookingProfile
   }
 ): Promise<Service> {
   return portalFetch('/portal/me/services', token, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+}
+
+export function updateMyService(
+  token: string | TokenGetter,
+  serviceId: string,
+  data: {
+    name?: string
+    duration_minutes?: number
+    description?: string | null
+    price?: number | null
+    currency?: string
+    booking_profile?: ServiceBookingProfile
+  }
+): Promise<Service> {
+  return portalFetch(`/portal/me/services/${encodeURIComponent(serviceId)}`, token, {
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
@@ -968,6 +1022,17 @@ export function assignMyOrder(
   )
 }
 
+export function syncMyOrderPayment(
+  token: string | TokenGetter,
+  orderId: string
+): Promise<Order> {
+  return portalFetch(
+    `/portal/me/ecommerce/orders/${encodeURIComponent(orderId)}/sync-payment`,
+    token,
+    { method: 'POST' }
+  )
+}
+
 // ── Conversation department routing ───────────────────────────────────────────
 
 export function updateConversationDepartment(
@@ -1123,18 +1188,39 @@ export interface WidgetQuickReply {
 
 export type WidgetAction =
   | { type: 'add_to_cart'; product_id: string; quantity?: number }
-  | { type: 'checkout' }
+  | {
+      type: 'checkout'
+      items?: { product_id: string; quantity: number }[]
+      customer_email?: string | null
+    }
   | { type: 'view_cart' }
   | { type: 'browse_services' }
   | { type: 'select_service'; service_id: string }
-  | { type: 'select_date'; service_id: string; date: string }
+  | {
+      type: 'select_date'
+      service_id: string
+      date: string
+      purpose?: 'appointment' | 'check_in' | 'check_out' | 'day'
+      check_in?: string | null
+    }
   | { type: 'select_time'; service_id: string; date: string; time: string }
+  | {
+      type: 'submit_booking_details'
+      service_id: string
+      date: string
+      time: string
+      booking_details: Record<string, string | number>
+    }
   | {
       type: 'confirm_booking'
       service_id: string
       date: string
       time: string
       customer_name?: string | null
+      customer_email?: string | null
+      // Forwarded from the backend-sent booking component (BookingConfirmationData),
+      // whose values are Record<string, unknown> — keep it loose to match.
+      booking_details?: Record<string, unknown> | null
     }
 
 export interface WidgetProductGridItem {
@@ -1188,6 +1274,9 @@ export type WidgetComponent =
       service_id: string
       service_name: string
       dates: { date: string; label: string }[]
+      purpose?: 'appointment' | 'check_in' | 'check_out' | 'day'
+      check_in?: string | null
+      check_in_label?: string | null
     }
   | {
       type: 'time_slots'
@@ -1196,6 +1285,25 @@ export type WidgetComponent =
       date: string
       date_label: string
       slots: { time: string; label: string }[]
+    }
+  | {
+      type: 'booking_intake_form'
+      service_id: string
+      service_name: string
+      date: string
+      date_label: string
+      time: string
+      time_label: string
+      fields: {
+        key: string
+        type: 'integer' | 'text'
+        label: string
+        required: boolean
+        min?: number | null
+        max?: number | null
+      }[]
+      check_out?: string | null
+      check_out_label?: string | null
     }
   | {
       type: 'booking_confirmation'
@@ -1211,6 +1319,9 @@ export type WidgetComponent =
       currency: string
       payment_link?: string | null
       payment_status?: string | null
+      booking_details?: Record<string, unknown> | null
+      check_out?: string | null
+      check_out_label?: string | null
     }
 
 export interface WidgetReplyPayload {
@@ -1228,8 +1339,16 @@ export function sendWidgetMessage(
   message: string,
   attachments: WidgetAttachment[] = [],
   action?: WidgetAction | null,
-  options?: { visitor_name?: string | null }
+  options?: {
+    visitor_name?: string | null
+    visitor_email?: string | null
+    checkout_items?: { product_id: string; quantity: number }[]
+  }
 ): Promise<WidgetReplyPayload> {
+  const checkoutItems =
+    options?.checkout_items ??
+    (action?.type === 'checkout' && action.items?.length ? action.items : undefined)
+
   return publicFetch(
     `/public/widget/${encodeURIComponent(widgetId)}/conversations/${encodeURIComponent(conversationId)}/messages`,
     {
@@ -1239,10 +1358,88 @@ export function sendWidgetMessage(
         message,
         attachments,
         ...(action ? { action } : {}),
+        ...(checkoutItems?.length ? { checkout_items: checkoutItems } : {}),
         ...(options?.visitor_name ? { visitor_name: options.visitor_name } : {}),
+        ...(options?.visitor_email ? { visitor_email: options.visitor_email } : {}),
       }),
     }
   )
+}
+
+export interface WidgetStreamCallbacks {
+  onDelta?: (text: string) => void
+  onReset?: () => void
+}
+
+/**
+ * Streaming variant of sendWidgetMessage. Opens an SSE stream and invokes the
+ * callbacks as the assistant reply is generated, resolving with the final
+ * widget envelope (the `done` event). Throws on transport/stream errors so the
+ * caller can fall back to the non-streaming endpoint.
+ */
+export async function streamWidgetMessage(
+  widgetId: string,
+  conversationId: string,
+  message: string,
+  attachments: WidgetAttachment[] = [],
+  callbacks: WidgetStreamCallbacks = {}
+): Promise<WidgetReplyPayload> {
+  const res = await fetch(
+    `${API_URL}/public/widget/${encodeURIComponent(widgetId)}/conversations/${encodeURIComponent(conversationId)}/messages/stream`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, attachments }),
+    }
+  )
+  if (!res.ok || !res.body) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(`Stream failed (${res.status}): ${detail}`)
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let done: WidgetReplyPayload | null = null
+  let errorMessage: string | null = null
+
+  const dispatch = (event: string, raw: string) => {
+    let data: Record<string, unknown> = {}
+    try {
+      data = raw ? (JSON.parse(raw) as Record<string, unknown>) : {}
+    } catch {
+      return
+    }
+    if (event === 'delta') callbacks.onDelta?.(String(data.text ?? ''))
+    else if (event === 'reset') callbacks.onReset?.()
+    else if (event === 'done') done = data as unknown as WidgetReplyPayload
+    else if (event === 'error') errorMessage = String(data.message ?? 'Stream error')
+  }
+
+  // SSE frames are separated by a blank line; each carries `event:`/`data:` lines.
+  let streamDone = false
+  while (!streamDone) {
+    const { value, done: rd } = await reader.read()
+    streamDone = rd
+    if (value) buffer += decoder.decode(value, { stream: true })
+    let sep = buffer.indexOf('\n\n')
+    while (sep !== -1) {
+      const frame = buffer.slice(0, sep)
+      buffer = buffer.slice(sep + 2)
+      let event = 'message'
+      const dataLines: string[] = []
+      for (const line of frame.split('\n')) {
+        if (line.startsWith('event:')) event = line.slice(6).trim()
+        else if (line.startsWith('data:')) dataLines.push(line.slice(5).replace(/^ /, ''))
+      }
+      dispatch(event, dataLines.join('\n'))
+      sep = buffer.indexOf('\n\n')
+    }
+  }
+
+  if (errorMessage) throw new Error(errorMessage)
+  if (!done) throw new Error('Stream ended without a final reply')
+  return done
 }
 
 export async function uploadWidgetAttachment(
@@ -1313,6 +1510,7 @@ export type {
   PortalTeamRow,
   Service,
   Slot,
+  BookingSlotsResponse,
   SubscriptionDetail,
   ToggleFeatureResponse,
   WidgetConfig,

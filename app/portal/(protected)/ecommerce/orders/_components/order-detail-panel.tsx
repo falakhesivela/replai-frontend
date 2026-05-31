@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {
   ExternalLink,
   Loader2,
+  Mail,
   MessageSquare,
   Package,
   Phone,
@@ -16,10 +17,12 @@ import {
   assignMyOrder,
   getBookableMembers,
   sendReply,
+  syncMyOrderPayment,
   updateMyOrderStatus,
   type TokenGetter,
 } from '@/lib/api'
 import { PaymentStatusBadge } from '@/components/payment-status-badge'
+import { formatCommerceReference } from '@/lib/commerce-search'
 import type { BookableMember, Order, OrderStatus } from '@/lib/types'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -204,6 +207,8 @@ export default function OrderDetailPanel({
 }) {
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [statusError, setStatusError] = useState<string | null>(null)
+  const [syncingPayment, setSyncingPayment] = useState(false)
+  const [paymentSyncError, setPaymentSyncError] = useState<string | null>(null)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
@@ -213,7 +218,20 @@ export default function OrderDetailPanel({
 
   useEffect(() => {
     setStatusError(null)
+    setPaymentSyncError(null)
   }, [order.id])
+
+  async function handleSyncPayment() {
+    setSyncingPayment(true)
+    setPaymentSyncError(null)
+    try {
+      onUpdate(await syncMyOrderPayment(token, order.id))
+    } catch (err: unknown) {
+      setPaymentSyncError(err instanceof Error ? err.message : 'Could not sync payment')
+    } finally {
+      setSyncingPayment(false)
+    }
+  }
 
   async function handleStatusChange(status: OrderStatus) {
     if (status === order.status) return
@@ -236,9 +254,14 @@ export default function OrderDetailPanel({
       <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <div className="flex items-center gap-3">
-            <h2 className="text-sm font-semibold text-gray-900">Order</h2>
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Order</h2>
+              <p className="font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">
+                {formatCommerceReference(order.id)}
+              </p>
+            </div>
             <StatusBadge status={order.status} />
           </div>
           <button
@@ -263,7 +286,7 @@ export default function OrderDetailPanel({
               </div>
               <span className="text-lg font-semibold text-gray-900">{fmt(order.total_amount)}</span>
             </div>
-            <p className="mt-1 font-mono text-[10px] text-gray-400">#{order.id.slice(0, 8)}</p>
+            <p className="text-xs text-gray-500">Ask the customer for this reference at pickup</p>
           </div>
 
           <div className="p-5 space-y-6">
@@ -289,6 +312,12 @@ export default function OrderDetailPanel({
                 <Phone size={13} strokeWidth={1.75} className="shrink-0 text-gray-400" />
                 <span className="font-mono text-sm text-gray-700">{order.customer_phone}</span>
               </div>
+              {order.customer_email && (
+                <div className="flex items-center gap-2.5">
+                  <Mail size={13} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+                  <span className="text-sm text-gray-700">{order.customer_email}</span>
+                </div>
+              )}
             </div>
 
             {/* Order items */}
@@ -330,7 +359,22 @@ export default function OrderDetailPanel({
                     <ExternalLink size={12} /> View payment link
                   </a>
                 )}
+                {canEdit &&
+                  order.payment_status === 'pending' &&
+                  order.payment_reference && (
+                    <button
+                      type="button"
+                      onClick={handleSyncPayment}
+                      disabled={syncingPayment}
+                      className="text-xs text-amber-700 hover:text-amber-900 disabled:opacity-50"
+                    >
+                      {syncingPayment ? 'Checking Paystack…' : 'Refresh payment status'}
+                    </button>
+                  )}
               </div>
+              {paymentSyncError && (
+                <p className="text-xs text-red-600">{paymentSyncError}</p>
+              )}
             </div>
 
             {/* Assign */}

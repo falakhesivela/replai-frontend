@@ -19,6 +19,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
   sendWidgetMessage,
+  streamWidgetMessage,
   startWidgetConversation,
   uploadWidgetAttachment,
   type WidgetAction,
@@ -33,6 +34,16 @@ import {
   type BookingConfirmationData,
 } from './widget-booking'
 import {
+  ConfirmationEmailModal,
+  isValidConfirmationEmail,
+} from './widget-confirmation-email'
+import {
+  addProductToLocalCart,
+  cartStorageKey,
+  loadStoredCart,
+  saveStoredCart,
+} from './widget-client-cart'
+import {
   actionToWidgetAction,
   actionUserLabel,
   extractCartFromComponents,
@@ -41,6 +52,7 @@ import {
   WidgetMessageComponents,
   type CartSummaryData,
 } from './widget-shopping'
+import type { WidgetProductGridItem } from '@/lib/api'
 import type { WidgetConfig } from '@/lib/types'
 
 interface ChatMessage {
@@ -166,6 +178,10 @@ export default function WidgetChat({ widgetId, config }: Props) {
   const [leadName, setLeadName] = useState('')
   const [leadEmail, setLeadEmail] = useState('')
   const [leadSubmitted, setLeadSubmitted] = useState(false)
+  const [confirmationEmail, setConfirmationEmail] = useState('')
+  const [emailPrompt, setEmailPrompt] = useState<
+    null | { purpose: 'checkout' } | { purpose: 'booking'; comp: BookingConfirmationData }
+  >(null)
 
   // Chat
   const [conversationId, setConversationId] = useState<string | null>(null)
@@ -173,10 +189,16 @@ export default function WidgetChat({ widgetId, config }: Props) {
   const [times, setTimes] = useState<Date[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  // Partial assistant text while an SSE reply streams in (null = not streaming).
+  const [streamingMessage, setStreamingMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pendingRetry, setPendingRetry] = useState<string | null>(null)
   const [pending, setPending] = useState<PendingAttachment[]>([])
   const [activeCart, setActiveCart] = useState<CartSummaryData | null>(null)
+  const [cartToast, setCartToast] = useState<string | null>(null)
+  const clientCartActiveRef = useRef(false)
+  const activeCartRef = useRef<CartSummaryData | null>(null)
+  const cartToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -199,6 +221,35 @@ export default function WidgetChat({ widgetId, config }: Props) {
       setLeadSubmitted(true)
     }
   }, [sessionKeys.conv])
+
+  // Restore client cart for this conversation (instant re-add after refresh).
+  useEffect(() => {
+    if (!conversationId) return
+    const stored = loadStoredCart(cartStorageKey(widgetId, conversationId))
+    if (stored?.items.length) {
+      clientCartActiveRef.current = true
+      setActiveCart(stored)
+    }
+  }, [conversationId, widgetId])
+
+  useEffect(() => {
+    activeCartRef.current = activeCart
+  }, [activeCart])
+
+  useEffect(() => {
+    if (leadEmail.trim()) setConfirmationEmail(leadEmail.trim())
+  }, [leadEmail])
+
+  useEffect(() => {
+    if (!conversationId) return
+    saveStoredCart(cartStorageKey(widgetId, conversationId), activeCart)
+  }, [activeCart, conversationId, widgetId])
+
+  useEffect(() => {
+    return () => {
+      if (cartToastTimerRef.current) clearTimeout(cartToastTimerRef.current)
+    }
+  }, [])
 
   // Pre-chat teaser: shows once per session if the visitor hasn't opened the widget.
   useEffect(() => {
@@ -374,13 +425,34 @@ export default function WidgetChat({ widgetId, config }: Props) {
     })
   }
 
+  const showCartToast = useCallback((text: string) => {
+    setCartToast(text)
+    if (cartToastTimerRef.current) clearTimeout(cartToastTimerRef.current)
+    cartToastTimerRef.current = setTimeout(() => setCartToast(null), 2000)
+  }, [])
+
+  const addToCartLocal = useCallback(
+    (product: WidgetProductGridItem) => {
+      if (!product.in_stock) return
+      clientCartActiveRef.current = true
+      setActiveCart((prev) => addProductToLocalCart(prev, product, 1))
+      showCartToast(`Added ${product.name}`)
+    },
+    [showCartToast],
+  )
+
   const applyAssistantResponse = useCallback((data: WidgetReplyPayload) => {
     const cart = extractCartFromComponents(data.components)
     const placed = data.components?.some((c) => c.type === 'payment_cta')
     if (placed) {
+      clientCartActiveRef.current = false
       setActiveCart(null)
-    } else if (cart) {
+      if (conversationId) {
+        saveStoredCart(cartStorageKey(widgetId, conversationId), null)
+      }
+    } else if (cart && cart.items.length > 0) {
       setActiveCart(cart)
+      clientCartActiveRef.current = true
     }
 
     const inline = [
@@ -396,17 +468,92 @@ export default function WidgetChat({ widgetId, config }: Props) {
       },
     ])
     setTimes((prev) => [...prev, new Date()])
-  }, [])
+  }, [conversationId, widgetId])
 
   const bookingsEnabled = config.features?.bookings === true
 
+  const viewLocalCart = useCallback(() => {
+    const cart = activeCartRef.current
+    if (!cart?.items.length) return
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', content: 'View cart' },
+      {
+        role: 'assistant',
+        content: "Here's your cart:",
+        components: [{ ...cart }],
+      },
+    ])
+    setTimes((prev) => [...prev, new Date(), new Date()])
+  }, [])
+
+  const resolveConfirmationEmail = useCallback(
+    (override?: string) => {
+      const candidate = (override ?? confirmationEmail ?? leadEmail).trim()
+      return isValidConfirmationEmail(candidate) ? candidate : null
+    },
+    [confirmationEmail, leadEmail],
+  )
+
   const sendWidgetAction = useCallback(
-    async (action: WidgetAction, contextLabel?: string) => {
+    async (
+      action: WidgetAction,
+      contextLabel?: string,
+      emailOverride?: string,
+    ) => {
       if (sending) return
 
+      if (action.type === 'view_cart') {
+        viewLocalCart()
+        return
+      }
+
+      let actionPayload: WidgetAction = action
+      if (action.type === 'checkout') {
+        const cart = activeCartRef.current
+        if (!cart?.items.length) {
+          setMessages((prev) => [
+            ...prev,
+            { role: 'user', content: contextLabel || 'Checkout' },
+            {
+              role: 'assistant',
+              content:
+                'Your cart is empty. Tap Add on a product first, then checkout.',
+            },
+          ])
+          setTimes((prev) => [...prev, new Date(), new Date()])
+          return
+        }
+        if (!action.items?.length) {
+          actionPayload = {
+            type: 'checkout',
+            items: cart.items.map((i) => ({
+              product_id: i.product_id,
+              quantity: i.quantity,
+            })),
+          }
+        }
+      }
+
+      const email = resolveConfirmationEmail(emailOverride)
+      if (actionPayload.type === 'checkout' && !email) {
+        setEmailPrompt({ purpose: 'checkout' })
+        return
+      }
+
+      if (email) {
+        setConfirmationEmail(email)
+        if (actionPayload.type === 'checkout') {
+          actionPayload = { ...actionPayload, customer_email: email }
+        }
+        if (actionPayload.type === 'confirm_booking') {
+          actionPayload = { ...actionPayload, customer_email: email }
+        }
+      }
+
       const label =
-        actionUserLabel(action, contextLabel) ||
-        bookingActionUserLabel(action, contextLabel)
+        actionUserLabel(actionPayload, contextLabel) ||
+        bookingActionUserLabel(actionPayload, contextLabel)
       setMessages((prev) => [...prev, { role: 'user', content: label }])
       setTimes((prev) => [...prev, new Date()])
 
@@ -415,24 +562,38 @@ export default function WidgetChat({ widgetId, config }: Props) {
       setPendingRetry(null)
 
       const visitorName = leadName.trim() || undefined
-      let actionPayload = action
-      if (action.type === 'confirm_booking' && visitorName && !action.customer_name) {
-        actionPayload = { ...action, customer_name: visitorName }
+      if (
+        actionPayload.type === 'confirm_booking' &&
+        visitorName &&
+        !actionPayload.customer_name
+      ) {
+        actionPayload = { ...actionPayload, customer_name: visitorName }
       }
 
       try {
         let convId = conversationId
         if (!convId) {
-          convId = await startConversation()
+          convId = await startConversation(
+            email ? { name: visitorName || 'Guest', email } : undefined,
+          )
           setLeadSubmitted(true)
         }
+        const checkoutItems =
+          actionPayload.type === 'checkout' && actionPayload.items?.length
+            ? actionPayload.items
+            : undefined
+
         const data = await sendWidgetMessage(
           widgetId,
           convId,
           '',
           [],
           actionPayload,
-          { visitor_name: visitorName },
+          {
+            visitor_name: visitorName,
+            visitor_email: email ?? undefined,
+            checkout_items: checkoutItems,
+          },
         )
         applyAssistantResponse(data)
       } catch {
@@ -452,7 +613,75 @@ export default function WidgetChat({ widgetId, config }: Props) {
       }
     },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sending, conversationId, widgetId, applyAssistantResponse, leadName],
+    [
+      sending,
+      conversationId,
+      widgetId,
+      applyAssistantResponse,
+      leadName,
+      viewLocalCart,
+      resolveConfirmationEmail,
+    ],
+  )
+
+  const checkoutCart = useCallback(() => {
+    if (!activeCart?.items.length || sending) return
+    void sendWidgetAction(
+      {
+        type: 'checkout',
+        items: activeCart.items.map((i) => ({
+          product_id: i.product_id,
+          quantity: i.quantity,
+        })),
+      },
+      'Checkout',
+    )
+  }, [activeCart, sending, sendWidgetAction])
+
+  const submitBookingDetails = useCallback(
+    (
+      comp: import('./widget-booking').BookingIntakeFormData,
+      details: Record<string, string | number>,
+    ) => {
+      const bookingDetails = { ...details }
+      if (comp.check_out) bookingDetails.check_out = comp.check_out
+      void sendWidgetAction(
+        {
+          type: 'submit_booking_details',
+          service_id: comp.service_id,
+          date: comp.date,
+          time: comp.time,
+          booking_details: bookingDetails,
+        },
+        'Continue booking',
+      )
+    },
+    [sendWidgetAction],
+  )
+
+  const confirmBooking = useCallback(
+    (comp: BookingConfirmationData, emailOverride?: string) => {
+      const email = resolveConfirmationEmail(emailOverride)
+      if (!email) {
+        setEmailPrompt({ purpose: 'booking', comp })
+        return
+      }
+      const bookingDetails = { ...(comp.booking_details ?? {}) }
+      if (comp.check_out) bookingDetails.check_out = comp.check_out
+      void sendWidgetAction(
+        {
+          type: 'confirm_booking',
+          service_id: comp.service_id,
+          date: comp.date,
+          time: comp.time,
+          customer_name: leadName.trim() || undefined,
+          booking_details: Object.keys(bookingDetails).length ? bookingDetails : undefined,
+        },
+        'Confirm booking',
+        email,
+      )
+    },
+    [sendWidgetAction, leadName, resolveConfirmationEmail],
   )
 
   const sendMessage = useCallback(
@@ -503,8 +732,20 @@ export default function WidgetChat({ widgetId, config }: Props) {
           convId = await startConversation()
           setLeadSubmitted(true)
         }
-        const data = await sendWidgetMessage(widgetId, convId, text, ready)
-        applyAssistantResponse(data)
+        try {
+          setStreamingMessage('')
+          const data = await streamWidgetMessage(widgetId, convId, text, ready, {
+            onDelta: (t) => setStreamingMessage((prev) => (prev ?? '') + t),
+            onReset: () => setStreamingMessage(''),
+          })
+          setStreamingMessage(null)
+          applyAssistantResponse(data)
+        } catch {
+          // Streaming failed (transport/SSE) — fall back to the JSON endpoint once.
+          setStreamingMessage(null)
+          const data = await sendWidgetMessage(widgetId, convId, text, ready)
+          applyAssistantResponse(data)
+        }
       } catch {
         // Mark the user message as failed so they can retry it. Attachments
         // aren't retried (they're already uploaded — only the message send failed).
@@ -522,6 +763,7 @@ export default function WidgetChat({ widgetId, config }: Props) {
         setError('Message failed to send.')
       } finally {
         setSending(false)
+        setStreamingMessage(null)
       }
     },
     // startConversation is stable-by-closure for this component lifetime; deps cover the inputs
@@ -632,6 +874,37 @@ export default function WidgetChat({ widgetId, config }: Props) {
         }}
         aria-hidden={!open}
       >
+        <div className="relative flex min-h-0 flex-1 flex-col">
+        <ConfirmationEmailModal
+          open={emailPrompt !== null}
+          purpose={emailPrompt?.purpose ?? 'checkout'}
+          initialEmail={confirmationEmail || leadEmail}
+          brandColor={brand_color}
+          onBrand={onBrand}
+          busy={sending}
+          onCancel={() => setEmailPrompt(null)}
+          onSubmit={(email) => {
+            setConfirmationEmail(email)
+            const pending = emailPrompt
+            setEmailPrompt(null)
+            if (pending?.purpose === 'checkout') {
+              void sendWidgetAction(
+                {
+                  type: 'checkout',
+                  items: activeCart?.items.map((i) => ({
+                    product_id: i.product_id,
+                    quantity: i.quantity,
+                  })),
+                  customer_email: email,
+                },
+                'Checkout',
+                email,
+              )
+            } else if (pending?.purpose === 'booking') {
+              confirmBooking(pending.comp, email)
+            }
+          }}
+        />
         {/* Header */}
         <div
           className="relative shrink-0 px-4 pt-4 pb-5"
@@ -785,17 +1058,43 @@ export default function WidgetChat({ widgetId, config }: Props) {
                           brandColor={brand_color}
                           onBrand={onBrand}
                           disabled={sending}
+                          addDisabled={false}
                           hasStickyCart={!!activeCart}
-                          onAddProduct={(id, name) =>
-                            void sendWidgetAction(
-                              { type: 'add_to_cart', product_id: id, quantity: 1 },
-                              name,
+                          onAddProduct={(id, name) => {
+                            const grids = msg.components?.filter(
+                              (c) => c.type === 'product_grid',
                             )
-                          }
+                            const product = grids
+                              ?.flatMap((g) =>
+                                g.type === 'product_grid' ? g.products : [],
+                              )
+                              .find((p) => p.id === id)
+                            if (product) {
+                              addToCartLocal(product)
+                            } else {
+                              addToCartLocal({
+                                id,
+                                name,
+                                price: 0,
+                                currency: 'ZAR',
+                                in_stock: true,
+                              })
+                            }
+                          }}
                           onActionId={(actionId, label) => {
+                            if (actionId === 'checkout') {
+                              checkoutCart()
+                              return
+                            }
+                            if (actionId === 'view_cart') {
+                              viewLocalCart()
+                              return
+                            }
                             const mapped = actionToWidgetAction(actionId)
                             if (mapped) void sendWidgetAction(mapped, label)
                           }}
+                          onCheckoutCart={() => checkoutCart()}
+                          checkoutBusy={sending}
                         />
                         <WidgetBookingMessageComponents
                           components={msg.components}
@@ -809,11 +1108,14 @@ export default function WidgetChat({ widgetId, config }: Props) {
                               name,
                             )
                           }
-                          onSelectDate={(serviceId, date) =>
+                          onSelectDate={(comp, date) =>
                             void sendWidgetAction({
                               type: 'select_date',
-                              service_id: serviceId,
+                              service_id: comp.service_id,
                               date,
+                              purpose: comp.purpose ?? 'appointment',
+                              check_in:
+                                comp.purpose === 'check_out' ? comp.check_in ?? undefined : undefined,
                             })
                           }
                           onSelectTime={(serviceId, date, time) =>
@@ -824,15 +1126,8 @@ export default function WidgetChat({ widgetId, config }: Props) {
                               time,
                             })
                           }
-                          onConfirmBooking={(comp: BookingConfirmationData) =>
-                            void sendWidgetAction({
-                              type: 'confirm_booking',
-                              service_id: comp.service_id,
-                              date: comp.date,
-                              time: comp.time,
-                              customer_name: leadName.trim() || undefined,
-                            })
-                          }
+                          onSubmitBookingDetails={submitBookingDetails}
+                          onConfirmBooking={confirmBooking}
                         />
                         </>
                       )}
@@ -840,7 +1135,16 @@ export default function WidgetChat({ widgetId, config }: Props) {
                 )
               })}
 
-              {sending && (
+              {sending && streamingMessage ? (
+                <MessageBubble
+                  role="assistant"
+                  content={streamingMessage}
+                  time={null}
+                  brandColor={brand_color}
+                  onBrand={onBrand}
+                  showTail
+                />
+              ) : sending ? (
                 <div className="flex justify-start pt-1">
                   <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-white border border-gray-100 px-3.5 py-2.5 shadow-sm">
                     <span className="h-1.5 w-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:-0.3s]" />
@@ -848,7 +1152,7 @@ export default function WidgetChat({ widgetId, config }: Props) {
                     <span className="h-1.5 w-1.5 rounded-full bg-gray-400 animate-bounce" />
                   </div>
                 </div>
-              )}
+              ) : null}
 
               <div ref={messagesEndRef} />
             </div>
@@ -867,15 +1171,21 @@ export default function WidgetChat({ widgetId, config }: Props) {
               </div>
             )}
 
+            {cartToast && (
+              <div className="shrink-0 border-t border-gray-100 bg-gray-900 px-4 py-2 text-center text-xs font-medium text-white">
+                {cartToast}
+              </div>
+            )}
+
             {activeCart && activeCart.items.length > 0 && (
               <StickyCartBar
                 cart={activeCart}
                 brandColor={brand_color}
                 onBrand={onBrand}
-                disabled={sending}
+                disabled={false}
                 busy={sending}
-                onCheckout={() => void sendWidgetAction({ type: 'checkout' })}
-                onViewCart={() => void sendWidgetAction({ type: 'view_cart' })}
+                onCheckout={() => checkoutCart()}
+                onViewCart={() => viewLocalCart()}
               />
             )}
 
@@ -973,9 +1283,11 @@ export default function WidgetChat({ widgetId, config }: Props) {
             </div>
           </>
         )}
+        </div>
       </div>
 
-      {/* Floating launcher */}
+      {/* Floating launcher — hidden on mobile while open (fullscreen panel + header minimize) */}
+      {!(isMobile && open) && (
       <button
         type="button"
         onClick={() => {
@@ -1013,6 +1325,7 @@ export default function WidgetChat({ widgetId, config }: Props) {
           <X size={22} strokeWidth={2.2} />
         </span>
       </button>
+      )}
 
       <style>{`
         @keyframes wfade {

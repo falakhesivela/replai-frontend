@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   ArrowUpRight,
   Calendar,
@@ -21,9 +22,12 @@ import {
   updateMyBookingStatus,
   type TokenGetter,
 } from '@/lib/api'
-import type { Booking, Service, Slot } from '@/lib/types'
+import type { Booking, SchedulingMode, Service, Slot } from '@/lib/types'
 import { usePermissions } from '@/hooks/usePermissions'
 import BookingDetailPanel from './booking-detail-panel'
+import { CommerceLookupBar } from '../../_components/commerce-lookup-bar'
+import { CommerceReferenceLabel } from '../../_components/commerce-reference-label'
+import { findByCommerceLookup, matchesCommerceLookup } from '@/lib/commerce-search'
 
 // Token getter that pulls a fresh Supabase access token on every call so we
 // don't ship an expired JWT to the backend after the page has been open for a
@@ -208,7 +212,11 @@ function BookingRow({
           <span className="text-xs text-gray-400">{formatDate(booking.booking_date)}</span>
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-700">{booking.customer_name}</td>
+      <td className="px-4 py-3">
+        <CommerceReferenceLabel id={booking.id} className="block text-[10px] text-gray-400" />
+        <span className="mt-0.5 block text-sm text-gray-700">{booking.customer_name}</span>
+        <span className="text-xs text-gray-400">{booking.customer_phone}</span>
+      </td>
       <td className="px-4 py-3 text-sm text-gray-500">
         {booking.services ? (
           <>
@@ -465,8 +473,10 @@ function NewBookingModal({
 }) {
   const [services, setServices] = useState<Service[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
+  const [schedulingMode, setSchedulingMode] = useState<SchedulingMode>('slot')
   const [serviceId, setServiceId] = useState('')
   const [slotId, setSlotId] = useState('')
+  const [checkOut, setCheckOut] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [loadingServices, setLoadingServices] = useState(true)
@@ -489,8 +499,12 @@ function NewBookingModal({
     if (!serviceId) { setSlots([]); return }
     setLoadingSlots(true)
     setSlotId('')
+    setCheckOut('')
     getMyAvailableSlots(getFreshToken, serviceId)
-      .then(setSlots)
+      .then((res) => {
+        setSchedulingMode(res.scheduling_mode)
+        setSlots(res.slots)
+      })
       .catch(() => setError('Failed to load available slots'))
       .finally(() => setLoadingSlots(false))
   }, [serviceId])
@@ -500,11 +514,16 @@ function NewBookingModal({
     setError(null)
     setSubmitting(true)
     try {
+      const bookingDetails =
+        schedulingMode === 'date_range' && checkOut.trim()
+          ? { check_out: checkOut.trim() }
+          : undefined
       const booking = await createMyBooking(getFreshToken, {
         customer_name: customerName,
         customer_phone: customerPhone,
         service_id: serviceId,
         slot_id: slotId,
+        booking_details: bookingDetails,
       })
       onCreated(booking)
       onClose()
@@ -524,7 +543,12 @@ function NewBookingModal({
     return map
   }, [slots])
 
-  const canSubmit = serviceId && slotId && customerName.trim() && customerPhone.trim()
+  const canSubmit =
+    serviceId &&
+    slotId &&
+    customerName.trim() &&
+    customerPhone.trim() &&
+    (schedulingMode !== 'date_range' || checkOut.trim())
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -567,7 +591,13 @@ function NewBookingModal({
 
           {/* Time slot */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Date &amp; Time</label>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              {schedulingMode === 'date_range'
+                ? 'Check-in'
+                : schedulingMode === 'date_only'
+                  ? 'Date'
+                  : 'Date & Time'}
+            </label>
             {loadingSlots ? (
               <div className="flex items-center gap-2 text-xs text-gray-400">
                 <Loader2 size={13} className="animate-spin" /> Loading slots…
@@ -599,6 +629,21 @@ function NewBookingModal({
               </select>
             )}
           </div>
+
+          {schedulingMode === 'date_range' && serviceId && (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Check-out</label>
+              <input
+                type="date"
+                value={checkOut}
+                onChange={(e) => setCheckOut(e.target.value)}
+                required
+                min={slotId ? slotId.slice(0, 10) : undefined}
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-accent"
+              />
+              <p className="mt-1 text-[11px] text-gray-400">Must be after check-in.</p>
+            </div>
+          )}
 
           {/* Customer name */}
           <div>
@@ -663,14 +708,33 @@ export default function BookingsView({
   initialBookings: Booking[]
   clientId: string
 }) {
+  const searchParams = useSearchParams()
   const [bookings, setBookings] = useState<Booking[]>(initialBookings)
   const [tab, setTab] = useState<Tab>('upcoming')
   const [view, setView] = useState<ViewMode>('list')
   const [dayFilter, setDayFilter] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
   const [showNewBooking, setShowNewBooking] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
 
   const today = todayStr()
+
+  useEffect(() => {
+    const ref = searchParams.get('ref')?.trim()
+    if (ref) {
+      setSearch(ref)
+      setTab('all')
+      setDayFilter(null)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (!bookings.length || selectedBooking) return
+    const ref = searchParams.get('ref')?.trim()
+    if (!ref) return
+    const match = findByCommerceLookup(bookings, ref)
+    if (match) setSelectedBooking(match)
+  }, [bookings, searchParams, selectedBooking])
 
   // Realtime subscription
   useEffect(() => {
@@ -717,10 +781,13 @@ export default function BookingsView({
     else if (tab === 'today') list = list.filter((b) => b.booking_date === today)
     else if (tab === 'past') list = list.filter((b) => b.booking_date < today)
     if (dayFilter) list = list.filter((b) => b.booking_date === dayFilter)
+    if (search.trim()) {
+      list = list.filter((b) => matchesCommerceLookup(b, search))
+    }
     return [...list].sort(
       (a, b) => a.booking_date.localeCompare(b.booking_date) || a.booking_time.localeCompare(b.booking_time)
     )
-  }, [bookings, tab, today, dayFilter])
+  }, [bookings, tab, today, dayFilter, search])
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
@@ -745,7 +812,9 @@ export default function BookingsView({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Bookings</h1>
-          <p className="mt-0.5 text-sm text-gray-500">{bookings.length} total</p>
+          <p className="mt-0.5 text-sm text-gray-500">
+            {bookings.length} total · search by reference when customers arrive
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -771,6 +840,8 @@ export default function BookingsView({
 
       {/* Stats */}
       <StatsRow bookings={bookings} />
+
+      <CommerceLookupBar value={search} onChange={setSearch} />
 
       {/* Calendar or list */}
       {view === 'calendar' ? (
@@ -798,11 +869,15 @@ export default function BookingsView({
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <MessageSquare size={28} strokeWidth={1.5} className="mb-3 text-gray-200" />
-              <p className="text-sm text-gray-400">No bookings found</p>
+              <p className="text-sm text-gray-400">
+                {search.trim() ? 'No bookings match your search' : 'No bookings found'}
+              </p>
               <p className="mt-1 text-xs text-gray-300">
-                {tab === 'today'
-                  ? 'Nothing scheduled for today.'
-                  : 'No bookings match this filter.'}
+                {search.trim()
+                  ? 'Try the reference number, customer name, phone, or email.'
+                  : tab === 'today'
+                    ? 'Nothing scheduled for today.'
+                    : 'No bookings match this filter.'}
               </p>
             </div>
           ) : (
