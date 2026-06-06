@@ -57,6 +57,7 @@ function formatDate(dateStr: string): string {
 }
 
 const BOOKING_STATUS_STYLES: Record<Booking['status'], string> = {
+  reserved: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
   confirmed: 'bg-green-50 text-green-700 ring-1 ring-green-200',
   cancelled: 'bg-red-50 text-red-600 ring-1 ring-red-200',
   completed: 'bg-gray-100 text-gray-500',
@@ -64,6 +65,7 @@ const BOOKING_STATUS_STYLES: Record<Booking['status'], string> = {
 }
 
 const BOOKING_STATUS_LABELS: Record<Booking['status'], string> = {
+  reserved: 'Reserved',
   confirmed: 'Confirmed',
   cancelled: 'Cancelled',
   completed: 'Completed',

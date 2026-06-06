@@ -201,6 +201,9 @@ export interface ServiceBookingProfile {
   max_guests_per_day?: number | null
 }
 
+export type BookingPaymentPolicy = 'none' | 'optional' | 'deposit' | 'full'
+export type DepositType = 'percent' | 'fixed'
+
 export interface Service {
   id: string
   client_id: string
@@ -211,6 +214,10 @@ export interface Service {
   currency?: string
   is_active?: boolean
   booking_profile?: ServiceBookingProfile
+  /** When/whether a booking for this service requires payment. */
+  payment_policy?: BookingPaymentPolicy
+  deposit_type?: DepositType | null
+  deposit_value?: number | null
   created_at: string
 }
 
@@ -252,6 +259,17 @@ export interface SettlementBank {
   name: string
 }
 
+/** Per-member Google Calendar connection status (one-way booking sync). */
+export interface CalendarConnectionStatus {
+  configured: boolean          // backend has Google OAuth credentials set
+  connected: boolean           // this member has an active connection
+  status?: 'active' | 'revoked' | 'error'
+  google_account_email?: string | null
+  calendar_id?: string | null
+  is_business_default?: boolean
+  last_synced_at?: string | null
+}
+
 export interface Booking {
   id: string
   client_id: string
@@ -261,7 +279,8 @@ export interface Booking {
   service_id: string
   booking_date: string  // "YYYY-MM-DD"
   booking_time: string  // "HH:MM"
-  status: 'confirmed' | 'cancelled' | 'completed' | 'no_show'
+  // 'reserved' = slot held (not yet confirmed) until a required deposit/prepayment is received.
+  status: 'reserved' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'
   total_amount?: number | null
   currency?: string
   payment_link?: string | null

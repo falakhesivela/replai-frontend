@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { CheckCircle2, ChevronRight, CreditCard, Loader2, Plug } from 'lucide-react'
+import { Calendar, CheckCircle2, ChevronRight, CreditCard, Loader2, Plug } from 'lucide-react'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
-import { getMyPaymentAccount, type TokenGetter } from '@/lib/api'
-import type { PaymentAccountStatus } from '@/lib/types'
+import { getMyCalendarStatus, getMyPaymentAccount, type TokenGetter } from '@/lib/api'
+import type { CalendarConnectionStatus, PaymentAccountStatus } from '@/lib/types'
 import { Card } from '@/components/ui'
 
 const getFreshToken: TokenGetter = async () => {
@@ -26,14 +26,18 @@ type IntegrationCard = {
 
 export default function IntegrationsView() {
   const [paystack, setPaystack] = useState<PaymentAccountStatus | null>(null)
+  const [calendar, setCalendar] = useState<CalendarConnectionStatus | null>(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setPaystack(await getMyPaymentAccount(getFreshToken))
-    } catch {
-      setPaystack(null)
+      const [pay, cal] = await Promise.allSettled([
+        getMyPaymentAccount(getFreshToken),
+        getMyCalendarStatus(getFreshToken),
+      ])
+      setPaystack(pay.status === 'fulfilled' ? pay.value : null)
+      setCalendar(cal.status === 'fulfilled' ? cal.value : null)
     } finally {
       setLoading(false)
     }
@@ -44,6 +48,7 @@ export default function IntegrationsView() {
   }, [load])
 
   const paystackConnected = paystack?.status === 'active'
+  const calendarConnected = calendar?.connected === true
 
   const integrations: IntegrationCard[] = [
     {
@@ -59,6 +64,16 @@ export default function IntegrationsView() {
         : paystack?.paystack_configured
           ? 'Not connected'
           : 'Unavailable',
+    },
+    {
+      id: 'google-calendar',
+      name: 'Google Calendar',
+      description:
+        'Sync confirmed bookings to your team’s Google Calendars — one event per booking.',
+      href: '/portal/integrations/google-calendar',
+      icon: Calendar,
+      status: calendarConnected ? 'connected' : 'available',
+      statusLabel: calendarConnected ? 'Connected' : 'Not connected',
     },
   ]
 

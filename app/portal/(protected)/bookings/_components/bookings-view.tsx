@@ -23,6 +23,7 @@ import {
   type TokenGetter,
 } from '@/lib/api'
 import type { Booking, SchedulingMode, Service, Slot } from '@/lib/types'
+import { PaymentStatusBadge } from '@/components/payment-status-badge'
 import { usePermissions } from '@/hooks/usePermissions'
 import BookingDetailPanel from './booking-detail-panel'
 import { CommerceLookupBar } from '../../_components/commerce-lookup-bar'
@@ -82,6 +83,7 @@ function thisWeekBounds(): { start: string; end: string } {
 // ── Status badge ──────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<BookingStatus, string> = {
+  reserved: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
   confirmed: 'bg-green-50 text-green-700 ring-1 ring-green-200',
   cancelled: 'bg-red-50 text-red-600 ring-1 ring-red-200',
   completed: 'bg-gray-100 text-gray-500',
@@ -89,6 +91,7 @@ const STATUS_STYLES: Record<BookingStatus, string> = {
 }
 
 const STATUS_LABELS: Record<BookingStatus, string> = {
+  reserved: 'Reserved',
   confirmed: 'Confirmed',
   cancelled: 'Cancelled',
   completed: 'Completed',
@@ -228,7 +231,15 @@ function BookingRow({
         )}
       </td>
       <td className="px-4 py-3">
-        <StatusBadge status={booking.status} />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <StatusBadge status={booking.status} />
+          {/* Hide the payment badge on a cancelled, unpaid booking (e.g. an
+              expired hold) — "Cancelled · Awaiting payment" is contradictory.
+              A cancelled *paid* booking still shows "Paid" (signals a refund). */}
+          {!(booking.status === 'cancelled' && booking.payment_status !== 'paid') && (
+            <PaymentStatusBadge status={booking.payment_status} />
+          )}
+        </div>
       </td>
       <td className="px-4 py-3 hidden md:table-cell">
         {booking.assigned_member ? (

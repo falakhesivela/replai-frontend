@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
+import Link from 'next/link'
 import { Clock, Loader2, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import {
   createMyService,
   deleteMyService,
   getMyBookingSettings,
+  getMyPaymentAccount,
   setMyAvailability,
   updateMyBookingSettings,
   updateMyService,
@@ -15,6 +17,8 @@ import {
 import { useToast } from '@/components/toast'
 import type {
   AvailabilitySchedule,
+  BookingPaymentPolicy,
+  DepositType,
   SchedulingMode,
   Service,
   ServiceBookingProfile,
@@ -41,6 +45,9 @@ interface ServiceForm {
   duration_minutes: number
   description: string
   price: string
+  payment_policy: BookingPaymentPolicy
+  deposit_type: DepositType
+  deposit_value: string
   use_workspace_defaults: boolean
   ask_guest_count: boolean
   scheduling_mode: SchedulingMode
@@ -53,6 +60,9 @@ const EMPTY_SERVICE_FORM: ServiceForm = {
   duration_minutes: 30,
   description: '',
   price: '',
+  payment_policy: 'optional',
+  deposit_type: 'percent',
+  deposit_value: '',
   use_workspace_defaults: true,
   ask_guest_count: false,
   scheduling_mode: 'slot',
@@ -72,6 +82,31 @@ function parseMaxGuestsPerDay(value: string): number | null {
   const n = parseInt(trimmed, 10)
   if (Number.isNaN(n) || n < 1) return null
   return Math.min(500, n)
+}
+
+function priceIsPositive(price: string): boolean {
+  const n = parseFloat(price)
+  return !Number.isNaN(n) && n > 0
+}
+
+/** Per-service payment fields for the API. Cleared when the service is free. */
+function servicePaymentPayload(form: ServiceForm): {
+  payment_policy: BookingPaymentPolicy
+  deposit_type: DepositType | null
+  deposit_value: number | null
+} {
+  if (!priceIsPositive(form.price)) {
+    return { payment_policy: 'none', deposit_type: null, deposit_value: null }
+  }
+  if (form.payment_policy === 'deposit') {
+    const val = parseFloat(form.deposit_value)
+    return {
+      payment_policy: 'deposit',
+      deposit_type: form.deposit_type,
+      deposit_value: !Number.isNaN(val) && val > 0 ? val : null,
+    }
+  }
+  return { payment_policy: form.payment_policy, deposit_type: null, deposit_value: null }
 }
 
 function bookingProfilePayload(form: ServiceForm): ServiceBookingProfile {
@@ -97,6 +132,9 @@ function serviceFormFromService(svc: Service): ServiceForm {
     duration_minutes: svc.duration_minutes,
     description: svc.description ?? '',
     price: svc.price != null && Number(svc.price) > 0 ? String(svc.price) : '',
+    payment_policy: svc.payment_policy ?? 'optional',
+    deposit_type: svc.deposit_type ?? 'percent',
+    deposit_value: svc.deposit_value != null ? String(svc.deposit_value) : '',
     use_workspace_defaults: bp?.use_workspace_defaults ?? true,
     ask_guest_count: bp?.ask_guest_count ?? false,
     scheduling_mode:
@@ -109,6 +147,20 @@ function serviceFormFromService(svc: Service): ServiceForm {
     max_guests_per_day:
       bp?.max_guests_per_day != null ? String(bp.max_guests_per_day) : '',
   }
+}
+
+function servicePaymentSummary(svc: Service): string | null {
+  if (svc.price == null || Number(svc.price) <= 0) return null
+  if (svc.payment_policy === 'full') return 'Prepay required'
+  if (svc.payment_policy === 'deposit') {
+    if (svc.deposit_value != null && Number(svc.deposit_value) > 0) {
+      return svc.deposit_type === 'fixed'
+        ? `Deposit R${Number(svc.deposit_value).toFixed(2)}`
+        : `Deposit ${Number(svc.deposit_value)}%`
+    }
+    return 'Deposit required'
+  }
+  return null
 }
 
 function schedulingModeLabel(mode: SchedulingMode): string {
@@ -436,6 +488,164 @@ function ServiceBookingProfileFields({
   )
 }
 
+// The stored `payment_policy` (none|optional|deposit|full) is surfaced as a
+// simpler two-level control: a top-level mode, then (for Required) full vs deposit.
+type PaymentMode = 'none' | 'optional' | 'required'
+
+function paymentModeOf(policy: BookingPaymentPolicy): PaymentMode {
+  if (policy === 'none') return 'none'
+  if (policy === 'optional') return 'optional'
+  return 'required' // deposit | full
+}
+
+const PAYMENT_MODE_OPTIONS: { value: PaymentMode; label: string; description: string }[] = [
+  {
+    value: 'none',
+    label: 'No online payment',
+    description: 'Customers book without paying online — arrange payment yourself.',
+  },
+  {
+    value: 'optional',
+    label: 'Optional',
+    description: 'Booking is confirmed right away; a pay-online link is shared.',
+  },
+  {
+    value: 'required',
+    label: 'Required',
+    description: 'Booking is held (Reserved) until paid, then auto-confirms.',
+  },
+]
+
+function ServicePaymentFields({
+  form,
+  setForm,
+  paystackConnected,
+  idPrefix,
+}: {
+  form: ServiceForm
+  setForm: Dispatch<SetStateAction<ServiceForm>>
+  paystackConnected: boolean
+  idPrefix: string
+}) {
+  // Payment only applies to priced services.
+  if (!priceIsPositive(form.price)) return null
+  const price = parseFloat(form.price)
+  const mode = paymentModeOf(form.payment_policy)
+
+  function setMode(next: PaymentMode) {
+    setForm((f) => {
+      if (next === 'none') return { ...f, payment_policy: 'none' }
+      if (next === 'optional') return { ...f, payment_policy: 'optional' }
+      // Required → keep deposit if already chosen, else default to full price.
+      return { ...f, payment_policy: f.payment_policy === 'deposit' ? 'deposit' : 'full' }
+    })
+  }
+
+  let depositPreview: string | null = null
+  if (form.payment_policy === 'deposit') {
+    const v = parseFloat(form.deposit_value)
+    if (!Number.isNaN(v) && v > 0) {
+      const amount =
+        form.deposit_type === 'percent'
+          ? (price * Math.min(v, 100)) / 100
+          : Math.min(v, price)
+      depositPreview = `Customer pays R${amount.toFixed(2)} now to secure the booking.`
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-md border border-gray-200 bg-white p-3">
+      <p className="text-xs font-medium text-gray-700">Payment</p>
+      <div className="space-y-1.5">
+        {PAYMENT_MODE_OPTIONS.map((o) => {
+          const disabled = o.value === 'required' && !paystackConnected
+          const selected = mode === o.value
+          return (
+            <label
+              key={o.value}
+              className={`flex items-start gap-2 rounded-md border p-2 transition-colors ${
+                disabled
+                  ? 'cursor-not-allowed border-gray-200 opacity-60'
+                  : selected
+                    ? 'cursor-pointer border-accent ring-1 ring-accent'
+                    : 'cursor-pointer border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name={`${idPrefix}-payment-mode`}
+                className="mt-0.5"
+                checked={selected}
+                disabled={disabled}
+                onChange={() => setMode(o.value)}
+              />
+              <span className="min-w-0">
+                <span className="block text-xs font-medium text-gray-800">{o.label}</span>
+                <span className="block text-[11px] text-gray-500">{o.description}</span>
+                {disabled && (
+                  <span className="mt-0.5 block text-[11px] text-amber-700">
+                    Connect{' '}
+                    <Link
+                      href="/portal/integrations/paystack"
+                      className="underline hover:text-amber-900"
+                    >
+                      Paystack
+                    </Link>{' '}
+                    to require payment.
+                  </span>
+                )}
+              </span>
+            </label>
+          )
+        })}
+      </div>
+
+      {mode === 'required' && (
+        <div className="space-y-2 rounded-md bg-gray-50 p-2.5">
+          <SelectField
+            label="How much to collect?"
+            value={form.payment_policy === 'deposit' ? 'deposit' : 'full'}
+            onChange={(v) =>
+              setForm((f) => ({ ...f, payment_policy: v as BookingPaymentPolicy }))
+            }
+            options={[
+              { value: 'full', label: 'Full price' },
+              { value: 'deposit', label: 'Deposit only' },
+            ]}
+          />
+          {form.payment_policy === 'deposit' && (
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-gray-700">Deposit amount</label>
+              <div className="flex gap-2">
+                <select
+                  value={form.deposit_type}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, deposit_type: e.target.value as DepositType }))
+                  }
+                  className={selectClass}
+                >
+                  <option value="percent">% of price</option>
+                  <option value="fixed">Fixed (R)</option>
+                </select>
+                <input
+                  type="number"
+                  min="0"
+                  step={form.deposit_type === 'percent' ? '1' : '0.01'}
+                  value={form.deposit_value}
+                  onChange={(e) => setForm((f) => ({ ...f, deposit_value: e.target.value }))}
+                  placeholder={form.deposit_type === 'percent' ? 'e.g. 20' : 'e.g. 500'}
+                  className={inputClass}
+                />
+              </div>
+              {depositPreview && <p className="text-[11px] text-gray-500">{depositPreview}</p>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Services section ──────────────────────────────────────────────────────────
 
 function ServicesSection({
@@ -452,6 +662,14 @@ function ServicesSection({
   const [saving, setSaving] = useState(false)
   const [savingEditId, setSavingEditId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  // Gates the "Required" payment option — you can't enforce payment without it.
+  const [paystackConnected, setPaystackConnected] = useState(false)
+
+  useEffect(() => {
+    getMyPaymentAccount(getFreshToken)
+      .then((acct) => setPaystackConnected(acct?.status === 'active'))
+      .catch(() => setPaystackConnected(false))
+  }, [])
 
   function resetForm() {
     setForm(EMPTY_SERVICE_FORM)
@@ -481,6 +699,7 @@ function ServicesSection({
         price: priceNum != null && !Number.isNaN(priceNum) ? priceNum : null,
         currency: 'ZAR',
         booking_profile: bookingProfilePayload(form),
+        ...servicePaymentPayload(form),
       })
       setServices((prev) => [...prev, created])
       resetForm()
@@ -503,6 +722,7 @@ function ServicesSection({
         description: editForm.description.trim() || null,
         price: priceNum != null && !Number.isNaN(priceNum) ? priceNum : null,
         booking_profile: bookingProfilePayload(editForm),
+        ...servicePaymentPayload(editForm),
       })
       setServices((prev) => prev.map((s) => (s.id === serviceId ? updated : s)))
       cancelEdit()
@@ -569,6 +789,27 @@ function ServicesSection({
                         ))}
                       </select>
                     </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Price (ZAR){' '}
+                        <span className="text-gray-400">(leave empty for free)</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={editForm.price}
+                        onChange={(e) => setEditForm((f) => ({ ...f, price: e.target.value }))}
+                        placeholder="0.00"
+                        className={inputClass}
+                      />
+                    </div>
+                    <ServicePaymentFields
+                      form={editForm}
+                      setForm={setEditForm}
+                      paystackConnected={paystackConnected}
+                      idPrefix={`edit-${svc.id}`}
+                    />
                     <ServiceBookingProfileFields form={editForm} setForm={setEditForm} />
                     <div className="flex justify-end gap-2">
                       <button
@@ -599,6 +840,11 @@ function ServicesSection({
                         {svc.price != null && Number(svc.price) > 0 && (
                           <span className="text-xs font-medium text-gray-600">
                             R{Number(svc.price).toFixed(2)}
+                          </span>
+                        )}
+                        {servicePaymentSummary(svc) && (
+                          <span className="rounded-full bg-orange-50 px-1.5 py-0.5 text-[10px] font-medium text-orange-700 ring-1 ring-orange-200">
+                            {servicePaymentSummary(svc)}
                           </span>
                         )}
                         <span className="text-xs text-indigo-600">{serviceIntakeSummary(svc)}</span>
@@ -688,6 +934,13 @@ function ServicesSection({
               className={inputClass}
             />
           </div>
+
+          <ServicePaymentFields
+            form={form}
+            setForm={setForm}
+            paystackConnected={paystackConnected}
+            idPrefix="new"
+          />
 
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">

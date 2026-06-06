@@ -15,6 +15,7 @@ import type {
   BroadcastAudiencePreview,
   BroadcastDetail,
   BusinessHoursItem,
+  CalendarConnectionStatus,
   Client,
   ClosedDate,
   Conversation,
@@ -562,6 +563,9 @@ export function createMyService(
     price?: number | null
     currency?: string
     booking_profile?: ServiceBookingProfile
+    payment_policy?: import('./types').BookingPaymentPolicy
+    deposit_type?: import('./types').DepositType | null
+    deposit_value?: number | null
   }
 ): Promise<Service> {
   return portalFetch('/portal/me/services', token, {
@@ -581,6 +585,9 @@ export function updateMyService(
     price?: number | null
     currency?: string
     booking_profile?: ServiceBookingProfile
+    payment_policy?: import('./types').BookingPaymentPolicy
+    deposit_type?: import('./types').DepositType | null
+    deposit_value?: number | null
   }
 ): Promise<Service> {
   return portalFetch(`/portal/me/services/${encodeURIComponent(serviceId)}`, token, {
@@ -874,6 +881,40 @@ export function connectPaystackSubaccount(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+  })
+}
+
+// ── Google Calendar (per-member booking sync) ────────────────────────────────
+
+export function getMyCalendarStatus(
+  token: string | TokenGetter
+): Promise<CalendarConnectionStatus> {
+  return portalFetch('/portal/me/integrations/google-calendar', token)
+}
+
+/** Returns the Google consent URL the browser should be redirected to. */
+export function startCalendarConnect(
+  token: string | TokenGetter
+): Promise<{ auth_url: string }> {
+  return portalFetch('/portal/me/integrations/google-calendar/connect', token, {
+    method: 'POST',
+  })
+}
+
+export function disconnectMyCalendar(
+  token: string | TokenGetter
+): Promise<{ ok: boolean }> {
+  return portalFetch('/portal/me/integrations/google-calendar/disconnect', token, {
+    method: 'POST',
+  })
+}
+
+/** Make the current member's calendar the fallback for unassigned bookings. */
+export function setMyCalendarBusinessDefault(
+  token: string | TokenGetter
+): Promise<CalendarConnectionStatus> {
+  return portalFetch('/portal/me/integrations/google-calendar/business-default', token, {
+    method: 'POST',
   })
 }
 
