@@ -6,12 +6,14 @@ import { CreditCard, Loader2, ToggleLeft, ToggleRight, Check } from 'lucide-reac
 import { createClient } from '@/lib/supabase/client'
 import {
   getMySubscription,
+  reconcileMySubscription,
   toggleMyFeature,
   setMyPlan,
   PortalAuthError,
   type TokenGetter,
 } from '@/lib/api'
 import { loadPaddle, paddleConfigured, onPaddleEvent } from '@/lib/paddle'
+import { LEGAL_LINKS } from '@/lib/marketing-site'
 import type { Plan, ClientSubscription, ClientUsageBilling } from '@/lib/types'
 import { Card } from '@/components/ui'
 
@@ -82,8 +84,15 @@ export default function SubscriptionView() {
     onPaddleEvent((name) => {
       if (name !== 'checkout.completed') return
       let tries = 0
-      const tick = () => {
+      const tick = async () => {
         tries += 1
+        if (tries <= 3) {
+          try {
+            await reconcileMySubscription(getFreshToken)
+          } catch {
+            /* webhook may still be enough */
+          }
+        }
         load()
         if (tries < 8) setTimeout(tick, 2500)
       }
@@ -362,9 +371,28 @@ export default function SubscriptionView() {
 
         <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
           <p className="text-xs text-gray-500">
-            Payments are processed securely by Paddle. Your plan and any add-ons
-            are billed {cycle === 'annual' ? 'annually' : 'monthly'}; add-on
-            changes are prorated immediately.
+            Payments are processed securely by Paddle, the Merchant of Record for
+            Replai orders. Your plan and any add-ons are billed{' '}
+            {cycle === 'annual' ? 'annually' : 'monthly'}; add-on changes are
+            prorated immediately. See our{' '}
+            <a
+              href={LEGAL_LINKS[2].href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-700 underline underline-offset-2 hover:text-gray-900"
+            >
+              Refund policy
+            </a>{' '}
+            and{' '}
+            <a
+              href={LEGAL_LINKS[0].href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-700 underline underline-offset-2 hover:text-gray-900"
+            >
+              Terms
+            </a>
+            .
           </p>
         </div>
       </Card>

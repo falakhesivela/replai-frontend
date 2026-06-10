@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { signupPortal } from '@/lib/api'
+import { LEGAL_LINKS } from '@/lib/marketing-site'
+import { PortalLegalFooter } from '@/app/portal/_components/portal-legal-footer'
 
 const CHANNEL_PLANS = ['website', 'whatsapp', 'both'] as const
 
@@ -115,6 +117,28 @@ export function RegisterForm({
         >
           {pending ? 'Creating your workspace…' : 'Create account'}
         </button>
+
+        <p className="text-center text-xs text-gray-400 leading-relaxed">
+          By creating an account you agree to our{' '}
+          <a
+            href={LEGAL_LINKS[0].href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-600 underline underline-offset-2 hover:text-gray-900"
+          >
+            Terms
+          </a>{' '}
+          and{' '}
+          <a
+            href={LEGAL_LINKS[1].href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-600 underline underline-offset-2 hover:text-gray-900"
+          >
+            Privacy Policy
+          </a>
+          .
+        </p>
       </form>
 
       <p className="mt-6 text-center text-sm text-gray-500">
@@ -123,6 +147,8 @@ export function RegisterForm({
           Log in
         </Link>
       </p>
+
+      <PortalLegalFooter className="mt-8" />
     </div>
   )
 }

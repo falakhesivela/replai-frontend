@@ -851,6 +851,15 @@ export function setMyPlan(
   })
 }
 
+/** Pull live state from Paddle after checkout (webhook fallback). */
+export function reconcileMySubscription(
+  token: string | TokenGetter
+): Promise<SubscriptionDetail> {
+  return portalFetch('/portal/me/subscription/reconcile', token, {
+    method: 'POST',
+  })
+}
+
 // ── Client payments (Paystack — end-customer checkout) ───────────────────────
 
 export function getMyPaymentAccount(

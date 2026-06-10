@@ -4,7 +4,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Lock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { getMySubscription, type TokenGetter } from '@/lib/api'
+import {
+  getMySubscription,
+  reconcileMySubscription,
+  type TokenGetter,
+} from '@/lib/api'
 import { loadPaddle, paddleConfigured, onPaddleEvent } from '@/lib/paddle'
 import type { Plan, ClientSubscription } from '@/lib/types'
 import { Card } from '@/components/ui'
@@ -65,7 +69,10 @@ export default function SubscriptionPaywall({ isOwner }: { isOwner: boolean }) {
       const tick = async () => {
         tries += 1
         try {
-          const d = await getMySubscription(getFreshToken)
+          const d =
+            tries <= 3
+              ? await reconcileMySubscription(getFreshToken)
+              : await getMySubscription(getFreshToken)
           if (isEntitled(d.subscription)) {
             router.refresh()
             return
@@ -121,12 +128,31 @@ export default function SubscriptionPaywall({ isOwner }: { isOwner: boolean }) {
             This usually takes a few seconds.
           </p>
           {activationSlow && (
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-5 rounded-md bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800"
-            >
-              Continue
-            </button>
+            <div className="mt-5 space-y-2">
+              <button
+                onClick={async () => {
+                  try {
+                    const d = await reconcileMySubscription(getFreshToken)
+                    if (isEntitled(d.subscription)) {
+                      router.refresh()
+                      return
+                    }
+                  } catch {
+                    /* fall through to reload */
+                  }
+                  window.location.reload()
+                }}
+                className="w-full rounded-md bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800"
+              >
+                I already paid — refresh access
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full text-xs font-medium text-gray-500 underline"
+              >
+                Reload page
+              </button>
+            </div>
           )}
         </div>
       </div>

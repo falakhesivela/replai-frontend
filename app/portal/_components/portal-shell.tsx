@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import PortalSidebar from './sidebar'
 import MobileTopBar from '@/components/mobile-top-bar'
+import { PortalLegalFooter } from './portal-legal-footer'
 
 interface PortalShellProps {
   businessName: string
@@ -57,6 +58,8 @@ export default function PortalShell({
         <main className="flex-1 p-4 md:p-6">
           {children}
         </main>
+
+        <PortalLegalFooter className="px-4 pb-4 md:px-6 md:pb-6" />
       </div>
     </div>
   )

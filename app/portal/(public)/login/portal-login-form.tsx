@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { resolvePortalLanding } from '@/lib/portal-login'
+import { PortalLegalFooter } from '@/app/portal/_components/portal-legal-footer'
 
 const NO_ACCOUNT_MSG =
   'No portal access for this account. Contact your administrator.'
@@ -194,6 +195,8 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
             Need an account?{' '}
             <span className="text-gray-500">Contact us.</span>
           </p>
+
+          <PortalLegalFooter className="mt-6" />
         </div>
       </div>
     </div>
