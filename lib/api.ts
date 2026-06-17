@@ -21,6 +21,7 @@ import type {
   Conversation,
   ConversationNote,
   KnowledgeFile,
+  Lead,
   Message,
   Order,
   OrderStatus,
@@ -680,6 +681,41 @@ export async function deleteMyBroadcast(
     throw new Error(`API error ${res.status}: ${await res.text()}`)
 }
 
+export async function deleteMyLead(
+  tokenOrGetter: string | TokenGetter,
+  leadId: string
+): Promise<void> {
+  const token =
+    typeof tokenOrGetter === 'function' ? await tokenOrGetter() : tokenOrGetter
+  if (!token) throw new PortalAuthError(401, 'Not authenticated')
+  const res = await fetch(
+    `${API_URL}/portal/me/leads/${encodeURIComponent(leadId)}`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
+  )
+  if (res.status === 401 || res.status === 403)
+    throw new PortalAuthError(res.status, await res.text())
+  if (!res.ok && res.status !== 204)
+    throw new Error(`API error ${res.status}: ${await res.text()}`)
+}
+
+export async function clearMyLeads(tokenOrGetter: string | TokenGetter): Promise<void> {
+  const token =
+    typeof tokenOrGetter === 'function' ? await tokenOrGetter() : tokenOrGetter
+  if (!token) throw new PortalAuthError(401, 'Not authenticated')
+  const res = await fetch(`${API_URL}/portal/me/leads`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (res.status === 401 || res.status === 403)
+    throw new PortalAuthError(res.status, await res.text())
+  if (!res.ok && res.status !== 204)
+    throw new Error(`API error ${res.status}: ${await res.text()}`)
+}
+
+export function getMyLeads(token: string | TokenGetter): Promise<Lead[]> {
+  return portalFetch('/portal/me/leads', token)
+}
+
 export function getMyBroadcast(
   token: string | TokenGetter,
   broadcastId: string
@@ -856,6 +892,15 @@ export function reconcileMySubscription(
   token: string | TokenGetter
 ): Promise<SubscriptionDetail> {
   return portalFetch('/portal/me/subscription/reconcile', token, {
+    method: 'POST',
+  })
+}
+
+/** Cancel subscription (end of billing period for Paddle; immediate for trial). */
+export function cancelMySubscription(
+  token: string | TokenGetter
+): Promise<SubscriptionDetail> {
+  return portalFetch('/portal/me/subscription/cancel', token, {
     method: 'POST',
   })
 }

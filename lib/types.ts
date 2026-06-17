@@ -349,6 +349,22 @@ export interface ActivityLogEntry {
   created_at: string
 }
 
+export type LeadSource = 'website' | 'whatsapp'
+
+export interface Lead {
+  id: string
+  client_id: string
+  name: string | null
+  phone: string | null
+  email: string | null
+  source: LeadSource
+  conversation_id: string | null
+  tags: string[]
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type BroadcastAudience = 'all' | 'leads' | 'bookings' | 'active_conversations'
 export type BroadcastStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed'
 
@@ -495,6 +511,8 @@ export interface ClientSubscription {
   trial_ends_at?: string | null
   paddle_customer_id?: string | null
   paddle_subscription_id?: string | null
+  /** Set when Paddle has a scheduled cancel at period end. */
+  cancel_scheduled_at?: string | null
   /** WhatsApp / Meta (Tech-Provider billing) */
   included_wa_messages?: number | null
   wa_overage_rate_usd?: number | null

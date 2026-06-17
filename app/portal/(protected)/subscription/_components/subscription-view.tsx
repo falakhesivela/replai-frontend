@@ -9,6 +9,7 @@ import {
   reconcileMySubscription,
   toggleMyFeature,
   setMyPlan,
+  cancelMySubscription,
   PortalAuthError,
   type TokenGetter,
 } from '@/lib/api'
@@ -50,6 +51,7 @@ export default function SubscriptionView() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyKey, setBusyKey] = useState<string | null>(null)
+  const [cancelling, setCancelling] = useState(false)
   const [trialEligibleAddons, setTrialEligibleAddons] = useState<string[]>([])
 
   const load = useCallback(async () => {
@@ -156,6 +158,33 @@ export default function SubscriptionView() {
     }
   }
 
+  async function cancelSubscription() {
+    const onPaddle = Boolean(subscription?.paddle_subscription_id)
+    const isTrialOnly =
+      (subscription?.status === 'trialing' || subscription?.plan_key === 'trial') &&
+      !onPaddle
+    const message = isTrialOnly
+      ? 'End your free trial now? You will lose access to paid features immediately.'
+      : onPaddle
+        ? 'Cancel your subscription? You will keep access until the end of your current billing period and will not be charged again.'
+        : 'Cancel your subscription? You will lose access immediately.'
+    if (!window.confirm(message)) return
+
+    setCancelling(true)
+    setError(null)
+    try {
+      const detail = await cancelMySubscription(getFreshToken)
+      setSubscription(detail.subscription)
+      setPlans(detail.plans)
+      setUsage(detail.usage ?? null)
+      setTrialEligibleAddons(detail.trial_eligible_addons ?? [])
+    } catch {
+      setError('Could not cancel subscription. Please try again or contact support.')
+    } finally {
+      setCancelling(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -178,6 +207,18 @@ export default function SubscriptionView() {
     trialEligibleAddons.includes(key)
   const channelPlan = channelPlans.find((p) => p.key === currentPlan) ?? null
   const enabledAddons = addons.filter((p) => p.enabled)
+  const cancelScheduledAt = subscription?.cancel_scheduled_at ?? null
+  const isCancelled = subscription?.status === 'cancelled'
+  const canCancel =
+    !isCancelled &&
+    !cancelScheduledAt &&
+    (subscription?.status === 'trialing' ||
+      subscription?.status === 'active' ||
+      subscription?.status === 'past_due')
+  const cancelLabel =
+    isTrial && !subscription?.paddle_subscription_id
+      ? 'End free trial'
+      : 'Cancel subscription'
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -189,6 +230,27 @@ export default function SubscriptionView() {
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {cancelScheduledAt && !isCancelled && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Your subscription is scheduled to cancel on{' '}
+          <strong>
+            {new Date(cancelScheduledAt).toLocaleDateString('en-US', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </strong>
+          . You will keep access until then and will not be charged again.
+        </div>
+      )}
+
+      {isCancelled && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+          Your subscription has been cancelled. You can resubscribe any time by
+          choosing a plan below.
+        </div>
+      )}
 
       {/* Billing + usage summary */}
       <Card padding="sm">
@@ -395,6 +457,26 @@ export default function SubscriptionView() {
             .
           </p>
         </div>
+
+        {canCancel && (
+          <div className="mt-4 border-t border-gray-100 pt-4">
+            <button
+              type="button"
+              onClick={cancelSubscription}
+              disabled={cancelling}
+              className="text-sm font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
+            >
+              {cancelling ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Loader2 size={14} className="animate-spin" />
+                  Cancelling…
+                </span>
+              ) : (
+                cancelLabel
+              )}
+            </button>
+          </div>
+        )}
       </Card>
 
       {/* Billing cycle */}
