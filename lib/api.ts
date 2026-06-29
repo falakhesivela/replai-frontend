@@ -38,6 +38,7 @@ import type {
   BookingSlotsResponse,
   SubscriptionDetail,
   ToggleFeatureResponse,
+  WhatsAppConnectionStatus,
   WidgetConfig,
 } from './types'
 
@@ -938,6 +939,35 @@ export function connectPaystackSubaccount(
   })
 }
 
+// ── WhatsApp Embedded Signup ──────────────────────────────────────────────────
+
+export function getMyWhatsAppStatus(
+  token: string | TokenGetter
+): Promise<WhatsAppConnectionStatus> {
+  return portalFetch('/portal/me/integrations/whatsapp', token)
+}
+
+/** Complete Embedded Signup: hand the backend the code + ids returned by the
+ * Facebook SDK so it can exchange the token and connect the WABA. */
+export function completeWhatsAppEmbeddedSignup(
+  token: string | TokenGetter,
+  payload: { code: string; waba_id: string; phone_number_id: string }
+): Promise<WhatsAppConnectionStatus> {
+  return portalFetch('/portal/me/integrations/whatsapp/embedded-signup', token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export function disconnectMyWhatsApp(
+  token: string | TokenGetter
+): Promise<WhatsAppConnectionStatus> {
+  return portalFetch('/portal/me/integrations/whatsapp/disconnect', token, {
+    method: 'POST',
+  })
+}
+
 // ── Google Calendar (per-member booking sync) ────────────────────────────────
 
 export function getMyCalendarStatus(
@@ -1608,5 +1638,6 @@ export type {
   BookingSlotsResponse,
   SubscriptionDetail,
   ToggleFeatureResponse,
+  WhatsAppConnectionStatus,
   WidgetConfig,
 } from './types'

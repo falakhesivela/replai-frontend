@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Mail,
   Phone,
@@ -21,6 +22,9 @@ import { useToast } from '@/components/toast'
 import { usePermissions } from '@/hooks/usePermissions'
 import type { Client } from '@/lib/types'
 import { Card, buttonClasses } from '@/components/ui'
+import WhatsAppEmbeddedSignup, {
+  whatsappEmbeddedSignupConfigured,
+} from '@/components/whatsapp-embedded-signup'
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 const inputClass =
@@ -298,6 +302,8 @@ function maskPhoneNumberId(id: string): string {
 
 function WhatsAppSection({ client }: { client: Client }) {
   const [modalOpen, setModalOpen] = useState(false)
+  const { toast } = useToast()
+  const router = useRouter()
   const isConnected = !!client.wa_access_token
 
   return (
@@ -305,19 +311,41 @@ function WhatsAppSection({ client }: { client: Client }) {
       {modalOpen && <UpdateCredentialsModal onClose={() => setModalOpen(false)} />}
 
       <Card>
-        <div className="flex items-start justify-between mb-5">
+        <div className="flex items-start justify-between mb-5 gap-3">
           <div>
             <h3 className="text-sm font-semibold text-gray-900">WhatsApp connection</h3>
             <p className="mt-0.5 text-xs text-gray-500">
               Your connected WhatsApp Business number.
             </p>
           </div>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Update credentials
-          </button>
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            {whatsappEmbeddedSignupConfigured ? (
+              <>
+                <WhatsAppEmbeddedSignup
+                  variant="primary"
+                  label={isConnected ? 'Reconnect WhatsApp' : 'Connect with WhatsApp'}
+                  onConnected={() => {
+                    toast.success('WhatsApp connected.')
+                    router.refresh()
+                  }}
+                  onError={(message) => toast.error(message)}
+                />
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  Enter credentials manually
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Update credentials
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="space-y-4">

@@ -6,6 +6,7 @@ export interface Client {
   wa_phone_number_id: string
   wa_access_token: string
   wa_phone_number: string
+  waba_id?: string | null
   system_prompt: string
   is_active: boolean
   user_id?: string
@@ -268,6 +269,14 @@ export interface CalendarConnectionStatus {
   calendar_id?: string | null
   is_business_default?: boolean
   last_synced_at?: string | null
+}
+
+export interface WhatsAppConnectionStatus {
+  configured: boolean          // backend has Meta Embedded Signup credentials
+  connected: boolean           // this workspace has a connected WhatsApp number
+  phone_number?: string | null
+  phone_number_id?: string | null
+  waba_id?: string | null
 }
 
 export interface Booking {
