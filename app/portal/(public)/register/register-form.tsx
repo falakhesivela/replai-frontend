@@ -26,7 +26,7 @@ export function RegisterForm({
   const intendedCycle = cycle === 'annual' ? 'annual' : 'monthly'
   const postSignup = intendedPlan
     ? `/portal/subscription?plan=${intendedPlan}&cycle=${intendedCycle}`
-    : '/portal'
+    : '/portal/onboarding'
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -59,32 +59,43 @@ export function RegisterForm({
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
-      <h1 className="text-2xl font-bold text-gray-900">Start your free trial</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        14 days free. No card required to start.
-      </p>
+    <div className="flex min-h-screen flex-col justify-center bg-canvas px-6 py-12">
+      <div className="mx-auto w-full max-w-md">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/replai_logo.png"
+          alt="Replai"
+          className="mx-auto mb-8 h-8 w-auto object-contain"
+        />
 
-      {error && (
-        <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
-          {error}
-        </p>
-      )}
+        <div className="rounded-xl border border-line bg-surface p-6 shadow-card sm:p-8">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">
+            Start your free trial
+          </h1>
+          <p className="mt-1 text-sm text-ink-2">
+            14 days free. No card required to start.
+          </p>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {error && (
+            <p className="mt-4 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
+              {error}
+            </p>
+          )}
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-ink-2">
             Business name
           </label>
           <input
             name="business_name"
             required
             autoComplete="organization"
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+            className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink shadow-xs transition-shadow focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-ink-2">
             Work email
           </label>
           <input
@@ -92,11 +103,11 @@ export function RegisterForm({
             type="email"
             required
             autoComplete="email"
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+            className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink shadow-xs transition-shadow focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-ink-2">
             Password
           </label>
           <input
@@ -105,26 +116,26 @@ export function RegisterForm({
             required
             minLength={8}
             autoComplete="new-password"
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+            className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink shadow-xs transition-shadow focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           />
-          <p className="mt-1 text-xs text-gray-400">At least 8 characters.</p>
+          <p className="mt-1 text-xs text-ink-3">At least 8 characters.</p>
         </div>
 
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-md bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+          className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-on-solid shadow-sm shadow-accent/25 transition-all hover:bg-accent-hover hover:shadow-md hover:shadow-accent/25 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {pending ? 'Creating your workspace…' : 'Create account'}
         </button>
 
-        <p className="text-center text-xs text-gray-400 leading-relaxed">
+        <p className="text-center text-xs text-ink-3 leading-relaxed">
           By creating an account you agree to our{' '}
           <a
             href={LEGAL_LINKS[0].href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-600 underline underline-offset-2 hover:text-gray-900"
+            className="text-ink-2 underline underline-offset-2 hover:text-ink"
           >
             Terms
           </a>{' '}
@@ -133,22 +144,27 @@ export function RegisterForm({
             href={LEGAL_LINKS[1].href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-600 underline underline-offset-2 hover:text-gray-900"
+            className="text-ink-2 underline underline-offset-2 hover:text-ink"
           >
             Privacy Policy
           </a>
           .
         </p>
-      </form>
+          </form>
+        </div>
 
-      <p className="mt-6 text-center text-sm text-gray-500">
-        Already have an account?{' '}
-        <Link href="/portal/login" className="font-medium text-gray-900 underline">
-          Log in
-        </Link>
-      </p>
+        <p className="mt-6 text-center text-sm text-ink-2">
+          Already have an account?{' '}
+          <Link
+            href="/portal/login"
+            className="font-medium text-accent transition-colors hover:text-accent-text"
+          >
+            Log in
+          </Link>
+        </p>
 
-      <PortalLegalFooter className="mt-8" />
+        <PortalLegalFooter className="mt-8" />
+      </div>
     </div>
   )
 }

@@ -75,9 +75,9 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-canvas">
       {/* Left branded panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between px-12 py-12">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between px-12 py-12 m-4 rounded-3xl shadow-overlay">
         <Image
           src="/images/woman_agent.jpg"
           alt=""
@@ -86,7 +86,7 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
           priority
         />
         {/* Dark gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-brand/90 via-brand/40 to-brand/60" />
+        <div className="absolute inset-0 bg-linear-to-t from-accent/90 via-accent/40 to-accent/60" />
 
         <div className="relative z-10 w-full">
           <Image
@@ -100,19 +100,19 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
         </div>
 
         <div className="relative z-10 text-left">
-          <h2 className="text-3xl font-bold text-white leading-snug">
+          <h2 className="text-3xl font-bold text-on-solid leading-snug">
             Your AI-powered<br />customer assistant
           </h2>
-          <p className="mt-3 text-blue-100 text-sm max-w-xs">
+          <p className="mt-3 text-on-solid/80 text-sm max-w-xs">
             Automate conversations, manage bookings, sell products, and delight your customers — 24/7.
           </p>
         </div>
 
-        <p className="relative z-10 text-white/40 text-xs">© {new Date().getFullYear()} ReplAI</p>
+        <p className="relative z-10 text-on-solid/40 text-xs">© {new Date().getFullYear()} ReplAI</p>
       </div>
 
       {/* Right form panel */}
-      <div className="flex-1 flex items-center justify-center bg-gray-50 px-6 py-12">
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="flex justify-center mb-8 lg:hidden">
@@ -121,19 +121,19 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
               alt="Replai"
               width={110}
               height={33}
-              className="object-contain"
+              className="object-contain dark:brightness-0 dark:invert"
               priority
             />
           </div>
 
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-            <p className="mt-1 text-sm text-gray-500">Sign in to your client portal</p>
+            <h1 className="text-2xl font-bold text-ink">Welcome back</h1>
+            <p className="mt-1 text-sm text-ink-2">Sign in to your client portal</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-ink-2 mb-1">
                 Email
               </label>
               <input
@@ -142,19 +142,19 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
                 type="email"
                 required
                 autoComplete="email"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent bg-white"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink shadow-xs placeholder:text-ink-3 transition-shadow focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
                 placeholder="you@example.com"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-ink-2">
                   Password
                 </label>
                 <Link
                   href="/portal/forgot-password"
-                  className="text-xs text-accent hover:text-brand transition-colors"
+                  className="text-xs text-accent-text hover:text-accent transition-colors"
                 >
                   Forgot password?
                 </Link>
@@ -165,19 +165,19 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
                 type="password"
                 required
                 autoComplete="current-password"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent bg-white"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink shadow-xs placeholder:text-ink-3 transition-shadow focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
                 placeholder="••••••••"
               />
             </div>
 
             {successMessage && (
-              <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <p className="text-sm text-success bg-success-soft border border-success/25 rounded-lg px-3 py-2">
                 {successMessage}
               </p>
             )}
 
             {message && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <p className="text-sm text-danger bg-danger-soft border border-danger/25 rounded-lg px-3 py-2">
                 {message}
               </p>
             )}
@@ -185,15 +185,15 @@ export function PortalLoginForm({ accountError, nextPath, passwordReset }: Porta
             <button
               type="submit"
               disabled={pending}
-              className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-accent-fg shadow-sm shadow-accent/25 transition-all hover:bg-accent-hover hover:shadow-md hover:shadow-accent/25 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-canvas active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {pending ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
 
-          <p className="mt-8 text-center text-xs text-gray-400">
+          <p className="mt-8 text-center text-xs text-ink-3">
             Need an account?{' '}
-            <span className="text-gray-500">Contact us.</span>
+            <span className="text-ink-2">Contact us.</span>
           </p>
 
           <PortalLegalFooter className="mt-6" />

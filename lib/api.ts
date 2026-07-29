@@ -22,9 +22,12 @@ import type {
   ConversationNote,
   KnowledgeFile,
   Lead,
+  ManualOrderInput,
   Message,
   Order,
+  OrderEvent,
   OrderStatus,
+  OrderUpdateInput,
   PortalCollaborationContext,
   PortalNotification,
   PortalTeamDirectory,
@@ -39,6 +42,7 @@ import type {
   SubscriptionDetail,
   ToggleFeatureResponse,
   WhatsAppConnectionStatus,
+  WhatsAppCatalogStatus,
   WidgetConfig,
 } from './types'
 
@@ -948,10 +952,18 @@ export function getMyWhatsAppStatus(
 }
 
 /** Complete Embedded Signup: hand the backend the code + ids returned by the
- * Facebook SDK so it can exchange the token and connect the WABA. */
+ * Facebook SDK so it can exchange the token and connect the WABA.
+ * ``phone_number_id`` may be omitted for coexistence finishes (backend
+ * resolves it from the WABA). ``coexistence`` skips phone registration and
+ * kicks off Meta's required SMB sync. */
 export function completeWhatsAppEmbeddedSignup(
   token: string | TokenGetter,
-  payload: { code: string; waba_id: string; phone_number_id: string }
+  payload: {
+    code: string
+    waba_id: string
+    phone_number_id?: string
+    coexistence?: boolean
+  }
 ): Promise<WhatsAppConnectionStatus> {
   return portalFetch('/portal/me/integrations/whatsapp/embedded-signup', token, {
     method: 'POST',
@@ -964,6 +976,62 @@ export function disconnectMyWhatsApp(
   token: string | TokenGetter
 ): Promise<WhatsAppConnectionStatus> {
   return portalFetch('/portal/me/integrations/whatsapp/disconnect', token, {
+    method: 'POST',
+  })
+}
+
+// ── WhatsApp Catalog (Meta commerce catalog, push-synced from products) ──────
+
+export function getMyWhatsAppCatalogStatus(
+  token: string | TokenGetter
+): Promise<WhatsAppCatalogStatus> {
+  return portalFetch('/portal/me/integrations/whatsapp-catalog', token)
+}
+
+export function connectWhatsAppCatalog(
+  token: string | TokenGetter,
+  catalogId: string,
+  /** Authorization code from the catalog-only consent popup, when it ran. */
+  code?: string
+): Promise<WhatsAppCatalogStatus> {
+  return portalFetch('/portal/me/integrations/whatsapp-catalog/connect', token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ catalog_id: catalogId, ...(code ? { code } : {}) }),
+  })
+}
+
+export function autoCreateWhatsAppCatalog(
+  token: string | TokenGetter
+): Promise<WhatsAppCatalogStatus> {
+  return portalFetch('/portal/me/integrations/whatsapp-catalog/auto-create', token, {
+    method: 'POST',
+  })
+}
+
+export function toggleWhatsAppCatalog(
+  token: string | TokenGetter,
+  enabled: boolean
+): Promise<WhatsAppCatalogStatus> {
+  return portalFetch('/portal/me/integrations/whatsapp-catalog/toggle', token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  })
+}
+
+export function syncWhatsAppCatalogNow(
+  token: string | TokenGetter
+): Promise<WhatsAppCatalogStatus & { sync_result: Record<string, number> }> {
+  return portalFetch('/portal/me/integrations/whatsapp-catalog/sync', token, {
+    method: 'POST',
+  })
+}
+
+export function disconnectWhatsAppCatalog(
+  token: string | TokenGetter
+): Promise<WhatsAppCatalogStatus> {
+  return portalFetch('/portal/me/integrations/whatsapp-catalog/disconnect', token, {
     method: 'POST',
   })
 }
@@ -1123,6 +1191,29 @@ export function getMyOrdersByPhone(
   )
 }
 
+export function createMyOrder(
+  token: string | TokenGetter,
+  input: ManualOrderInput
+): Promise<Order> {
+  return portalFetch(`/portal/me/ecommerce/orders`, token, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateMyOrder(
+  token: string | TokenGetter,
+  orderId: string,
+  patch: OrderUpdateInput
+): Promise<Order> {
+  return portalFetch(`/portal/me/ecommerce/orders/${encodeURIComponent(orderId)}`, token, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  })
+}
+
 export function updateMyOrderStatus(
   token: string | TokenGetter,
   orderId: string,
@@ -1156,6 +1247,37 @@ export function syncMyOrderPayment(
     token,
     { method: 'POST' }
   )
+}
+
+export function getMyOrderEvents(
+  token: string | TokenGetter,
+  orderId: string
+): Promise<OrderEvent[]> {
+  return portalFetch(
+    `/portal/me/ecommerce/orders/${encodeURIComponent(orderId)}/events`,
+    token
+  )
+}
+
+export async function uploadMyProductImage(
+  tokenOrGetter: string | TokenGetter,
+  file: File
+): Promise<{ url: string }> {
+  const token =
+    typeof tokenOrGetter === 'function' ? await tokenOrGetter() : tokenOrGetter
+  if (!token) throw new PortalAuthError(401, 'Not authenticated')
+  const form = new FormData()
+  form.append('file', file, file.name)
+  const res = await fetch(`${API_URL}/portal/me/ecommerce/products/image`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  })
+  if (res.status === 401 || res.status === 403) {
+    throw new PortalAuthError(res.status, await res.text())
+  }
+  if (!res.ok) throw new Error(`Upload failed (${res.status}): ${await res.text()}`)
+  return res.json() as Promise<{ url: string }>
 }
 
 // ── Conversation department routing ───────────────────────────────────────────
@@ -1234,8 +1356,61 @@ export function setDepartmentMembers(
   })
 }
 
-export async function getSlaCsatMetrics(token: string): Promise<import('./types').SlaCsatMetrics> {
-  return portalFetch('/portal/me/metrics/sla-csat', token)
+export async function getSlaCsatMetrics(
+  token: string,
+  range?: { start: string; end: string }
+): Promise<import('./types').SlaCsatMetrics> {
+  const qs = range ? `?start=${range.start}&end=${range.end}` : ''
+  return portalFetch(`/portal/me/metrics/sla-csat${qs}`, token)
+}
+
+export async function getAnalyticsOverview(
+  token: string,
+  range: { start: string; end: string }
+): Promise<import('./types').AnalyticsOverview> {
+  return portalFetch(
+    `/portal/me/metrics/overview?start=${range.start}&end=${range.end}`,
+    token
+  )
+}
+
+export async function getSentimentMetrics(
+  token: string,
+  range: { start: string; end: string }
+): Promise<import('./types').SentimentMetrics> {
+  return portalFetch(
+    `/portal/me/metrics/sentiment?start=${range.start}&end=${range.end}`,
+    token
+  )
+}
+
+export async function getUsageMetrics(
+  token: string
+): Promise<import('./types').UsageMetrics> {
+  return portalFetch('/portal/me/metrics/usage', token)
+}
+
+// ── Onboarding ────────────────────────────────────────────────────────────────
+
+export function getMyOnboarding(
+  token: string | TokenGetter
+): Promise<import('./types').OnboardingStatus> {
+  return portalFetch('/portal/me/onboarding', token)
+}
+
+export function patchMyOnboarding(
+  token: string | TokenGetter,
+  body: {
+    skips?: Record<string, boolean>
+    power_ups_done?: boolean
+    complete?: boolean
+  }
+): Promise<import('./types').OnboardingStatus> {
+  return portalFetch('/portal/me/onboarding', token, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
 }
 
 // ── Chatbot widget (authenticated — dashboard settings) ───────────────────────
@@ -1306,6 +1481,22 @@ export interface WidgetAttachment {
   mime_type: string
 }
 
+export interface WidgetHistoryMessage {
+  role: 'user' | 'assistant'
+  content: string
+  attachments?: WidgetAttachment[]
+  created_at?: string | null
+}
+
+export function getWidgetHistory(
+  widgetId: string,
+  conversationId: string
+): Promise<{ messages: WidgetHistoryMessage[] }> {
+  return publicFetch(
+    `/public/widget/${encodeURIComponent(widgetId)}/conversations/${encodeURIComponent(conversationId)}/messages`
+  )
+}
+
 export interface WidgetQuickReply {
   label: string
   id?: string | null
@@ -1355,6 +1546,10 @@ export interface WidgetProductGridItem {
   currency: string
   image_url?: string | null
   in_stock: boolean
+  description?: string | null
+  category?: string | null
+  /** Set only when stock is low — honest scarcity hint. */
+  stock_left?: number | null
 }
 
 export type WidgetComponent =
@@ -1639,5 +1834,6 @@ export type {
   SubscriptionDetail,
   ToggleFeatureResponse,
   WhatsAppConnectionStatus,
+  WhatsAppCatalogStatus,
   WidgetConfig,
 } from './types'

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
+  BarChart3,
   LayoutDashboard,
   Bot,
   BookOpen,
@@ -29,6 +30,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { featureForHref } from '@/lib/entitlements'
 import PortalNotificationsBell from './portal-notifications-bell'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 // ── Nav structure ─────────────────────────────────────────────────────────────
 
@@ -37,6 +39,7 @@ const NAV_GROUPS = [
     label: null,
     items: [
       { href: '/portal/overview', label: 'Overview', icon: LayoutDashboard },
+      { href: '/portal/analytics', label: 'Analytics', icon: BarChart3 },
     ],
   },
   {
@@ -62,7 +65,7 @@ const NAV_GROUPS = [
     label: 'Operations',
     items: [
       { href: '/portal/bookings', label: 'Bookings', icon: Calendar },
-      { href: '/portal/setup', label: 'Services', icon: Sliders },
+      { href: '/portal/setup', label: 'Booking Setup', icon: Sliders },
       { href: '/portal/ecommerce/products', label: 'Products', icon: Package },
       { href: '/portal/ecommerce/orders', label: 'Orders', icon: ShoppingBag },
     ],
@@ -156,26 +159,26 @@ export default function PortalSidebar({
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-gray-200 bg-white transition-all duration-200
+      className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-line bg-surface shadow-overlay transition-all duration-200 md:shadow-none
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0
         ${collapsed ? 'md:w-14' : 'md:w-60'}
         w-60`}
     >
       {/* Header */}
-      <div className={`flex h-14 items-center border-b border-gray-100 ${collapsed ? '' : 'px-3 gap-2'}`}>
+      <div className={`flex h-14 items-center border-b border-line ${collapsed ? '' : 'px-3 gap-2'}`}>
         {collapsed ? (
           <button
             type="button"
             onClick={() => onCollapsedChange(false)}
-            className="hidden md:flex w-full h-full items-center justify-center hover:bg-gray-50 transition-colors"
+            className="hidden md:flex w-full h-full items-center justify-center hover:bg-surface-2 transition-colors"
             aria-label="Expand sidebar"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/images/replai_R.png"
               alt="Replai"
-              className="w-7 h-7 object-contain"
+              className="w-7 h-7 object-contain dark:brightness-0 dark:invert"
             />
           </button>
         ) : (
@@ -185,18 +188,13 @@ export default function PortalSidebar({
               <img
                 src="/images/replai_logo.png"
                 alt="Replai"
-                className="h-8 w-auto object-contain object-left"
+                className="h-8 w-auto object-contain object-left dark:brightness-0 dark:invert"
               />
-              {businessName && (
-                <span className="truncate text-[10px] text-gray-400 leading-tight mt-0.5">
-                  {businessName}
-                </span>
-              )}
             </div>
             <button
               type="button"
               onClick={() => onCollapsedChange(true)}
-              className="hidden md:flex shrink-0 rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+              className="hidden md:flex shrink-0 rounded-md p-1.5 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
               aria-label="Collapse sidebar"
             >
               <ChevronLeft size={15} strokeWidth={1.75} />
@@ -206,7 +204,7 @@ export default function PortalSidebar({
         <button
           type="button"
           onClick={onMobileClose}
-          className="md:hidden shrink-0 rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+          className="md:hidden shrink-0 rounded-md p-1.5 text-ink-3 hover:bg-surface-2 hover:text-ink transition-colors"
           aria-label="Close menu"
         >
           <X size={15} strokeWidth={1.75} />
@@ -229,22 +227,22 @@ export default function PortalSidebar({
                 <button
                   type="button"
                   onClick={() => toggleGroup(group.label!)}
-                  className="flex w-full items-center justify-between px-3 py-1 rounded-md hover:bg-gray-50 transition-colors group"
+                  className="flex w-full items-center justify-between px-3 py-1 rounded-md hover:bg-surface-2 transition-colors group"
                 >
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 group-hover:text-gray-500 transition-colors">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 group-hover:text-ink-2 transition-colors">
                     {group.label}
                   </span>
                   <ChevronDown
                     size={11}
                     strokeWidth={2}
-                    className={`text-gray-300 transition-transform duration-150 ${groupCollapsed ? '-rotate-90' : ''}`}
+                    className={`text-ink-3 transition-transform duration-150 ${groupCollapsed ? '-rotate-90' : ''}`}
                   />
                 </button>
               )}
 
               {/* Divider when sidebar is icon-only */}
               {group.label && collapsed && gi > 0 && (
-                <div className="mx-auto mb-1 w-6 border-t border-gray-100" />
+                <div className="mx-auto mb-1 w-6 border-t border-line" />
               )}
 
               {/* Items — hidden when group is collapsed (unless sidebar is icon-only) */}
@@ -263,7 +261,7 @@ export default function PortalSidebar({
                           href={`/portal/subscription?feature=${featureForHref(href) ?? ''}`}
                           title={collapsed ? `${label} — upgrade to unlock` : undefined}
                           onClick={onMobileClose}
-                          className={`group flex items-center rounded-md px-2 py-1.5 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 ${
+                          className={`group flex items-center rounded-lg px-2 py-1.5 text-sm font-medium text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink-2 ${
                             collapsed ? 'md:justify-center' : 'gap-3 px-3'
                           }`}
                         >
@@ -272,7 +270,7 @@ export default function PortalSidebar({
                           <Lock
                             size={12}
                             strokeWidth={2}
-                            className={`shrink-0 text-gray-300 group-hover:text-gray-400 ${collapsed ? 'md:hidden' : ''}`}
+                            className={`shrink-0 text-ink-3/70 group-hover:text-ink-3 ${collapsed ? 'md:hidden' : ''}`}
                           />
                         </Link>
                       )
@@ -284,15 +282,19 @@ export default function PortalSidebar({
                         href={href}
                         title={collapsed ? label : undefined}
                         onClick={onMobileClose}
-                        className={`flex items-center rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
+                        className={`relative flex items-center rounded-lg px-2 py-1.5 text-sm font-medium transition-colors ${
                           collapsed ? 'md:justify-center' : 'gap-3 px-3'
                         } ${
                           active
-                            ? 'bg-brand-soft text-brand'
-                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                            ? 'bg-accent-soft text-accent-text before:absolute before:left-0 before:top-1/2 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-accent'
+                            : 'text-ink-2 hover:bg-surface-2 hover:text-ink'
                         }`}
                       >
-                        <Icon size={16} strokeWidth={1.75} className="shrink-0" />
+                        <Icon
+                          size={16}
+                          strokeWidth={active ? 2 : 1.75}
+                          className="shrink-0"
+                        />
                         <span className={collapsed ? 'md:hidden' : ''}>{label}</span>
                       </Link>
                     )
@@ -310,22 +312,32 @@ export default function PortalSidebar({
       </nav>
 
       {/* User footer */}
-      <div className="border-t border-gray-100 px-2 py-3">
+      <div className="border-t border-line px-2 py-3">
         {!collapsed && (
-          <div className="flex items-center justify-between gap-2 px-1 mb-2">
-            <p className="truncate text-xs text-gray-400 flex-1">{email}</p>
+          <div className="flex items-center gap-2.5 px-1 mb-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-accent to-accent-hover text-[11px] font-semibold text-on-solid">
+              {(businessName || email).charAt(0).toUpperCase()}
+            </span>
+            <div className="min-w-0 flex-1">
+              {businessName && (
+                <p className="truncate text-xs font-medium text-ink leading-tight">{businessName}</p>
+              )}
+              <p className="truncate text-[11px] text-ink-3 leading-tight">{email}</p>
+            </div>
             {teamMemberId ? <PortalNotificationsBell teamMemberId={teamMemberId} /> : null}
+            <ThemeToggle />
           </div>
         )}
-        {collapsed && teamMemberId && (
-          <div className="flex justify-center mb-2">
-            <PortalNotificationsBell teamMemberId={teamMemberId} />
+        {collapsed && (
+          <div className="flex flex-col items-center gap-1 mb-2">
+            {teamMemberId && <PortalNotificationsBell teamMemberId={teamMemberId} />}
+            <ThemeToggle />
           </div>
         )}
         <button
           onClick={handleSignOut}
           title={collapsed ? 'Sign out' : undefined}
-          className={`flex w-full items-center rounded-md px-2 py-1.5 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
+          className={`flex w-full items-center rounded-lg px-2 py-1.5 text-sm text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors ${
             collapsed ? 'md:justify-center' : 'gap-2'
           }`}
         >

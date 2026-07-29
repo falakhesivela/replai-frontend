@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { CheckCircle, Info, X, XCircle } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -89,18 +90,18 @@ export function useToast(): ToastContextValue {
 
 const STYLES: Record<
   ToastType,
-  { container: string; icon: React.ReactNode }
+  { iconCls: string; icon: React.ReactNode }
 > = {
   success: {
-    container: 'bg-green-600 text-white',
+    iconCls: 'text-success',
     icon: <CheckCircle size={16} strokeWidth={2} aria-hidden />,
   },
   error: {
-    container: 'bg-red-600 text-white',
+    iconCls: 'text-danger',
     icon: <XCircle size={16} strokeWidth={2} aria-hidden />,
   },
   info: {
-    container: 'bg-blue-600 text-white',
+    iconCls: 'text-info',
     icon: <Info size={16} strokeWidth={2} aria-hidden />,
   },
 }
@@ -114,20 +115,20 @@ function ToastItem({
   toast: ToastItem
   onDismiss: (id: number) => void
 }) {
-  const { container, icon } = STYLES[toast.type]
+  const { iconCls, icon } = STYLES[toast.type]
 
   return (
     <div
       role="alert"
       aria-live="assertive"
-      className={`flex items-start gap-3 rounded-lg px-4 py-3 shadow-lg ${container} w-80 max-w-full`}
+      className="flex w-80 max-w-full items-start gap-3 rounded-lg border border-line bg-overlay px-4 py-3 text-ink shadow-overlay"
     >
-      <span className="mt-px shrink-0">{icon}</span>
+      <span className={`mt-px shrink-0 ${iconCls}`}>{icon}</span>
       <p className="flex-1 text-sm leading-snug">{toast.message}</p>
       <button
         onClick={() => onDismiss(toast.id)}
         aria-label="Dismiss notification"
-        className="shrink-0 rounded p-0.5 opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white/50 transition-opacity"
+        className="shrink-0 rounded p-0.5 text-ink-3 transition-colors hover:text-ink focus:outline-none focus:ring-2 focus:ring-accent/40"
       >
         <X size={14} strokeWidth={2} />
       </button>
@@ -144,16 +145,17 @@ function ToastContainer({
   toasts: ToastItem[]
   onDismiss: (id: number) => void
 }) {
-  if (toasts.length === 0) return null
+  if (toasts.length === 0 || typeof document === 'undefined') return null
 
-  return (
+  return createPortal(
     <div
       aria-label="Notifications"
-      className="fixed bottom-5 right-5 z-50 flex flex-col gap-2"
+      className="fixed bottom-5 right-5 z-60 flex flex-col gap-2"
     >
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
       ))}
-    </div>
+    </div>,
+    document.body
   )
 }

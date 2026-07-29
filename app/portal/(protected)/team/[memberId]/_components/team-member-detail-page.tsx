@@ -38,8 +38,8 @@ function initials(name: string): string {
 
 function roleBadgeClasses(role: PortalTeamRow['role']): string {
   if (role === 'owner') return 'bg-violet-100 text-violet-800 ring-violet-600/15'
-  if (role === 'manager') return 'bg-blue-100 text-blue-800 ring-blue-600/15'
-  return 'bg-gray-100 text-gray-700 ring-gray-500/15'
+  if (role === 'manager') return 'bg-info-soft text-info ring-info/25'
+  return 'bg-surface-2 text-ink-2 ring-line'
 }
 
 function formatTime(time: string): string {
@@ -58,10 +58,10 @@ function formatDate(dateStr: string): string {
 
 const BOOKING_STATUS_STYLES: Record<Booking['status'], string> = {
   reserved: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
-  confirmed: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-  cancelled: 'bg-red-50 text-red-600 ring-1 ring-red-200',
-  completed: 'bg-gray-100 text-gray-500',
-  no_show: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+  confirmed: 'bg-success-soft text-success ring-1 ring-success/25',
+  cancelled: 'bg-danger-soft text-danger ring-1 ring-danger/25',
+  completed: 'bg-surface-2 text-ink-2',
+  no_show: 'bg-warning-soft text-warning ring-1 ring-warning/25',
 }
 
 const BOOKING_STATUS_LABELS: Record<Booking['status'], string> = {
@@ -127,7 +127,7 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 size={20} className="animate-spin text-gray-400" />
+        <Loader2 size={20} className="animate-spin text-ink-3" />
       </div>
     )
   }
@@ -135,10 +135,10 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
   if (error || !member) {
     return (
       <div className="mx-auto max-w-3xl space-y-4">
-        <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors">
+        <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-ink-2 hover:text-ink transition-colors">
           <ArrowLeft size={14} /> Back
         </button>
-        <p className="text-sm text-red-600">{error ?? 'Member not found.'}</p>
+        <p className="text-sm text-danger">{error ?? 'Member not found.'}</p>
       </div>
     )
   }
@@ -153,7 +153,7 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
       {/* Back */}
       <button
         onClick={() => router.push('/portal/team')}
-        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+        className="flex items-center gap-1.5 text-sm text-ink-2 hover:text-ink transition-colors"
       >
         <ArrowLeft size={14} strokeWidth={1.75} /> Team
       </button>
@@ -167,35 +167,35 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
           <Card>
             <div className="flex items-start gap-4">
               <div
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white shadow-sm"
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-bold text-on-solid shadow-sm"
                 style={{ backgroundColor: color }}
               >
                 {initials(member.name || member.email)}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-xl font-semibold text-gray-900">{member.name || '—'}</h1>
+                  <h1 className="text-2xl font-semibold tracking-tight text-ink">{member.name || '—'}</h1>
                   {member.is_self && (
-                    <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                    <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-on-solid">
                       You
                     </span>
                   )}
                 </div>
-                <span className={`mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${member.custom_role ? 'bg-brand-soft text-brand ring-brand/15' : roleBadgeClasses(member.role)}`}>
+                <span className={`mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${member.custom_role ? 'bg-accent-soft text-accent-text ring-accent/15' : roleBadgeClasses(member.role)}`}>
                   {member.custom_role?.name ?? (member.role.charAt(0).toUpperCase() + member.role.slice(1))}
                 </span>
-                <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+                <div className="mt-2 flex items-center gap-2 text-sm text-ink-2">
                   <Mail size={13} strokeWidth={1.75} className="shrink-0" />
                   <span className="truncate">{member.email}</span>
                 </div>
                 <div className="mt-1 flex items-center gap-2 text-sm">
                   {member.is_active ? (
-                    <span className="flex items-center gap-1.5 text-green-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-green-500" /> Active
+                    <span className="flex items-center gap-1.5 text-success">
+                      <span className="h-1.5 w-1.5 rounded-full bg-success" /> Active
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1.5 text-gray-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-gray-300" /> Inactive
+                    <span className="flex items-center gap-1.5 text-ink-3">
+                      <span className="h-1.5 w-1.5 rounded-full bg-line-strong" /> Inactive
                     </span>
                   )}
                 </div>
@@ -203,15 +203,15 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
             </div>
 
             {/* Stats */}
-            <div className="mt-5 grid grid-cols-3 gap-3 border-t border-gray-100 pt-5">
+            <div className="mt-5 grid grid-cols-3 gap-3 border-t border-line pt-5">
               {[
                 { label: 'Conversations', value: member.conversation_count },
                 { label: 'Bookings', value: assignedBookings.length },
                 { label: 'Upcoming', value: upcoming.length },
               ].map(({ label, value }) => (
                 <div key={label} className="text-center">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
-                  <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-3">{label}</p>
+                  <p className="mt-1 text-2xl font-semibold text-ink">{value}</p>
                 </div>
               ))}
             </div>
@@ -222,10 +222,10 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
             <Card padding="sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Bookmark size={16} strokeWidth={1.75} className="text-gray-400" />
+                  <Bookmark size={16} strokeWidth={1.75} className="text-ink-3" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Bookable</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-sm font-medium text-ink">Bookable</p>
+                    <p className="text-xs text-ink-2">
                       Bookings can be assigned to this member.
                     </p>
                   </div>
@@ -238,15 +238,15 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
                     aria-label={member.is_bookable ? 'Disable bookable' : 'Enable bookable'}
                   >
                     {togglingBookable ? (
-                      <Loader2 size={24} className="animate-spin text-gray-400" />
+                      <Loader2 size={24} className="animate-spin text-ink-3" />
                     ) : member.is_bookable ? (
-                      <ToggleRight size={28} className="text-gray-900" />
+                      <ToggleRight size={28} className="text-ink" />
                     ) : (
-                      <ToggleLeft size={28} className="text-gray-300" />
+                      <ToggleLeft size={28} className="text-ink-3" />
                     )}
                   </button>
                 ) : (
-                  <span className={`text-xs font-medium ${member.is_bookable ? 'text-green-700' : 'text-gray-400'}`}>
+                  <span className={`text-xs font-medium ${member.is_bookable ? 'text-success' : 'text-ink-3'}`}>
                     {member.is_bookable ? 'Enabled' : 'Disabled'}
                   </span>
                 )}
@@ -257,35 +257,35 @@ export function TeamMemberDetailPage({ memberId }: { memberId: string }) {
 
         {/* Right column: assigned bookings */}
         <div className="lg:col-span-2 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Assigned bookings</h2>
+          <h2 className="text-sm font-semibold text-ink-2">Assigned bookings</h2>
           {assignedBookings.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-gray-200 py-16 text-center">
-              <Calendar size={24} className="mx-auto mb-2 text-gray-200" />
-              <p className="text-sm text-gray-400">No bookings assigned yet.</p>
+            <div className="rounded-lg border border-dashed border-line py-16 text-center">
+              <Calendar size={24} className="mx-auto mb-2 text-ink-3/50" />
+              <p className="text-sm text-ink-3">No bookings assigned yet.</p>
             </div>
           ) : (
-            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+            <div className="rounded-xl border border-line bg-surface shadow-card overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Customer</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 hidden sm:table-cell">Service</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Status</th>
+                  <tr className="border-b border-line bg-surface-2">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-ink-3">Time</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-ink-3">Customer</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-ink-3 hidden sm:table-cell">Service</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-ink-3">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-line">
                   {assignedBookings
                     .sort((a, b) => a.booking_date.localeCompare(b.booking_date) || a.booking_time.localeCompare(b.booking_time))
                     .map((b) => (
-                      <tr key={b.id} className="hover:bg-gray-50/50 transition-colors">
+                      <tr key={b.id} className="hover:bg-surface-2/50 transition-colors">
                         <td className="px-4 py-3">
-                          <div className="text-sm font-medium text-gray-900">{formatTime(b.booking_time)}</div>
-                          <div className="text-xs text-gray-400">{formatDate(b.booking_date)}</div>
+                          <div className="text-sm font-medium text-ink">{formatTime(b.booking_time)}</div>
+                          <div className="text-xs text-ink-3">{formatDate(b.booking_date)}</div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{b.customer_name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">
-                          {b.services?.name ?? <span className="italic text-gray-300">Unknown</span>}
+                        <td className="px-4 py-3 text-sm text-ink-2">{b.customer_name}</td>
+                        <td className="px-4 py-3 text-sm text-ink-2 hidden sm:table-cell">
+                          {b.services?.name ?? <span className="italic text-ink-3">Unknown</span>}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${BOOKING_STATUS_STYLES[b.status]}`}>

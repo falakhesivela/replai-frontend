@@ -35,10 +35,10 @@ function formatDateTime(iso: string | null): string {
 
 function RecipientStatusIcon({ status }: { status: BroadcastRecipient['status'] }) {
   if (status === 'sent')
-    return <CheckCircle size={14} strokeWidth={1.75} className="text-green-500 shrink-0" />
+    return <CheckCircle size={14} strokeWidth={1.75} className="text-success shrink-0" />
   if (status === 'failed')
-    return <XCircle size={14} strokeWidth={1.75} className="text-red-400 shrink-0" />
-  return <Clock size={14} strokeWidth={1.75} className="text-amber-400 shrink-0" />
+    return <XCircle size={14} strokeWidth={1.75} className="text-danger shrink-0" />
+  return <Clock size={14} strokeWidth={1.75} className="text-warning shrink-0" />
 }
 
 // ── CSV export ────────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ export default function BroadcastDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 size={24} strokeWidth={1.5} className="animate-spin text-gray-300" />
+        <Loader2 size={24} strokeWidth={1.5} className="animate-spin text-ink-3" />
       </div>
     )
   }
@@ -123,11 +123,11 @@ export default function BroadcastDetailPage() {
   if (!broadcast) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3">
-        <p className="text-sm text-gray-500">Broadcast not found</p>
+        <p className="text-sm text-ink-2">Broadcast not found</p>
         <button
           type="button"
           onClick={() => router.push('/portal/broadcasts')}
-          className="text-xs text-gray-400 hover:text-gray-600 underline"
+          className="text-xs text-ink-3 hover:text-ink-2 underline"
         >
           Back to broadcasts
         </button>
@@ -152,7 +152,7 @@ export default function BroadcastDetailPage() {
       <button
         type="button"
         onClick={() => router.push('/portal/broadcasts')}
-        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-6"
+        className="flex items-center gap-1.5 text-sm text-ink-2 hover:text-ink transition-colors mb-6"
       >
         <ArrowLeft size={15} />
         Broadcasts
@@ -161,8 +161,8 @@ export default function BroadcastDetailPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">{broadcast.name}</h1>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">{broadcast.name}</h1>
+          <p className="text-xs text-ink-3 mt-0.5">
             {broadcast.sent_at
               ? `Sent ${formatDateTime(broadcast.sent_at)}`
               : broadcast.scheduled_at
@@ -174,7 +174,7 @@ export default function BroadcastDetailPage() {
           <button
             type="button"
             onClick={() => exportCsv(broadcast)}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-sm text-ink-2 hover:bg-surface-2 transition-colors"
           >
             <Download size={14} strokeWidth={1.75} />
             Export CSV
@@ -185,12 +185,12 @@ export default function BroadcastDetailPage() {
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[
-          { label: 'Sent', value: sent, color: 'text-green-600' },
-          { label: 'Failed', value: failed, color: 'text-red-500' },
-          { label: 'Pending', value: pending, color: 'text-amber-500' },
+          { label: 'Sent', value: sent, color: 'text-success' },
+          { label: 'Failed', value: failed, color: 'text-danger' },
+          { label: 'Pending', value: pending, color: 'text-warning' },
         ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-lg border border-gray-100 bg-white px-5 py-4">
-            <p className="text-xs text-gray-400 mb-1">{label}</p>
+          <div key={label} className="rounded-lg border border-line bg-surface px-5 py-4">
+            <p className="text-xs text-ink-3 mb-1">{label}</p>
             <p className={`text-2xl font-semibold tabular-nums ${color}`}>{value}</p>
           </div>
         ))}
@@ -198,22 +198,22 @@ export default function BroadcastDetailPage() {
 
       {/* Progress */}
       {total > 0 && (
-        <div className="rounded-lg border border-gray-100 bg-white px-5 py-4 mb-6">
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+        <div className="rounded-lg border border-line bg-surface px-5 py-4 mb-6">
+          <div className="flex items-center justify-between text-xs text-ink-2 mb-2">
             <span>Progress</span>
-            <span className="tabular-nums font-medium text-gray-900">
+            <span className="tabular-nums font-medium text-ink">
               {sent + failed} / {total}
-              <span className="text-gray-400 ml-1">({deliveryRate}% delivered)</span>
+              <span className="text-ink-3 ml-1">({deliveryRate}% delivered)</span>
             </span>
           </div>
-          <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+          <div className="h-2 rounded-full bg-surface-2 overflow-hidden">
             <div
-              className="h-full rounded-full bg-brand transition-all duration-500"
+              className="h-full rounded-full bg-accent transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
           {broadcast.status === 'sending' && (
-            <p className="text-[11px] text-blue-500 mt-1.5 flex items-center gap-1">
+            <p className="text-[11px] text-info mt-1.5 flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse inline-block" />
               Sending in progress…
             </p>
@@ -222,39 +222,39 @@ export default function BroadcastDetailPage() {
       )}
 
       {/* Message preview */}
-      <div className="rounded-lg border border-gray-100 bg-white px-5 py-4 mb-6">
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Message</p>
-        <p className="text-sm text-gray-700 whitespace-pre-wrap">{broadcast.message}</p>
+      <div className="rounded-lg border border-line bg-surface px-5 py-4 mb-6">
+        <p className="text-xs font-medium text-ink-3 uppercase tracking-wide mb-2">Message</p>
+        <p className="text-sm text-ink-2 whitespace-pre-wrap">{broadcast.message}</p>
       </div>
 
       {/* Recipients */}
       {broadcast.recipients.length > 0 && (
-        <div className="rounded-lg border border-gray-100 bg-white overflow-hidden">
-          <div className="border-b border-gray-100 px-5 py-3">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+        <div className="rounded-lg border border-line bg-surface overflow-hidden">
+          <div className="border-b border-line px-5 py-3">
+            <p className="text-xs font-medium text-ink-2 uppercase tracking-wide">
               Recipients ({total})
             </p>
           </div>
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50/80 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-              <tr className="border-b border-gray-100">
+            <thead className="bg-surface-2/80 text-left text-xs font-medium text-ink-2 uppercase tracking-wide">
+              <tr className="border-b border-line">
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-line/60">
               {broadcast.recipients.map((r, i) => (
-                <tr key={`${r.phone}-${i}`} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-4 py-2.5 font-mono text-xs text-gray-700">{r.phone}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{r.name ?? <span className="text-gray-300 italic">—</span>}</td>
+                <tr key={`${r.phone}-${i}`} className="hover:bg-surface-2/50 transition-colors">
+                  <td className="px-4 py-2.5 font-mono text-xs text-ink-2">{r.phone}</td>
+                  <td className="px-4 py-2.5 text-ink-2">{r.name ?? <span className="text-ink-3 italic">—</span>}</td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-1.5">
                       <RecipientStatusIcon status={r.status} />
                       <span className={`text-xs capitalize ${
-                        r.status === 'sent' ? 'text-green-600' :
-                        r.status === 'failed' ? 'text-red-500' : 'text-amber-600'
+                        r.status === 'sent' ? 'text-success' :
+                        r.status === 'failed' ? 'text-danger' : 'text-warning'
                       }`}>{r.status}</span>
                     </div>
                   </td>

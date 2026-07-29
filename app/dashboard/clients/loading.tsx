@@ -8,7 +8,7 @@ export default function ClientsLoading() {
       </div>
 
       {/* Table skeleton */}
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="rounded-xl border border-gray-200/70 bg-white shadow-card overflow-hidden">
         {/* Header row */}
         <div className="grid grid-cols-5 gap-4 border-b border-gray-100 bg-gray-50 px-6 py-3">
           {['Business name', 'WhatsApp number', 'Status', 'Created', 'Actions'].map((col) => (

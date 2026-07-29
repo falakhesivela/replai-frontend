@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Bot,
@@ -41,6 +41,7 @@ import type {
   Message,
 } from '@/lib/types'
 import { MessageComponentsPreview } from './message-component-preview'
+import { readPortalUiRoleFromDocument } from '@/lib/portal-login'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -50,6 +51,24 @@ function maskPhone(phone: string): string {
   const last4 = digits.slice(-4)
   const ccLen = digits.startsWith('1') ? 1 : digits.length > 11 ? 3 : 2
   return `+${digits.slice(0, ccLen)} ** *** ${last4}`
+}
+
+/** Owners/managers see full numbers; agents see them masked. */
+function displayPhone(phone: string, unmask: boolean): string {
+  return unmask ? phone : maskPhone(phone)
+}
+
+/** Reads portal_ui_role from the cookie (SSR-safe: masked until hydrated). */
+const noopSubscribe = () => () => {}
+function useUnmaskPhones(): boolean {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => {
+      const role = readPortalUiRoleFromDocument()
+      return role === 'owner' || role === 'manager'
+    },
+    () => false
+  )
 }
 
 function formatListTime(dateStr?: string): string {
@@ -122,7 +141,7 @@ function renderNoteWithMentions(content: string, memberNames: string[]): ReactNo
   const parts = content.split(pattern)
   return parts.map((part, i) =>
     pattern.test(part) ? (
-      <span key={i} className="font-medium text-blue-600">
+      <span key={i} className="font-medium text-info">
         {part}
       </span>
     ) : (
@@ -136,20 +155,20 @@ function renderNoteWithMentions(content: string, memberNames: string[]): ReactNo
 function StatusBadge({ status }: { status: Conversation['status'] }) {
   if (status === 'human') {
     return (
-      <span className="inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-amber-200">
+      <span className="inline-flex items-center rounded-full bg-warning-soft px-1.5 py-0.5 text-[10px] font-medium text-warning ring-1 ring-warning/25">
         Needs attention
       </span>
     )
   }
   if (status === 'resolved') {
     return (
-      <span className="inline-flex items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
+      <span className="inline-flex items-center rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-ink-2">
         Resolved
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-700 ring-1 ring-green-200">
+    <span className="inline-flex items-center rounded-full bg-success-soft px-1.5 py-0.5 text-[10px] font-medium text-success ring-1 ring-success/25">
       AI
     </span>
   )
@@ -166,7 +185,7 @@ function AssigneeAvatar({
   if (!assignee) {
     return (
       <div
-        className={`flex shrink-0 items-center justify-center rounded-full bg-gray-200 font-semibold text-gray-500 ${dim}`}
+        className={`flex shrink-0 items-center justify-center rounded-full bg-line font-semibold text-ink-2 ${dim}`}
       >
         ?
       </div>
@@ -175,7 +194,7 @@ function AssigneeAvatar({
   const bg = assignee.avatar_color || '#6b7280'
   return (
     <div
-      className={`flex shrink-0 items-center justify-center rounded-full font-semibold text-white ${dim}`}
+      className={`flex shrink-0 items-center justify-center rounded-full font-semibold text-on-solid ${dim}`}
       style={{ backgroundColor: bg }}
     >
       {initials(assignee.name)}
@@ -190,11 +209,13 @@ function ConversationItem({
   selected,
   onClick,
   departments,
+  unmaskPhones = false,
 }: {
   conv: Conversation
   selected: boolean
   onClick: () => void
   departments: Department[]
+  unmaskPhones?: boolean
 }) {
   const hasUnread = (conv.unread_count ?? 0) > 0
   const timeStr = formatListTime(conv.last_message_at ?? conv.updated_at)
@@ -204,12 +225,12 @@ function ConversationItem({
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left px-4 py-3.5 border-b border-gray-100 transition-colors ${
+      className={`w-full text-left px-4 py-3.5 border-b border-line transition-colors ${
         selected
-          ? 'bg-gray-100'
+          ? 'bg-surface-2'
           : isHuman
-            ? 'bg-amber-50/40 hover:bg-amber-50/70'
-            : 'hover:bg-gray-50'
+            ? 'bg-warning-soft/40 hover:bg-warning-soft/70'
+            : 'hover:bg-surface-2'
       }`}
     >
       <div className="flex items-start gap-2 mb-1">
@@ -218,15 +239,15 @@ function ConversationItem({
           <div className="flex items-start justify-between gap-2">
             <span
               className={`text-sm font-medium truncate ${
-                hasUnread ? 'text-gray-900' : 'text-gray-700'
+                hasUnread ? 'text-ink' : 'text-ink-2'
               }`}
             >
-              {maskPhone(conv.customer_phone)}
+              {displayPhone(conv.customer_phone, unmaskPhones)}
             </span>
             <div className="flex items-center gap-1.5 shrink-0">
-              {timeStr && <span className="text-xs text-gray-400">{timeStr}</span>}
+              {timeStr && <span className="text-xs text-ink-3">{timeStr}</span>}
               {hasUnread && (
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-green-500 text-[10px] font-bold text-white shrink-0">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-success text-[10px] font-bold text-on-solid shrink-0">
                   {conv.unread_count > 9 ? '9+' : conv.unread_count}
                 </span>
               )}
@@ -234,12 +255,12 @@ function ConversationItem({
           </div>
           <div className="flex items-center justify-between gap-2 mt-1">
             <p
-              className={`text-xs truncate flex-1 ${hasUnread ? 'text-gray-600 font-medium' : 'text-gray-400'}`}
+              className={`text-xs truncate flex-1 ${hasUnread ? 'text-ink-2 font-medium' : 'text-ink-3'}`}
             >
               {conv.last_message ? (
                 truncate(conv.last_message, 40)
               ) : (
-                <span className="italic text-gray-300">No messages yet</span>
+                <span className="italic text-ink-3">No messages yet</span>
               )}
             </p>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -248,10 +269,10 @@ function ConversationItem({
                 if (!color) return null
                 const cls =
                   color === 'red'
-                    ? 'bg-red-400'
+                    ? 'bg-danger'
                     : color === 'yellow'
                       ? 'bg-yellow-400'
-                      : 'bg-green-400'
+                      : 'bg-success'
                 return (
                   <span
                     className={`h-1.5 w-1.5 rounded-full ${cls} shrink-0`}
@@ -274,12 +295,12 @@ function ConversationItem({
               )
             })()}
             {conv.csat_score != null && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-amber-100">
+              <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning ring-1 ring-warning/25">
                 ★ {conv.csat_score}/5
               </span>
             )}
             {conv.sla_breached && (
-              <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-600 ring-1 ring-red-100">
+              <span className="inline-flex items-center rounded-full bg-danger-soft px-2 py-0.5 text-[10px] font-medium text-danger ring-1 ring-danger/25">
                 SLA breached
               </span>
             )}
@@ -305,7 +326,7 @@ function MessageBubble({ message }: { message: Message }) {
   if (message.role === 'system') {
     return (
       <div className="flex justify-center my-1">
-        <span className="text-[11px] text-gray-500 bg-white/70 rounded-full px-3 py-1 max-w-[80%] text-center leading-relaxed">
+        <span className="text-[11px] text-ink-2 bg-surface/70 rounded-full px-3 py-1 max-w-[80%] text-center leading-relaxed">
           {message.content}
         </span>
       </div>
@@ -320,15 +341,15 @@ function MessageBubble({ message }: { message: Message }) {
     <div className={`flex ${isOutbound ? 'justify-end' : 'justify-start'}`}>
       <div className={`max-w-[72%] flex flex-col ${isOutbound ? 'items-end' : 'items-start'}`}>
         {isHumanAgent && (
-          <span className="mb-0.5 px-1 text-[10px] font-medium text-blue-500">You</span>
+          <span className="mb-0.5 px-1 text-[10px] font-medium text-info">You</span>
         )}
         <div
           className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
             isHumanAgent
-              ? 'rounded-tr-sm bg-blue-100 text-gray-800'
+              ? 'rounded-tr-sm bg-info-soft text-ink'
               : isOutbound
-                ? 'rounded-tr-sm bg-[#dcf8c6] text-gray-800'
-                : 'rounded-tl-sm bg-white border border-gray-200 text-gray-800'
+                ? 'rounded-tr-sm bg-[#dcf8c6] text-ink'
+                : 'rounded-tl-sm bg-surface border border-line text-ink'
           }`}
         >
           {message.content}
@@ -337,12 +358,12 @@ function MessageBubble({ message }: { message: Message }) {
           <MessageComponentsPreview components={componentPreviews} />
         )}
         {message.message_type === 'voice' && (
-          <span className="mt-0.5 px-1 flex items-center gap-1 text-[11px] text-gray-400 italic">
+          <span className="mt-0.5 px-1 flex items-center gap-1 text-[11px] text-ink-3 italic">
             <Mic size={10} strokeWidth={1.75} />
             Transcribed voice note
           </span>
         )}
-        <span className="mt-1 px-1 text-[11px] text-gray-400">
+        <span className="mt-1 px-1 text-[11px] text-ink-3">
           {formatMessageTime(message.created_at)}
         </span>
       </div>
@@ -365,22 +386,22 @@ function StatusBar({
 }) {
   if (status === 'resolved') {
     return (
-      <div className="shrink-0 border-b border-gray-100 bg-gray-50 px-5 py-2 flex items-center gap-2">
-        <span className="h-2 w-2 rounded-full bg-gray-400 shrink-0" />
-        <p className="text-xs text-gray-500 flex-1">Conversation resolved</p>
+      <div className="shrink-0 border-b border-line bg-surface-2 px-5 py-2 flex items-center gap-2">
+        <span className="h-2 w-2 rounded-full bg-ink-3 shrink-0" />
+        <p className="text-xs text-ink-2 flex-1">Conversation resolved</p>
       </div>
     )
   }
 
   if (status === 'human') {
     return (
-      <div className="shrink-0 border-b border-amber-100 bg-amber-50 px-5 py-2 flex items-center gap-2">
-        <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0 animate-pulse" />
-        <p className="text-xs text-amber-700 flex-1 font-medium">Waiting for your reply</p>
+      <div className="shrink-0 border-b border-warning/30 bg-warning-soft px-5 py-2 flex items-center gap-2">
+        <span className="h-2 w-2 rounded-full bg-warning shrink-0 animate-pulse" />
+        <p className="text-xs text-warning flex-1 font-medium">Waiting for your reply</p>
         <button
           onClick={onHandBack}
           disabled={changing}
-          className="inline-flex items-center gap-1.5 rounded-md bg-white border border-amber-200 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-md bg-surface border border-warning/30 px-2.5 py-1 text-xs font-medium text-warning hover:bg-warning-soft transition-colors disabled:opacity-50"
         >
           {changing ? <Loader2 size={11} className="animate-spin" /> : <Bot size={11} />}
           Hand back to AI
@@ -390,13 +411,13 @@ function StatusBar({
   }
 
   return (
-    <div className="shrink-0 border-b border-green-100 bg-green-50 px-5 py-2 flex items-center gap-2">
-      <Bot size={13} strokeWidth={1.75} className="text-green-600 shrink-0" />
-      <p className="text-xs text-green-700 flex-1">AI is handling this conversation</p>
+    <div className="shrink-0 border-b border-success/30 bg-success-soft px-5 py-2 flex items-center gap-2">
+      <Bot size={13} strokeWidth={1.75} className="text-success shrink-0" />
+      <p className="text-xs text-success flex-1">AI is handling this conversation</p>
       <button
         onClick={onTakeOver}
         disabled={changing}
-        className="inline-flex items-center gap-1.5 rounded-md bg-white border border-green-200 px-2.5 py-1 text-xs font-medium text-green-700 hover:bg-green-50 transition-colors disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-md bg-surface border border-success/30 px-2.5 py-1 text-xs font-medium text-success hover:bg-success-soft transition-colors disabled:opacity-50"
       >
         {changing ? <Loader2 size={11} className="animate-spin" /> : <UserCheck size={11} />}
         Take over
@@ -410,11 +431,11 @@ function StatusBar({
 function NoConversationsState() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center text-center px-8">
-      <div className="mb-4 rounded-full bg-gray-50 p-5">
-        <MessageSquare size={28} strokeWidth={1.5} className="text-gray-300" />
+      <div className="mb-4 rounded-full bg-surface-2 p-5">
+        <MessageSquare size={28} strokeWidth={1.5} className="text-ink-3" />
       </div>
-      <p className="text-sm font-medium text-gray-500">No conversations yet</p>
-      <p className="mt-1.5 text-xs text-gray-400 max-w-xs leading-relaxed">
+      <p className="text-sm font-medium text-ink-2">No conversations yet</p>
+      <p className="mt-1.5 text-xs text-ink-3 max-w-xs leading-relaxed">
         Share your WhatsApp number to get started. Customer messages will appear here.
       </p>
     </div>
@@ -424,10 +445,10 @@ function NoConversationsState() {
 function NothingSelectedState() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center text-center px-8">
-      <div className="mb-3 rounded-full bg-gray-50 p-4">
-        <MessageSquare size={22} strokeWidth={1.5} className="text-gray-300" />
+      <div className="mb-3 rounded-full bg-surface-2 p-4">
+        <MessageSquare size={22} strokeWidth={1.5} className="text-ink-3" />
       </div>
-      <p className="text-sm text-gray-400">Select a conversation to view messages</p>
+      <p className="text-sm text-ink-3">Select a conversation to view messages</p>
     </div>
   )
 }
@@ -435,8 +456,8 @@ function NothingSelectedState() {
 function NoResultsState() {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-      <Search size={20} strokeWidth={1.5} className="text-gray-200 mb-2" />
-      <p className="text-sm text-gray-400">No conversations match your search</p>
+      <Search size={20} strokeWidth={1.5} className="text-ink-3/50 mb-2" />
+      <p className="text-sm text-ink-3">No conversations match your search</p>
     </div>
   )
 }
@@ -465,7 +486,7 @@ function TabBar({
   ]
 
   return (
-    <div className="flex flex-wrap border-b border-gray-100">
+    <div className="flex flex-wrap border-b border-line">
       {tabs.map(([tab, label]) => (
         <button
           key={tab}
@@ -473,13 +494,13 @@ function TabBar({
           onClick={() => onChange(tab)}
           className={`relative flex items-center gap-1.5 px-2.5 py-2 text-[11px] font-medium transition-colors ${
             active === tab
-              ? 'text-brand border-b-2 border-accent -mb-px'
-              : 'text-gray-400 hover:text-gray-600'
+              ? 'text-accent-text border-b-2 border-accent -mb-px'
+              : 'text-ink-3 hover:text-ink-2'
           }`}
         >
           {label}
           {tab === 'attention' && attentionCount > 0 && (
-            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-bold text-white">
+            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-warning px-1 text-[10px] font-bold text-on-solid">
               {attentionCount}
             </span>
           )}
@@ -501,6 +522,7 @@ export default function ConversationsView({
   initialPhone?: string | null
 }) {
   const router = useRouter()
+  const unmaskPhones = useUnmaskPhones()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [listLoaded, setListLoaded] = useState(false)
   const [tab, setTab] = useState<ListTab>('all')
@@ -926,12 +948,12 @@ export default function ConversationsView({
   const isEmpty = listLoaded && conversations.length === 0
 
   return (
-    <div className="flex h-[calc(100dvh-5.5rem)] md:h-[calc(100vh-3rem)] overflow-hidden rounded-lg border border-gray-200 bg-white">
-      <div className={`flex-none flex-col border-r border-gray-100 w-full md:w-72 md:flex ${selectedPhone ? 'hidden' : 'flex'}`}>
-        <div className="border-b border-gray-100 px-4 py-3">
-          <h2 className="text-sm font-semibold text-gray-900">Conversations</h2>
+    <div className="flex h-[calc(100dvh-5.5rem)] md:h-[calc(100vh-4rem)] overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+      <div className={`flex-none flex-col border-r border-line w-full md:w-72 md:flex ${selectedPhone ? 'hidden' : 'flex'}`}>
+        <div className="border-b border-line px-4 py-3">
+          <h2 className="text-sm font-semibold text-ink">Conversations</h2>
           {!isEmpty && listLoaded && (
-            <p className="text-xs text-gray-400 mt-0.5">{conversations.length} total</p>
+            <p className="text-xs text-ink-3 mt-0.5">{conversations.length} total</p>
           )}
         </div>
 
@@ -945,26 +967,26 @@ export default function ConversationsView({
         )}
 
         {!isEmpty && listLoaded && (
-          <div className="border-b border-gray-100 px-3 py-2.5 space-y-2">
+          <div className="border-b border-line px-3 py-2.5 space-y-2">
             <div className="relative">
               <Search
                 size={13}
                 strokeWidth={2}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3"
               />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by number or message…"
-                className="w-full rounded-md border border-gray-200 bg-gray-50 py-1.5 pl-7 pr-3 text-xs text-gray-700 placeholder-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-0"
+                className="w-full rounded-md border border-line bg-surface-2 py-1.5 pl-7 pr-3 text-xs text-ink-2 placeholder:text-ink-3 focus:border-accent/50 focus:bg-surface focus:outline-none focus:ring-0"
               />
             </div>
             {departments.length > 0 && (
               <select
                 value={deptFilter ?? ''}
                 onChange={(e) => setDeptFilter(e.target.value || null)}
-                className="w-full rounded-md border border-gray-200 bg-gray-50 py-1.5 px-2.5 text-xs text-gray-700 focus:border-gray-400 focus:outline-none"
+                className="w-full rounded-md border border-line bg-surface-2 py-1.5 px-2.5 text-xs text-ink-2 focus:border-accent/50 focus:outline-none"
               >
                 <option value="">All departments</option>
                 {departments.map((d) => (
@@ -978,7 +1000,7 @@ export default function ConversationsView({
         <div className="flex-1 overflow-y-auto">
           {!listLoaded ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="animate-spin text-gray-300" size={22} />
+              <Loader2 className="animate-spin text-ink-3" size={22} />
             </div>
           ) : isEmpty ? (
             <NoConversationsState />
@@ -992,6 +1014,7 @@ export default function ConversationsView({
                 selected={conv.customer_phone === selectedPhone}
                 onClick={() => handleSelectConversation(conv.customer_phone)}
                 departments={departments}
+                unmaskPhones={unmaskPhones}
               />
             ))
           )}
@@ -1003,30 +1026,30 @@ export default function ConversationsView({
           <NothingSelectedState />
         ) : (
           <>
-            <div className="shrink-0 border-b border-gray-100 px-3 md:px-5 py-3.5 flex items-start justify-between gap-3">
+            <div className="shrink-0 border-b border-line px-3 md:px-5 py-3.5 flex items-start justify-between gap-3">
               <div className="flex items-start gap-2 min-w-0">
                 <button
                   type="button"
                   onClick={() => setSelectedPhone(null)}
-                  className="md:hidden mt-0.5 shrink-0 rounded-md p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="md:hidden mt-0.5 shrink-0 rounded-md p-1 text-ink-3 hover:text-ink-2 transition-colors"
                   aria-label="Back to conversations"
                 >
                   <ChevronLeft size={18} strokeWidth={1.75} />
                 </button>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {maskPhone(selectedConv.customer_phone)}
+                  <p className="text-sm font-semibold text-ink">
+                    {displayPhone(selectedConv.customer_phone, unmaskPhones)}
                   </p>
                   {selectedConv.detected_language && selectedConv.detected_language !== 'en' && (
-                    <span className="inline-flex items-center gap-0.5 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-ink-2">
                       🌍{' '}
                       {LANGUAGE_NAMES[selectedConv.detected_language] ??
                         selectedConv.detected_language.toUpperCase()}
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">{selectedConv.customer_phone}</p>
+                <p className="text-xs text-ink-3 mt-0.5">{selectedConv.customer_phone}</p>
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   {/* Member assignment */}
@@ -1035,23 +1058,23 @@ export default function ConversationsView({
                       type="button"
                       onClick={() => { setAssignOpen((v) => !v); setDeptOpen(false) }}
                       disabled={assigning}
-                      className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-left text-xs hover:bg-gray-50 disabled:opacity-50"
+                      className="flex items-center gap-2 rounded-md border border-line bg-surface px-2.5 py-1.5 text-left text-xs hover:bg-surface-2 disabled:opacity-50"
                     >
                       <AssigneeAvatar assignee={headerAssignee} size="md" />
-                      <span className="font-medium text-gray-800">
+                      <span className="font-medium text-ink">
                         {headerAssignee ? headerAssignee.name : 'Unassigned'}
                       </span>
                       {assigning ? (
-                        <Loader2 size={12} className="animate-spin text-gray-400" />
+                        <Loader2 size={12} className="animate-spin text-ink-3" />
                       ) : (
-                        <ChevronDown size={14} className="text-gray-400" />
+                        <ChevronDown size={14} className="text-ink-3" />
                       )}
                     </button>
                     {assignOpen && (
-                      <div className="absolute left-0 top-full z-30 mt-1 min-w-[220px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                      <div className="absolute left-0 top-full z-30 mt-1 min-w-[220px] rounded-xl border border-line bg-surface shadow-card py-1 shadow-lg">
                         <button
                           type="button"
-                          className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                          className="w-full px-3 py-2 text-left text-xs text-ink-2 hover:bg-surface-2"
                           onClick={() => void doAssign(null)}
                         >
                           Unassign
@@ -1060,14 +1083,14 @@ export default function ConversationsView({
                           <button
                             key={m.id}
                             type="button"
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-50"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-surface-2"
                             onClick={() => void doAssign(m.id)}
                           >
                             <AssigneeAvatar
                               assignee={{ id: m.id, name: m.name, avatar_color: m.avatar_color }}
                               size="sm"
                             />
-                            <span className="text-gray-800">{m.name}</span>
+                            <span className="text-ink">{m.name}</span>
                           </button>
                         ))}
                       </div>
@@ -1081,26 +1104,26 @@ export default function ConversationsView({
                         type="button"
                         onClick={() => { setDeptOpen((v) => !v); setAssignOpen(false) }}
                         disabled={deptAssigning}
-                        className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-left text-xs hover:bg-gray-50 disabled:opacity-50"
+                        className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1.5 text-left text-xs hover:bg-surface-2 disabled:opacity-50"
                       >
-                        <Building2 size={13} className="text-gray-400" />
-                        <span className="font-medium text-gray-800">
+                        <Building2 size={13} className="text-ink-3" />
+                        <span className="font-medium text-ink">
                           {selectedConv.department_id
                             ? (departments.find((d) => d.id === selectedConv.department_id)?.name ?? 'Department')
                             : 'Route to team'}
                         </span>
                         {deptAssigning ? (
-                          <Loader2 size={12} className="animate-spin text-gray-400" />
+                          <Loader2 size={12} className="animate-spin text-ink-3" />
                         ) : (
-                          <ChevronDown size={14} className="text-gray-400" />
+                          <ChevronDown size={14} className="text-ink-3" />
                         )}
                       </button>
                       {deptOpen && (
-                        <div className="absolute left-0 top-full z-30 mt-1 min-w-[200px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                        <div className="absolute left-0 top-full z-30 mt-1 min-w-[200px] rounded-xl border border-line bg-surface shadow-card py-1 shadow-lg">
                           {selectedConv.department_id && (
                             <button
                               type="button"
-                              className="w-full px-3 py-2 text-left text-xs text-gray-500 hover:bg-gray-50"
+                              className="w-full px-3 py-2 text-left text-xs text-ink-2 hover:bg-surface-2"
                               onClick={() => void doDeptRoute(null)}
                             >
                               Remove from team
@@ -1110,12 +1133,12 @@ export default function ConversationsView({
                             <button
                               key={d.id}
                               type="button"
-                              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-50 ${
-                                selectedConv.department_id === d.id ? 'text-accent font-medium' : 'text-gray-800'
+                              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-surface-2 ${
+                                selectedConv.department_id === d.id ? 'text-accent font-medium' : 'text-ink'
                               }`}
                               onClick={() => void doDeptRoute(d.id)}
                             >
-                              <Building2 size={12} className="text-gray-400 shrink-0" />
+                              <Building2 size={12} className="text-ink-3 shrink-0" />
                               {d.name}
                             </button>
                           ))}
@@ -1131,7 +1154,7 @@ export default function ConversationsView({
                   type="button"
                   onClick={() => handleSetStatus('resolved')}
                   disabled={statusChanging}
-                  className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 shrink-0"
+                  className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 transition-colors disabled:opacity-50 shrink-0"
                 >
                   Mark resolved
                 </button>
@@ -1146,41 +1169,41 @@ export default function ConversationsView({
             />
 
             {selectedConv.summary ? (
-              <div className="shrink-0 border-b border-gray-100 bg-gray-50 px-5 py-2">
+              <div className="shrink-0 border-b border-line bg-surface-2 px-5 py-2">
                 <button
                   type="button"
                   onClick={() => setSummaryExpanded(v => !v)}
                   className="flex w-full items-center gap-2 text-left"
                 >
                   <span className="text-sm shrink-0">📝</span>
-                  <span className="text-xs font-medium text-gray-600 shrink-0">Summary</span>
+                  <span className="text-xs font-medium text-ink-2 shrink-0">Summary</span>
                   {!summaryExpanded && (
-                    <span className="text-xs text-gray-400 truncate flex-1">{selectedConv.summary}</span>
+                    <span className="text-xs text-ink-3 truncate flex-1">{selectedConv.summary}</span>
                   )}
                   <ChevronDown
                     size={14}
-                    className={`ml-auto shrink-0 text-gray-400 transition-transform ${summaryExpanded ? 'rotate-180' : ''}`}
+                    className={`ml-auto shrink-0 text-ink-3 transition-transform ${summaryExpanded ? 'rotate-180' : ''}`}
                   />
                 </button>
                 {summaryExpanded && (
-                  <p className="mt-1.5 text-xs text-gray-500 leading-relaxed pl-6">{selectedConv.summary}</p>
+                  <p className="mt-1.5 text-xs text-ink-2 leading-relaxed pl-6">{selectedConv.summary}</p>
                 )}
               </div>
             ) : selectedConv.status === 'ai' || selectedConv.status === 'human' ? (
-              <div className="shrink-0 border-b border-gray-100 bg-gray-50 px-5 py-2 flex items-center gap-2">
+              <div className="shrink-0 border-b border-line bg-surface-2 px-5 py-2 flex items-center gap-2">
                 <span className="text-sm">📝</span>
-                <p className="text-xs text-gray-400 italic">Generating summary…</p>
+                <p className="text-xs text-ink-3 italic">Generating summary…</p>
               </div>
             ) : null}
 
-            <div className="flex border-b border-gray-100 bg-gray-50/80 px-5">
+            <div className="flex border-b border-line bg-surface-2/80 px-5">
               <button
                 type="button"
                 onClick={() => setThreadTab('messages')}
                 className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
                   threadTab === 'messages'
-                    ? 'border-accent text-brand'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    ? 'border-accent text-accent-text'
+                    : 'border-transparent text-ink-2 hover:text-ink-2'
                 }`}
               >
                 <MessageSquare size={14} strokeWidth={1.75} />
@@ -1191,8 +1214,8 @@ export default function ConversationsView({
                 onClick={() => setThreadTab('notes')}
                 className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-medium transition-colors ${
                   threadTab === 'notes'
-                    ? 'border-accent text-brand'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    ? 'border-accent text-accent-text'
+                    : 'border-transparent text-ink-2 hover:text-ink-2'
                 }`}
               >
                 <StickyNote size={14} strokeWidth={1.75} />
@@ -1204,11 +1227,11 @@ export default function ConversationsView({
               <div className="flex-1 overflow-y-auto bg-[#e5ddd5] px-5 py-4 space-y-3 min-h-0">
                 {loadingMessages ? (
                   <div className="flex h-full items-center justify-center">
-                    <Loader2 size={20} strokeWidth={1.75} className="animate-spin text-gray-400" />
+                    <Loader2 size={20} strokeWidth={1.75} className="animate-spin text-ink-3" />
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex h-full items-center justify-center">
-                    <p className="text-xs text-gray-500 bg-white/60 rounded-full px-3 py-1">
+                    <p className="text-xs text-ink-2 bg-surface/60 rounded-full px-3 py-1">
                       No messages in this conversation
                     </p>
                   </div>
@@ -1222,14 +1245,14 @@ export default function ConversationsView({
                 )}
               </div>
             ) : (
-              <div className="flex flex-1 flex-col min-h-0 bg-gray-50">
+              <div className="flex flex-1 flex-col min-h-0 bg-surface-2">
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
                   {loadingNotes ? (
                     <div className="flex justify-center py-8">
-                      <Loader2 className="animate-spin text-gray-400" size={20} />
+                      <Loader2 className="animate-spin text-ink-3" size={20} />
                     </div>
                   ) : notes.length === 0 ? (
-                    <p className="text-center text-xs text-gray-400 py-8">
+                    <p className="text-center text-xs text-ink-3 py-8">
                       No internal notes yet. Add one below — customers never see these.
                     </p>
                   ) : (
@@ -1241,9 +1264,9 @@ export default function ConversationsView({
                         : null
                       const color = author?.avatar_color || '#6b7280'
                       return (
-                        <div key={n.id} className="flex gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+                        <div key={n.id} className="flex gap-3 rounded-xl border border-line bg-surface shadow-card p-3 shadow-sm">
                           <div
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-on-solid"
                             style={{ backgroundColor: color }}
                           >
                             {initials(n.author_name)}
@@ -1251,10 +1274,10 @@ export default function ConversationsView({
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-2">
                               <div>
-                                <span className="text-xs font-semibold text-gray-900">
+                                <span className="text-xs font-semibold text-ink">
                                   {n.author_name}
                                 </span>
-                                <span className="text-[10px] text-gray-400 ml-2">
+                                <span className="text-[10px] text-ink-3 ml-2">
                                   {formatMessageTime(n.created_at)}
                                 </span>
                               </div>
@@ -1262,14 +1285,14 @@ export default function ConversationsView({
                                 <button
                                   type="button"
                                   onClick={() => void removeNote(n.id)}
-                                  className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                                  className="rounded p-1 text-ink-3 hover:bg-danger-soft hover:text-danger"
                                   aria-label="Delete note"
                                 >
                                   <Trash2 size={14} />
                                 </button>
                               )}
                             </div>
-                            <p className="mt-1.5 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                            <p className="mt-1.5 text-sm text-ink-2 whitespace-pre-wrap leading-relaxed">
                               {renderNoteWithMentions(n.content, assignableMembers.map((m) => m.name))}
                             </p>
                           </div>
@@ -1279,7 +1302,7 @@ export default function ConversationsView({
                   )}
                   <div ref={notesEndRef} />
                 </div>
-                <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-3">
+                <div className="shrink-0 border-t border-line bg-surface px-4 py-3">
                   <div className="relative">
                     <textarea
                       ref={textareaRef}
@@ -1292,15 +1315,15 @@ export default function ConversationsView({
                         'Add an internal note…\nUse @name to mention a teammate'
                       }
                       rows={3}
-                      className="w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-0"
+                      className="w-full resize-none rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:border-accent/50 focus:bg-surface focus:outline-none focus:ring-0"
                     />
                     {mentionPick && mentionChoices.length > 0 && (
-                      <div className="absolute bottom-full left-0 mb-1 max-h-40 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md z-10">
+                      <div className="absolute bottom-full left-0 mb-1 max-h-40 w-full overflow-y-auto rounded-md border border-line bg-surface shadow-md z-10">
                         {mentionChoices.map((m) => (
                           <button
                             key={m.id}
                             type="button"
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-50"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-surface-2"
                             onClick={() => insertMention(m.name)}
                           >
                             <AssigneeAvatar
@@ -1318,7 +1341,7 @@ export default function ConversationsView({
                       type="button"
                       onClick={() => void submitNote()}
                       disabled={!noteText.trim() || noteSubmitting}
-                      className="rounded-md bg-brand px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-40"
+                      className="rounded-lg bg-accent shadow-sm shadow-accent/25 px-4 py-1.5 text-xs font-medium text-on-solid hover:bg-accent-hover disabled:opacity-40"
                     >
                       {noteSubmitting ? 'Adding…' : 'Add note'}
                     </button>
@@ -1329,7 +1352,7 @@ export default function ConversationsView({
 
             {threadTab === 'messages' &&
               (selectedConv.status === 'human' ? (
-                <div className="shrink-0 border-t border-gray-100 bg-white px-4 py-3">
+                <div className="shrink-0 border-t border-line bg-surface px-4 py-3">
                   <div className="flex gap-2 items-end">
                     <textarea
                       value={replyText}
@@ -1342,13 +1365,13 @@ export default function ConversationsView({
                       }}
                       placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
                       rows={2}
-                      className="flex-1 resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-0"
+                      className="flex-1 resize-none rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:border-accent/50 focus:bg-surface focus:outline-none focus:ring-0"
                     />
                     <button
                       type="button"
                       onClick={handleReply}
                       disabled={!replyText.trim() || sending}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500 text-white transition-colors hover:bg-green-600 disabled:opacity-40"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-success text-on-solid transition-colors hover:bg-success disabled:opacity-40"
                     >
                       {sending ? (
                         <Loader2 size={15} className="animate-spin" />
@@ -1359,13 +1382,13 @@ export default function ConversationsView({
                   </div>
                 </div>
               ) : selectedConv.status === 'ai' ? (
-                <div className="shrink-0 border-t border-gray-100 bg-gray-50 px-5 py-3 flex items-center justify-between">
-                  <p className="text-xs text-gray-400">Your AI agent handles replies automatically</p>
+                <div className="shrink-0 border-t border-line bg-surface-2 px-5 py-3 flex items-center justify-between">
+                  <p className="text-xs text-ink-3">Your AI agent handles replies automatically</p>
                   <button
                     type="button"
                     onClick={() => handleSetStatus('human')}
                     disabled={statusChanging}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-white border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-surface border border-line px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 transition-colors disabled:opacity-50"
                   >
                     {statusChanging ? (
                       <Loader2 size={11} className="animate-spin" />
@@ -1376,13 +1399,13 @@ export default function ConversationsView({
                   </button>
                 </div>
               ) : (
-                <div className="shrink-0 border-t border-gray-100 bg-gray-50 px-5 py-3 flex items-center justify-between">
-                  <p className="text-xs text-gray-400">This conversation has been resolved</p>
+                <div className="shrink-0 border-t border-line bg-surface-2 px-5 py-3 flex items-center justify-between">
+                  <p className="text-xs text-ink-3">This conversation has been resolved</p>
                   <button
                     type="button"
                     onClick={() => handleSetStatus('ai')}
                     disabled={statusChanging}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-white border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-surface border border-line px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 transition-colors disabled:opacity-50"
                   >
                     {statusChanging ? <Loader2 size={11} className="animate-spin" /> : <Bot size={11} />}
                     Reopen with AI

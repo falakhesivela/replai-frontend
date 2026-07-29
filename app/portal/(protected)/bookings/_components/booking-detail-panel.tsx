@@ -59,10 +59,10 @@ function formatDateShort(dateStr: string): string {
 
 const STATUS_STYLES: Record<BookingStatus, string> = {
   reserved: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
-  confirmed: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-  cancelled: 'bg-red-50 text-red-600 ring-1 ring-red-200',
-  completed: 'bg-gray-100 text-gray-500',
-  no_show: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+  confirmed: 'bg-success-soft text-success ring-1 ring-success/25',
+  cancelled: 'bg-danger-soft text-danger ring-1 ring-danger/25',
+  completed: 'bg-surface-2 text-ink-2',
+  no_show: 'bg-warning-soft text-warning ring-1 ring-warning/25',
 }
 
 const STATUS_LABELS: Record<BookingStatus, string> = {
@@ -82,7 +82,7 @@ function StatusBadge({ status }: { status: BookingStatus }) {
 }
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
-  return <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{children}</p>
+  return <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-3">{children}</p>
 }
 
 // ── Reschedule panel ──────────────────────────────────────────────────────────
@@ -134,8 +134,8 @@ function ReschedulePanel({
   }
 
   return (
-    <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-4">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-blue-700">
+    <div className="rounded-lg border border-info/30 bg-info-soft/50 p-4">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-info">
         {schedulingMode === 'date_range'
           ? 'Choose new check-in'
           : schedulingMode === 'date_only'
@@ -143,7 +143,7 @@ function ReschedulePanel({
             : 'Choose new slot'}
       </p>
       {loading ? (
-        <div className="flex items-center gap-2 text-xs text-gray-400">
+        <div className="flex items-center gap-2 text-xs text-ink-3">
           <Loader2 size={13} className="animate-spin" /> Loading slots…
         </div>
       ) : (
@@ -153,7 +153,7 @@ function ReschedulePanel({
             onChange={(e) => setSlotId(e.target.value)}
             required
             disabled={slots.length === 0}
-            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
+            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
           >
             <option value="">{slots.length === 0 ? 'No slots available' : 'Select a slot…'}</option>
             {Object.entries(slotsByDate).map(([label, daySlots]) => (
@@ -164,14 +164,14 @@ function ReschedulePanel({
               </optgroup>
             ))}
           </select>
-          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
+          {error && <p className="rounded-md bg-danger-soft px-3 py-2 text-xs text-danger">{error}</p>}
           <div className="flex gap-2">
             <button type="button" onClick={onCancel}
-              className="flex-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+              className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-xs font-medium text-ink-2 hover:bg-surface-2 transition-colors">
               Cancel
             </button>
             <button type="submit" disabled={!slotId || submitting}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-2 text-xs font-medium text-white hover:bg-brand-hover transition-colors disabled:opacity-40">
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-2 text-xs font-medium text-on-solid hover:bg-accent-hover transition-colors disabled:opacity-40">
               {submitting && <Loader2 size={12} className="animate-spin" />}
               Confirm
             </button>
@@ -217,12 +217,12 @@ function SendMessagePanel({ customerPhone, token }: { customerPhone: string; tok
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type a WhatsApp message…"
           rows={3}
-          className="w-full resize-none rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-accent"
+          className="w-full resize-none rounded-md border border-line px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent"
         />
-        {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
-        {sent && <p className="rounded-md bg-green-50 px-3 py-2 text-xs text-green-700">Message sent.</p>}
+        {error && <p className="rounded-md bg-danger-soft px-3 py-2 text-xs text-danger">{error}</p>}
+        {sent && <p className="rounded-md bg-success-soft px-3 py-2 text-xs text-success">Message sent.</p>}
         <button type="submit" disabled={!message.trim() || sending}
-          className="flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-xs font-medium text-white hover:bg-brand-hover transition-colors disabled:opacity-40">
+          className="flex items-center gap-1.5 rounded-lg bg-accent shadow-sm shadow-accent/25 px-4 py-2 text-xs font-medium text-on-solid hover:bg-accent-hover transition-colors disabled:opacity-40">
           {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} strokeWidth={2} />}
           Send
         </button>
@@ -243,7 +243,7 @@ function memberInitials(name: string): string {
 function MemberAvatar({ name, color }: { name: string; color?: string | null }) {
   return (
     <div
-      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-on-solid"
       style={{ backgroundColor: color ?? '#6b7280' }}
     >
       {memberInitials(name)}
@@ -292,7 +292,7 @@ function AssignSection({
     <div className="space-y-2">
       <SectionHeading>Assigned to</SectionHeading>
       {loading ? (
-        <div className="flex items-center gap-2 text-xs text-gray-400">
+        <div className="flex items-center gap-2 text-xs text-ink-3">
           <Loader2 size={12} className="animate-spin" /> Loading…
         </div>
       ) : canManage ? (
@@ -301,7 +301,7 @@ function AssignSection({
             value={booking.assigned_to ?? ''}
             onChange={(e) => handleAssign(e.target.value || null)}
             disabled={busy}
-            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
+            className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
           >
             <option value="">Unassigned</option>
             {members.map((m) => (
@@ -310,18 +310,18 @@ function AssignSection({
               </option>
             ))}
           </select>
-          {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
+          {error && <p className="rounded-md bg-danger-soft px-3 py-2 text-xs text-danger">{error}</p>}
         </div>
       ) : current ? (
         <div className="flex items-center gap-2">
           <MemberAvatar name={current.name} color={current.avatar_color} />
-          <span className="text-sm text-gray-700">{current.name}</span>
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+          <span className="text-sm text-ink-2">{current.name}</span>
+          <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-ink-2">
             {current.role_label ?? (current.role.charAt(0).toUpperCase() + current.role.slice(1))}
           </span>
         </div>
       ) : (
-        <p className="text-sm text-gray-400">Unassigned</p>
+        <p className="text-sm text-ink-3">Unassigned</p>
       )}
     </div>
   )
@@ -386,21 +386,21 @@ export default function BookingDetailPanel({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px]" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl">
+      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-surface shadow-2xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <div className="flex items-center gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-gray-900">Booking</h2>
-              <p className="font-mono text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <h2 className="text-sm font-semibold text-ink">Booking</h2>
+              <p className="font-mono text-xs font-semibold uppercase tracking-wide text-ink-2">
                 {formatCommerceReference(booking.id)}
               </p>
             </div>
             <StatusBadge status={booking.status} />
           </div>
           <button onClick={onClose}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+            className="rounded-md p-1.5 text-ink-3 hover:bg-surface-2 hover:text-ink-2 transition-colors">
             <X size={15} strokeWidth={2} />
           </button>
         </div>
@@ -408,54 +408,54 @@ export default function BookingDetailPanel({
         {/* Body */}
         <div className="flex-1 overflow-y-auto">
           {/* Appointment hero */}
-          <div className="border-b border-gray-100 bg-gray-50 px-5 py-4 space-y-2">
+          <div className="border-b border-line bg-surface-2 px-5 py-4 space-y-2">
             {stayRange ? (
               <>
-                <div className="flex items-center gap-2.5 text-sm font-medium text-gray-800">
-                  <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+                <div className="flex items-center gap-2.5 text-sm font-medium text-ink">
+                  <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-ink-3" />
                   Check-in {stayRange.checkInLabel}
                 </div>
-                <div className="flex items-center gap-2.5 text-sm text-gray-700">
-                  <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+                <div className="flex items-center gap-2.5 text-sm text-ink-2">
+                  <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-ink-3" />
                   Check-out {stayRange.checkOutLabel}
                 </div>
               </>
             ) : isAllDay ? (
-              <div className="flex items-center gap-2.5 text-sm font-medium text-gray-800">
-                <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+              <div className="flex items-center gap-2.5 text-sm font-medium text-ink">
+                <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-ink-3" />
                 {formatDateLong(booking.booking_date)} · All day
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-2.5 text-sm font-medium text-gray-800">
-                  <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+                <div className="flex items-center gap-2.5 text-sm font-medium text-ink">
+                  <Calendar size={14} strokeWidth={1.75} className="shrink-0 text-ink-3" />
                   {formatDateLong(booking.booking_date)}
                 </div>
-                <div className="flex items-center gap-2.5 text-sm text-gray-700">
-                  <Clock size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+                <div className="flex items-center gap-2.5 text-sm text-ink-2">
+                  <Clock size={14} strokeWidth={1.75} className="shrink-0 text-ink-3" />
                   {formatTime(booking.booking_time)}
                   {booking.services && (
-                    <span className="text-xs text-gray-400">· {booking.services.duration_minutes} min</span>
+                    <span className="text-xs text-ink-3">· {booking.services.duration_minutes} min</span>
                   )}
                 </div>
               </>
             )}
             {booking.services && (
-              <div className="flex items-center gap-2.5 text-sm text-gray-700">
-                <Scissors size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+              <div className="flex items-center gap-2.5 text-sm text-ink-2">
+                <Scissors size={14} strokeWidth={1.75} className="shrink-0 text-ink-3" />
                 {booking.services.name}
               </div>
             )}
             {detailRows.map((row) => (
-              <div key={row.label} className="flex items-center gap-2.5 text-sm text-gray-700">
-                <User size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
+              <div key={row.label} className="flex items-center gap-2.5 text-sm text-ink-2">
+                <User size={14} strokeWidth={1.75} className="shrink-0 text-ink-3" />
                 <span>
-                  <span className="text-gray-500">{row.label}: </span>
+                  <span className="text-ink-2">{row.label}: </span>
                   {row.value}
                 </span>
               </div>
             ))}
-            <p className="text-xs text-gray-500">Ask the customer for this reference when they arrive</p>
+            <p className="text-xs text-ink-2">Ask the customer for this reference when they arrive</p>
           </div>
 
           <div className="p-5 space-y-6">
@@ -466,28 +466,28 @@ export default function BookingDetailPanel({
                 <SectionHeading>Customer</SectionHeading>
                 <Link
                   href={`/portal/conversations?phone=${encodeURIComponent(booking.customer_phone)}`}
-                  className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 transition-colors"
+                  className="flex items-center gap-1 text-[10px] text-info hover:text-info transition-colors"
                 >
                   <MessageSquare size={10} /> Open conversation
                 </Link>
               </div>
               <div className="flex items-center gap-2.5">
-                <User size={13} strokeWidth={1.75} className="shrink-0 text-gray-400" />
-                <span className="text-sm text-gray-800">{booking.customer_name}</span>
+                <User size={13} strokeWidth={1.75} className="shrink-0 text-ink-3" />
+                <span className="text-sm text-ink">{booking.customer_name}</span>
                 {otherBookings.length > 0 && (
-                  <span className="ml-auto rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500">
+                  <span className="ml-auto rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-ink-2">
                     {otherBookings.length + 1} bookings total
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-2.5">
-                <Phone size={13} strokeWidth={1.75} className="shrink-0 text-gray-400" />
-                <span className="font-mono text-sm text-gray-700">{booking.customer_phone}</span>
+                <Phone size={13} strokeWidth={1.75} className="shrink-0 text-ink-3" />
+                <span className="font-mono text-sm text-ink-2">{booking.customer_phone}</span>
               </div>
               {booking.customer_email && (
                 <div className="flex items-center gap-2.5">
-                  <Mail size={13} strokeWidth={1.75} className="shrink-0 text-gray-400" />
-                  <span className="text-sm text-gray-700">{booking.customer_email}</span>
+                  <Mail size={13} strokeWidth={1.75} className="shrink-0 text-ink-3" />
+                  <span className="text-sm text-ink-2">{booking.customer_email}</span>
                 </div>
               )}
             </div>
@@ -498,7 +498,7 @@ export default function BookingDetailPanel({
               <div className="space-y-2">
                 <SectionHeading>Payment</SectionHeading>
                 {booking.total_amount != null && booking.total_amount > 0 && (
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-ink">
                     {new Intl.NumberFormat('en-ZA', {
                       style: 'currency',
                       currency: booking.currency ?? 'ZAR',
@@ -513,7 +513,7 @@ export default function BookingDetailPanel({
                     href={booking.payment_link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                    className="flex items-center gap-1.5 text-xs text-info hover:text-info transition-colors"
                   >
                     <ExternalLink size={12} /> View payment link
                   </a>
@@ -527,12 +527,12 @@ export default function BookingDetailPanel({
                 <SectionHeading>Other bookings</SectionHeading>
                 <div className="space-y-1">
                   {otherBookings.slice(0, 4).map((b) => (
-                    <div key={b.id} className="flex items-center justify-between rounded-md border border-gray-100 px-3 py-2">
+                    <div key={b.id} className="flex items-center justify-between rounded-md border border-line px-3 py-2">
                       <div>
-                        <p className="text-xs text-gray-700">
+                        <p className="text-xs text-ink-2">
                           {formatDateShort(b.booking_date)} · {formatTime(b.booking_time)}
                         </p>
-                        {b.services && <p className="text-[10px] text-gray-400">{b.services.name}</p>}
+                        {b.services && <p className="text-[10px] text-ink-3">{b.services.name}</p>}
                       </div>
                       <StatusBadge status={b.status} />
                     </div>
@@ -554,29 +554,29 @@ export default function BookingDetailPanel({
               <div className="space-y-2">
                 <SectionHeading>Actions</SectionHeading>
                 {actionError && (
-                  <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">{actionError}</p>
+                  <p className="rounded-md bg-danger-soft px-3 py-2 text-xs text-danger">{actionError}</p>
                 )}
                 {!showReschedule ? (
                   <div className="flex flex-col gap-2">
                     <button onClick={() => setShowReschedule(true)}
-                      className="flex items-center justify-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-medium text-blue-700 hover:bg-accent-soft transition-colors">
+                      className="flex items-center justify-center gap-1.5 rounded-md border border-info/30 bg-info-soft px-4 py-2 text-xs font-medium text-info hover:bg-accent-soft transition-colors">
                       <Calendar size={12} strokeWidth={2} /> Reschedule
                     </button>
                     <div className="flex gap-2">
                       <button onClick={() => applyStatus('completed')} disabled={busy !== null}
-                        className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-gray-200 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40">
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-line px-4 py-2 text-xs font-medium text-ink-2 hover:bg-surface-2 transition-colors disabled:opacity-40">
                         {busy === 'completed' && <Loader2 size={12} className="animate-spin" />}
                         Mark completed
                       </button>
                       <button onClick={() => applyStatus('no_show')} disabled={busy !== null}
-                        className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-40">
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-warning/30 bg-warning-soft px-4 py-2 text-xs font-medium text-warning hover:bg-warning-soft transition-colors disabled:opacity-40">
                         {busy === 'no_show' && <Loader2 size={12} className="animate-spin" />}
                         No-show
                       </button>
                     </div>
                     {canCancel && (
                       <button onClick={() => applyStatus('cancelled')} disabled={busy !== null}
-                        className="flex items-center justify-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-100 transition-colors disabled:opacity-40">
+                        className="flex items-center justify-center gap-1.5 rounded-md border border-danger/30 bg-danger-soft px-4 py-2 text-xs font-medium text-danger hover:bg-danger-soft transition-colors disabled:opacity-40">
                         {busy === 'cancelled' && <Loader2 size={12} className="animate-spin" />}
                         Cancel booking
                       </button>
@@ -597,13 +597,13 @@ export default function BookingDetailPanel({
             <SendMessagePanel customerPhone={booking.customer_phone} token={token} />
 
             {/* Footer */}
-            <div className="border-t border-gray-100 pt-4 space-y-1">
-              <p className="text-[10px] text-gray-400">
+            <div className="border-t border-line pt-4 space-y-1">
+              <p className="text-[10px] text-ink-3">
                 Booked {new Date(booking.created_at).toLocaleString('en-GB', {
                   day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
                 })}
               </p>
-              <p className="font-mono text-[10px] text-gray-300">{booking.id}</p>
+              <p className="font-mono text-[10px] text-ink-3">{booking.id}</p>
             </div>
           </div>
         </div>

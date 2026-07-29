@@ -127,13 +127,13 @@ export default function GoogleCalendarView({
       <div>
         <Link
           href="/portal/integrations"
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-2 hover:text-ink transition-colors"
         >
           <ArrowLeft size={14} />
           Integrations
         </Link>
-        <h1 className="text-xl font-semibold text-gray-900">Google Calendar</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">Google Calendar</h1>
+        <p className="mt-1 text-sm text-ink-2">
           Sync confirmed bookings to your own Google Calendar. Each person connects
           their own account — a booking lands on the assigned team member’s calendar,
           falling back to the default calendar for unassigned bookings.
@@ -142,13 +142,13 @@ export default function GoogleCalendarView({
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          <Loader2 className="h-6 w-6 animate-spin text-ink-3" />
         </div>
       ) : !status?.configured ? (
         <Card>
           <div className="flex items-start gap-3">
-            <TriangleAlert size={18} className="mt-0.5 shrink-0 text-amber-500" />
-            <p className="text-sm text-gray-600">
+            <TriangleAlert size={18} className="mt-0.5 shrink-0 text-warning" />
+            <p className="text-sm text-ink-2">
               Google Calendar isn’t enabled on this Replai environment yet. Once the
               server is configured with Google credentials, you’ll be able to connect
               here.
@@ -158,21 +158,21 @@ export default function GoogleCalendarView({
       ) : (
         <Card>
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
-              <Calendar size={18} className="text-gray-600" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface-2">
+              <Calendar size={18} className="text-ink-2" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-gray-900">Connection status</p>
+              <p className="text-sm font-semibold text-ink">Connection status</p>
 
               {connected ? (
-                <div className="mt-2 space-y-2 text-sm text-gray-600">
-                  <p className="inline-flex items-center gap-1.5 text-green-700">
+                <div className="mt-2 space-y-2 text-sm text-ink-2">
+                  <p className="inline-flex items-center gap-1.5 text-success">
                     <CheckCircle2 size={14} />
                     Connected{status?.google_account_email ? ` as ${status.google_account_email}` : ''}
                   </p>
                   {status?.is_business_default && (
-                    <p className="inline-flex items-center gap-1.5 text-gray-500">
-                      <Star size={13} className="fill-amber-400 text-amber-400" />
+                    <p className="inline-flex items-center gap-1.5 text-ink-2">
+                      <Star size={13} className="fill-warning text-warning" />
                       Default calendar for unassigned bookings
                     </p>
                   )}
@@ -212,12 +212,12 @@ export default function GoogleCalendarView({
               ) : (
                 <div className="mt-2 space-y-3">
                   {revoked ? (
-                    <p className="inline-flex items-center gap-1.5 text-sm text-amber-700">
+                    <p className="inline-flex items-center gap-1.5 text-sm text-warning">
                       <TriangleAlert size={14} />
                       Access was revoked — reconnect to resume syncing.
                     </p>
                   ) : (
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-ink-2">
                       Connect your Google account to start syncing your bookings.
                     </p>
                   )}

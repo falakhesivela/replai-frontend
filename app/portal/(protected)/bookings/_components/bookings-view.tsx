@@ -84,10 +84,10 @@ function thisWeekBounds(): { start: string; end: string } {
 
 const STATUS_STYLES: Record<BookingStatus, string> = {
   reserved: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
-  confirmed: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-  cancelled: 'bg-red-50 text-red-600 ring-1 ring-red-200',
-  completed: 'bg-gray-100 text-gray-500',
-  no_show: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+  confirmed: 'bg-success-soft text-success ring-1 ring-success/25',
+  cancelled: 'bg-danger-soft text-danger ring-1 ring-danger/25',
+  completed: 'bg-surface-2 text-ink-2',
+  no_show: 'bg-warning-soft text-warning ring-1 ring-warning/25',
 }
 
 const STATUS_LABELS: Record<BookingStatus, string> = {
@@ -161,7 +161,7 @@ function ActionsDropdown({
       <button
         onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }}
         disabled={busy}
-        className="flex items-center justify-center rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-40"
+        className="flex items-center justify-center rounded-md p-1.5 text-ink-3 hover:bg-surface-2 hover:text-ink-2 transition-colors disabled:opacity-40"
       >
         {busy ? (
           <Loader2 size={14} strokeWidth={2} className="animate-spin" />
@@ -170,13 +170,13 @@ function ActionsDropdown({
         )}
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-gray-200 bg-white py-1 shadow-md">
+        <div className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-line bg-surface py-1 shadow-md">
           {available.map(({ label, status, danger }) => (
             <button
               key={status}
               onClick={() => apply(status)}
-              className={`w-full px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50 ${
-                danger ? 'text-red-600' : 'text-gray-700'
+              className={`w-full px-3 py-2 text-left text-sm transition-colors hover:bg-surface-2 ${
+                danger ? 'text-danger' : 'text-ink-2'
               }`}
             >
               {label}
@@ -201,7 +201,7 @@ function BookingRow({
 }) {
   return (
     <tr
-      className="border-t border-gray-100 hover:bg-gray-50/50 cursor-pointer transition-colors"
+      className="border-t border-line hover:bg-surface-2/50 cursor-pointer transition-colors"
       onClick={() => onSelect(booking)}
     >
       <td className="px-4 py-3">
@@ -209,25 +209,25 @@ function BookingRow({
           <ChevronRight
             size={13}
             strokeWidth={2}
-            className="shrink-0 text-gray-400"
+            className="shrink-0 text-ink-3"
           />
-          <span className="text-sm font-medium text-gray-900">{formatTime(booking.booking_time)}</span>
-          <span className="text-xs text-gray-400">{formatDate(booking.booking_date)}</span>
+          <span className="text-sm font-medium text-ink">{formatTime(booking.booking_time)}</span>
+          <span className="text-xs text-ink-3">{formatDate(booking.booking_date)}</span>
         </div>
       </td>
       <td className="px-4 py-3">
-        <CommerceReferenceLabel id={booking.id} className="block text-[10px] text-gray-400" />
-        <span className="mt-0.5 block text-sm text-gray-700">{booking.customer_name}</span>
-        <span className="text-xs text-gray-400">{booking.customer_phone}</span>
+        <CommerceReferenceLabel id={booking.id} className="block text-[10px] text-ink-3" />
+        <span className="mt-0.5 block text-sm text-ink-2">{booking.customer_name}</span>
+        <span className="text-xs text-ink-3">{booking.customer_phone}</span>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-500">
+      <td className="px-4 py-3 text-sm text-ink-2">
         {booking.services ? (
           <>
             {booking.services.name}
-            <span className="ml-1.5 text-xs text-gray-400">({booking.services.duration_minutes}m)</span>
+            <span className="ml-1.5 text-xs text-ink-3">({booking.services.duration_minutes}m)</span>
           </>
         ) : (
-          <span className="italic text-gray-300">Unknown</span>
+          <span className="italic text-ink-3">Unknown</span>
         )}
       </td>
       <td className="px-4 py-3">
@@ -245,20 +245,20 @@ function BookingRow({
         {booking.assigned_member ? (
           <div className="flex items-center gap-1.5">
             <div
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-on-solid"
               style={{ backgroundColor: booking.assigned_member.avatar_color ?? '#6b7280' }}
             >
               {booking.assigned_member.name.trim().split(/\s+/).filter(Boolean).map((p, i, arr) =>
                 i === 0 || i === arr.length - 1 ? p[0] : ''
               ).join('').toUpperCase().slice(0, 2)}
             </div>
-            <span className="text-xs text-gray-500 truncate max-w-[60px]">{booking.assigned_member.name}</span>
-            <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-400">
+            <span className="text-xs text-ink-2 truncate max-w-[60px]">{booking.assigned_member.name}</span>
+            <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[9px] font-medium text-ink-3">
               {booking.assigned_member.role_label ?? (booking.assigned_member.role.charAt(0).toUpperCase() + booking.assigned_member.role.slice(1))}
             </span>
           </div>
         ) : (
-          <span className="text-xs text-gray-300">—</span>
+          <span className="text-xs text-ink-3">—</span>
         )}
       </td>
       <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -315,12 +315,12 @@ function StatsRow({ bookings }: { bookings: Booking[] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {stats.map(({ label, value, icon: Icon }) => (
-        <div key={label} className="rounded-lg border border-gray-200 bg-white p-5">
+        <div key={label} className="rounded-xl border border-line bg-surface shadow-card p-5">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
-            <Icon size={14} strokeWidth={1.75} className="text-gray-300" />
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-3">{label}</p>
+            <Icon size={14} strokeWidth={1.75} className="text-ink-3" />
           </div>
-          <p className="mt-2 truncate text-2xl font-semibold text-gray-900">{value}</p>
+          <p className="mt-2 truncate text-2xl font-semibold text-ink">{value}</p>
         </div>
       ))}
     </div>
@@ -345,8 +345,8 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
           onClick={() => onChange(value)}
           className={`relative px-4 py-2.5 text-xs font-medium transition-colors ${
             active === value
-              ? 'border-b-2 border-accent text-brand -mb-px'
-              : 'text-gray-400 hover:text-gray-600'
+              ? 'border-b-2 border-accent text-accent-text -mb-px'
+              : 'text-ink-3 hover:text-ink-2'
           }`}
         >
           {label}
@@ -407,27 +407,27 @@ function CalendarView({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
-    <div className="bg-white overflow-hidden min-w-[420px]">
-      <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+    <div className="overflow-x-auto rounded-lg border border-line">
+    <div className="bg-surface overflow-hidden min-w-[420px]">
+      <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <button
           onClick={() => shift(-1)}
-          className="rounded-md px-2 py-1 text-sm text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          className="rounded-md px-2 py-1 text-sm text-ink-3 hover:bg-surface-2 hover:text-ink-2 transition-colors"
         >
           ‹
         </button>
-        <p className="text-sm font-semibold text-gray-900">{monthLabel}</p>
+        <p className="text-sm font-semibold text-ink">{monthLabel}</p>
         <button
           onClick={() => shift(1)}
-          className="rounded-md px-2 py-1 text-sm text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          className="rounded-md px-2 py-1 text-sm text-ink-3 hover:bg-surface-2 hover:text-ink-2 transition-colors"
         >
           ›
         </button>
       </div>
 
-      <div className="grid grid-cols-7 border-b border-gray-100">
+      <div className="grid grid-cols-7 border-b border-line">
         {DAY_HEADERS.map((d) => (
-          <div key={d} className="py-2 text-center text-xs font-medium text-gray-400">
+          <div key={d} className="py-2 text-center text-xs font-medium text-ink-3">
             {d}
           </div>
         ))}
@@ -436,7 +436,7 @@ function CalendarView({
       <div className="grid grid-cols-7">
         {cells.map((day, i) => {
           if (day === null) {
-            return <div key={`e${i}`} className="h-16 border-b border-r border-gray-50 last:border-r-0" />
+            return <div key={`e${i}`} className="h-16 border-b border-r border-line/60 last:border-r-0" />
           }
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
           const count = countsByDate[dateStr] ?? 0
@@ -448,19 +448,19 @@ function CalendarView({
               key={dateStr}
               onClick={() => count > 0 && onDayClick(dateStr)}
               disabled={count === 0}
-              className={`h-16 flex flex-col items-center border-b border-r border-gray-50 pt-2 transition-colors last:border-r-0 ${
-                isWeekend ? 'bg-gray-50/50' : ''
+              className={`h-16 flex flex-col items-center border-b border-r border-line/60 pt-2 transition-colors last:border-r-0 ${
+                isWeekend ? 'bg-surface-2/50' : ''
               } ${count > 0 ? 'hover:bg-accent-soft cursor-pointer' : 'cursor-default'}`}
             >
               <span
                 className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                  isToday ? 'bg-brand text-white' : 'text-gray-700'
+                  isToday ? 'bg-accent text-on-solid' : 'text-ink-2'
                 }`}
               >
                 {day}
               </span>
               {count > 0 && (
-                <span className="mt-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 px-1.5 text-[10px] font-medium text-blue-700">
+                <span className="mt-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-info-soft px-1.5 text-[10px] font-medium text-info">
                   {count}
                 </span>
               )}
@@ -562,14 +562,14 @@ function NewBookingModal({
     (schedulingMode !== 'date_range' || checkOut.trim())
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-xl border border-line bg-surface shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-          <h3 className="text-sm font-semibold text-gray-900">New Booking</h3>
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+          <h3 className="text-sm font-semibold text-ink">New Booking</h3>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            className="rounded-md p-1 text-ink-3 hover:bg-surface-2 hover:text-ink-2 transition-colors"
           >
             <X size={15} strokeWidth={2} />
           </button>
@@ -578,9 +578,9 @@ function NewBookingModal({
         <form onSubmit={handleSubmit} className="space-y-4 p-5">
           {/* Service */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Service</label>
+            <label className="mb-1 block text-xs font-medium text-ink-2">Service</label>
             {loadingServices ? (
-              <div className="flex items-center gap-2 text-xs text-gray-400">
+              <div className="flex items-center gap-2 text-xs text-ink-3">
                 <Loader2 size={13} className="animate-spin" /> Loading services…
               </div>
             ) : (
@@ -588,7 +588,7 @@ function NewBookingModal({
                 value={serviceId}
                 onChange={(e) => setServiceId(e.target.value)}
                 required
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-accent"
+                className="w-full rounded-md border border-line px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent"
               >
                 <option value="">Select a service…</option>
                 {services.map((s) => (
@@ -602,7 +602,7 @@ function NewBookingModal({
 
           {/* Time slot */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className="mb-1 block text-xs font-medium text-ink-2">
               {schedulingMode === 'date_range'
                 ? 'Check-in'
                 : schedulingMode === 'date_only'
@@ -610,7 +610,7 @@ function NewBookingModal({
                   : 'Date & Time'}
             </label>
             {loadingSlots ? (
-              <div className="flex items-center gap-2 text-xs text-gray-400">
+              <div className="flex items-center gap-2 text-xs text-ink-3">
                 <Loader2 size={13} className="animate-spin" /> Loading slots…
               </div>
             ) : (
@@ -619,7 +619,7 @@ function NewBookingModal({
                 onChange={(e) => setSlotId(e.target.value)}
                 required
                 disabled={!serviceId || slots.length === 0}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
+                className="w-full rounded-md border border-line px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
               >
                 <option value="">
                   {!serviceId
@@ -643,47 +643,47 @@ function NewBookingModal({
 
           {schedulingMode === 'date_range' && serviceId && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Check-out</label>
+              <label className="mb-1 block text-xs font-medium text-ink-2">Check-out</label>
               <input
                 type="date"
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
                 required
                 min={slotId ? slotId.slice(0, 10) : undefined}
-                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-accent"
+                className="w-full rounded-md border border-line px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent"
               />
-              <p className="mt-1 text-[11px] text-gray-400">Must be after check-in.</p>
+              <p className="mt-1 text-[11px] text-ink-3">Must be after check-in.</p>
             </div>
           )}
 
           {/* Customer name */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Customer Name</label>
+            <label className="mb-1 block text-xs font-medium text-ink-2">Customer Name</label>
             <input
               type="text"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               required
               placeholder="Jane Smith"
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full rounded-md border border-line px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
 
           {/* Customer phone */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Customer Phone</label>
+            <label className="mb-1 block text-xs font-medium text-ink-2">Customer Phone</label>
             <input
               type="tel"
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
               required
               placeholder="+27821234567"
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full rounded-md border border-line px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
 
           {error && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>
+            <p className="rounded-md bg-danger-soft px-3 py-2 text-xs text-danger">{error}</p>
           )}
 
           {/* Actions */}
@@ -691,14 +691,14 @@ function NewBookingModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="rounded-md border border-line px-4 py-2 text-xs font-medium text-ink-2 hover:bg-surface-2 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!canSubmit || submitting}
-              className="flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-xs font-medium text-white hover:bg-brand-hover transition-colors disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-lg bg-accent shadow-sm shadow-accent/25 px-4 py-2 text-xs font-medium text-on-solid hover:bg-accent-hover transition-colors disabled:opacity-40"
             >
               {submitting && <Loader2 size={12} className="animate-spin" />}
               Create Booking
@@ -822,15 +822,15 @@ export default function BookingsView({
       {/* Heading */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Bookings</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Bookings</h1>
+          <p className="mt-0.5 text-sm text-ink-2">
             {bookings.length} total · search by reference when customers arrive
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowNewBooking(true)}
-            className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover transition-colors"
+            className="flex items-center gap-1.5 rounded-lg bg-accent shadow-sm shadow-accent/25 px-3 py-1.5 text-xs font-medium text-on-solid hover:bg-accent-hover transition-colors"
           >
             <Plus size={13} strokeWidth={2} />
             New Booking
@@ -839,8 +839,8 @@ export default function BookingsView({
             onClick={() => setView((v) => (v === 'list' ? 'calendar' : 'list'))}
             className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
               view === 'calendar'
-                ? 'border-accent bg-brand text-white'
-                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                ? 'border-accent bg-accent text-on-solid'
+                : 'border-line text-ink-2 hover:bg-surface-2'
             }`}
           >
             {view === 'calendar' ? <List size={13} strokeWidth={1.75} /> : <Calendar size={13} strokeWidth={1.75} />}
@@ -858,9 +858,9 @@ export default function BookingsView({
       {view === 'calendar' ? (
         <CalendarView bookings={bookings} onDayClick={handleDayClick} />
       ) : (
-        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <div className="rounded-xl border border-line bg-surface shadow-card overflow-hidden">
           {/* Tabs + day filter */}
-          <div className="flex items-center justify-between border-b border-gray-100 px-4">
+          <div className="flex items-center justify-between border-b border-line px-4">
             <TabBar
               active={tab}
               onChange={(t) => { setTab(t); setDayFilter(null) }}
@@ -868,10 +868,10 @@ export default function BookingsView({
             {dayFilter && (
               <button
                 onClick={() => setDayFilter(null)}
-                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                className="flex items-center gap-1 text-xs text-info hover:text-info transition-colors"
               >
                 {formatDate(dayFilter)}
-                <span className="ml-0.5 text-gray-400">×</span>
+                <span className="ml-0.5 text-ink-3">×</span>
               </button>
             )}
           </div>
@@ -879,11 +879,11 @@ export default function BookingsView({
           {/* Table */}
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <MessageSquare size={28} strokeWidth={1.5} className="mb-3 text-gray-200" />
-              <p className="text-sm text-gray-400">
+              <MessageSquare size={28} strokeWidth={1.5} className="mb-3 text-ink-3/50" />
+              <p className="text-sm text-ink-3">
                 {search.trim() ? 'No bookings match your search' : 'No bookings found'}
               </p>
-              <p className="mt-1 text-xs text-gray-300">
+              <p className="mt-1 text-xs text-ink-3">
                 {search.trim()
                   ? 'Try the reference number, customer name, phone, or email.'
                   : tab === 'today'
@@ -896,11 +896,11 @@ export default function BookingsView({
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400">Time</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400">Customer</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400">Service</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400 hidden md:table-cell">Assigned</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3">Time</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3">Customer</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3">Service</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3 hidden md:table-cell">Assigned</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>

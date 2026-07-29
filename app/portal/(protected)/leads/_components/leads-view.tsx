@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Target, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { clearMyLeads, deleteMyLead, type TokenGetter } from '@/lib/api'
 import type { Lead } from '@/lib/types'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useToast } from '@/components/toast'
+import { ConfirmDialog, EmptyState } from '@/components/ui'
 
 const getFreshToken: TokenGetter = async () => {
   const supabase = createClient()
@@ -44,6 +45,7 @@ export default function LeadsView({ initialLeads }: Props) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [clearing, setClearing] = useState(false)
+  const [confirmClear, setConfirmClear] = useState(false)
 
   async function remove(id: string) {
     if (!canManageLeads) return
@@ -61,7 +63,7 @@ export default function LeadsView({ initialLeads }: Props) {
 
   async function clearAll() {
     if (!canManageLeads || leads.length === 0) return
-    if (!window.confirm('Remove all leads from this list?')) return
+    setConfirmClear(false)
     setClearing(true)
     try {
       await clearMyLeads(getFreshToken)
@@ -80,28 +82,28 @@ export default function LeadsView({ initialLeads }: Props) {
     <div className="mx-auto max-w-5xl">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Leads</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Leads</h1>
+          <p className="mt-0.5 text-sm text-ink-2">
             Prospects captured from your website widget and WhatsApp conversations.
           </p>
         </div>
         {canManageLeads && (
           <button
             type="button"
-            onClick={clearAll}
+            onClick={() => setConfirmClear(true)}
             disabled={leads.length === 0 || clearing}
-            className="rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-md border border-line bg-surface px-4 py-2 text-sm font-medium text-ink-2 hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {clearing ? 'Clearing…' : 'Clear all'}
           </button>
         )}
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-medium text-gray-500">
+              <tr className="border-b border-line bg-surface-2 text-left text-xs font-medium text-ink-2">
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Contact</th>
                 <th className="px-4 py-3">Source</th>
@@ -110,33 +112,36 @@ export default function LeadsView({ initialLeads }: Props) {
                 {canManageLeads && <th className="w-28 px-4 py-3 text-right">Actions</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-line">
               {leads.length === 0 ? (
                 <tr>
-                  <td colSpan={colCount} className="px-4 py-14 text-center text-sm text-gray-400">
-                    No leads yet. They appear here when visitors submit the pre-chat form or when
-                    your agent captures contact details in chat.
+                  <td colSpan={colCount}>
+                    <EmptyState
+                      icon={Target}
+                      title="No leads yet"
+                      description="They appear here when visitors submit the pre-chat form or when your agent captures contact details in chat."
+                    />
                   </td>
                 </tr>
               ) : (
                 leads.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50/60">
-                    <td className="px-4 py-3 font-medium text-gray-900">
+                  <tr key={row.id} className="hover:bg-surface-2/60">
+                    <td className="px-4 py-3 font-medium text-ink">
                       {row.name || '—'}
                     </td>
-                    <td className="px-4 py-3 font-mono text-gray-600">{formatContact(row)}</td>
-                    <td className="px-4 py-3 text-gray-600">{SOURCE_LABELS[row.source]}</td>
-                    <td className="px-4 py-3 text-gray-600">
+                    <td className="px-4 py-3 font-mono text-ink-2">{formatContact(row)}</td>
+                    <td className="px-4 py-3 text-ink-2">{SOURCE_LABELS[row.source]}</td>
+                    <td className="px-4 py-3 text-ink-2">
                       {row.tags?.length ? row.tags.join(', ') : '—'}
                     </td>
-                    <td className="px-4 py-3 text-gray-500">{formatDate(row.created_at)}</td>
+                    <td className="px-4 py-3 text-ink-2">{formatDate(row.created_at)}</td>
                     {canManageLeads && (
                       <td className="px-4 py-3 text-right">
                         <button
                           type="button"
                           onClick={() => remove(row.id)}
                           disabled={busyId === row.id}
-                          className="inline-flex items-center gap-1 rounded-md border border-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-md border border-danger/30 px-2 py-1 text-xs font-medium text-danger hover:bg-danger-soft disabled:opacity-50"
                           aria-label={`Remove ${row.name || 'lead'}`}
                         >
                           <Trash2 size={13} strokeWidth={1.75} />
@@ -151,6 +156,16 @@ export default function LeadsView({ initialLeads }: Props) {
           </table>
         </div>
       </div>
+
+      {confirmClear && (
+        <ConfirmDialog
+          title="Clear all leads"
+          description="Remove all leads from this list? This cannot be undone."
+          confirmLabel="Clear all"
+          onConfirm={clearAll}
+          onCancel={() => setConfirmClear(false)}
+        />
+      )}
     </div>
   )
 }

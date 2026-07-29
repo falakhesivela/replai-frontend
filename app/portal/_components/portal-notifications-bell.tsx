@@ -130,34 +130,34 @@ export default function PortalNotificationsBell({ teamMemberId }: { teamMemberId
           setOpen((v) => !v)
           if (!open) void refresh()
         }}
-        className="relative rounded-md p-2 text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+        className="relative rounded-md p-2 text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
         aria-label="Notifications"
       >
         <Bell size={18} strokeWidth={1.75} />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-on-solid">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 mb-2 w-80 rounded-lg border border-gray-200 bg-white shadow-lg z-50 flex flex-col max-h-96">
-          <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2">
-            <span className="text-xs font-semibold text-gray-900">Notifications</span>
+        <div className="absolute bottom-full left-0 mb-2 w-80 rounded-xl border border-line bg-overlay shadow-overlay z-50 flex flex-col max-h-96">
+          <div className="flex items-center justify-between border-b border-line px-3 py-2">
+            <span className="text-xs font-semibold text-ink">Notifications</span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => void markAllRead()}
                 disabled={loading || unread === 0}
-                className="text-[11px] font-medium text-gray-600 hover:text-gray-900 disabled:opacity-40"
+                className="text-[11px] font-medium text-ink-2 hover:text-ink disabled:opacity-40"
               >
                 Mark all read
               </button>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                className="p-1 text-ink-3 hover:text-ink-2 rounded"
                 aria-label="Close"
               >
                 <X size={14} />
@@ -166,20 +166,20 @@ export default function PortalNotificationsBell({ teamMemberId }: { teamMemberId
           </div>
           <div className="overflow-y-auto flex-1">
             {items.length === 0 ? (
-              <p className="px-3 py-6 text-center text-xs text-gray-400">No notifications yet</p>
+              <p className="px-3 py-6 text-center text-xs text-ink-3">No notifications yet</p>
             ) : (
               items.map((n) => (
                 <button
                   key={n.id}
                   type="button"
                   onClick={() => goToConversation(n)}
-                  className={`w-full text-left px-3 py-2.5 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
+                  className={`w-full text-left px-3 py-2.5 border-b border-line/60 hover:bg-surface-2 transition-colors ${
                     !n.is_read ? 'bg-violet-50/40' : ''
                   }`}
                 >
-                  <p className="text-xs font-medium text-gray-900">{n.title}</p>
-                  <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{n.body}</p>
-                  <p className="text-[10px] text-gray-400 mt-1">
+                  <p className="text-xs font-medium text-ink">{n.title}</p>
+                  <p className="text-[11px] text-ink-2 mt-0.5 line-clamp-2">{n.body}</p>
+                  <p className="text-[10px] text-ink-3 mt-1">
                     {new Date(n.created_at).toLocaleString()}
                   </p>
                 </button>
@@ -187,8 +187,8 @@ export default function PortalNotificationsBell({ teamMemberId }: { teamMemberId
             )}
           </div>
           {loading && (
-            <div className="flex justify-center py-2 border-t border-gray-100">
-              <Loader2 size={14} className="animate-spin text-gray-400" />
+            <div className="flex justify-center py-2 border-t border-line">
+              <Loader2 size={14} className="animate-spin text-ink-3" />
             </div>
           )}
         </div>

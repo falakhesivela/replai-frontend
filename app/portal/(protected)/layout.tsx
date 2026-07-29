@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import PortalShell from '../_components/portal-shell'
 import { ToastProvider } from '@/components/toast'
+import { ThemeProvider } from '@/components/theme/theme-provider'
 import { getCurrentTeamMember, getEffectivePortalRole } from '@/lib/team-auth'
 import { PORTAL_NAV_ACCESS, portalNavEntryAllowsRole } from '@/lib/portal-nav'
 import SubscriptionPaywall from './_components/subscription-paywall'
@@ -82,9 +84,11 @@ export default async function PortalLayout({
     if (!entitled) {
       const isOwner = !!ownerClient?.id && ownerClient.id === clientId
       return (
-        <ToastProvider>
-          <SubscriptionPaywall isOwner={isOwner} />
-        </ToastProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <SubscriptionPaywall isOwner={isOwner} />
+          </ToastProvider>
+        </ThemeProvider>
       )
     }
 
@@ -98,17 +102,25 @@ export default async function PortalLayout({
 
   const teamMember = await getCurrentTeamMember()
 
+  // Server-read so the collapsed sidebar renders correctly on first paint.
+  const cookieStore = await cookies()
+  const initialCollapsed =
+    cookieStore.get('portal_sidebar_collapsed')?.value === '1'
+
   return (
-    <ToastProvider>
-      <PortalShell
-        businessName={businessName ?? 'My Business'}
-        email={user.email ?? ''}
-        allowedHrefs={allowedHrefs}
-        lockedHrefs={lockedHrefs}
-        teamMemberId={teamMember?.id ?? null}
-      >
-        {children}
-      </PortalShell>
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <PortalShell
+          businessName={businessName ?? 'My Business'}
+          email={user.email ?? ''}
+          allowedHrefs={allowedHrefs}
+          lockedHrefs={lockedHrefs}
+          teamMemberId={teamMember?.id ?? null}
+          initialCollapsed={initialCollapsed}
+        >
+          {children}
+        </PortalShell>
+      </ToastProvider>
+    </ThemeProvider>
   )
 }

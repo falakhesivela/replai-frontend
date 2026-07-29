@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MessageSquare } from 'lucide-react'
 import { getClient, getKnowledgeFiles, getClientConversations, getClientSubscriptionDetail, getClientUsage } from '@/lib/api.server'
@@ -64,7 +65,7 @@ function ConversationsCard({ conversations }: { conversations: Conversation[] })
   const attentionCount = conversations.filter((c) => c.status === 'human').length
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white">
+    <div className="rounded-xl border border-gray-200/70 bg-white shadow-card">
       {/* Card header */}
       <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
         <div className="flex items-center gap-2">
@@ -179,7 +180,13 @@ export default async function ClientDetailPage({
       {/* ── Header ── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">{client.business_name}</h2>
+          <Link
+            href="/dashboard/clients"
+            className="mb-1 inline-flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-gray-900"
+          >
+            ← All clients
+          </Link>
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">{client.business_name}</h1>
           {client.wa_phone_number && (
             <p className="mt-0.5 text-sm text-gray-500">{client.wa_phone_number}</p>
           )}

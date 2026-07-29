@@ -30,10 +30,10 @@ function formatDate(dateStr: string): string {
 
 const STATUS_STYLES: Record<Booking['status'], string> = {
   reserved: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
-  confirmed: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-  cancelled: 'bg-red-50 text-red-600 ring-1 ring-red-200',
-  completed: 'bg-gray-100 text-gray-500',
-  no_show: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+  confirmed: 'bg-success-soft text-success ring-1 ring-success/25',
+  cancelled: 'bg-danger-soft text-danger ring-1 ring-danger/25',
+  completed: 'bg-surface-2 text-ink-2',
+  no_show: 'bg-warning-soft text-warning ring-1 ring-warning/25',
 }
 
 const STATUS_LABELS: Record<Booking['status'], string> = {
@@ -109,34 +109,34 @@ export default function MyBookingsView() {
       {/* Heading */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">My Bookings</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">My Bookings</h1>
+          <p className="mt-0.5 text-sm text-ink-2">
             {upcomingCount > 0 ? `${upcomingCount} upcoming` : 'No upcoming bookings'}
           </p>
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-          <Bookmark size={16} strokeWidth={1.75} className="text-gray-500" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2">
+          <Bookmark size={16} strokeWidth={1.75} className="text-ink-2" />
         </div>
       </div>
 
       {loading ? (
         <div className="flex h-48 items-center justify-center">
-          <Loader2 size={20} className="animate-spin text-gray-400" />
+          <Loader2 size={20} className="animate-spin text-ink-3" />
         </div>
       ) : error ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+        <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>
       ) : (
-        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <div className="rounded-xl border border-line bg-surface shadow-card overflow-hidden">
           {/* Tab bar */}
-          <div className="flex border-b border-gray-100 px-4">
+          <div className="flex border-b border-line px-4">
             {TABS.map(({ value, label }) => (
               <button
                 key={value}
                 onClick={() => setTab(value)}
                 className={`relative px-4 py-2.5 text-xs font-medium transition-colors ${
                   tab === value
-                    ? 'border-b-2 border-accent text-brand -mb-px'
-                    : 'text-gray-400 hover:text-gray-600'
+                    ? 'border-b-2 border-accent text-accent-text -mb-px'
+                    : 'text-ink-3 hover:text-ink-2'
                 }`}
               >
                 {label}
@@ -146,43 +146,43 @@ export default function MyBookingsView() {
 
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Calendar size={28} strokeWidth={1.5} className="mb-3 text-gray-200" />
-              <p className="text-sm text-gray-400">No bookings here.</p>
+              <Calendar size={28} strokeWidth={1.5} className="mb-3 text-ink-3/50" />
+              <p className="text-sm text-ink-3">No bookings here.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400">Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400">Customer</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400 hidden sm:table-cell">Service</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-400">Status</th>
+                  <tr className="border-b border-line bg-surface-2">
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3">Time</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3">Customer</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3 hidden sm:table-cell">Service</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-line">
                   {filtered.map((b) => (
                     <tr
                       key={b.id}
                       onClick={() => setSelected(b)}
-                      className="cursor-pointer hover:bg-gray-50/50 transition-colors"
+                      className="cursor-pointer hover:bg-surface-2/50 transition-colors"
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
-                          <Clock size={12} strokeWidth={1.75} className="shrink-0 text-gray-300" />
-                          <span className="font-medium text-gray-900">{formatTime(b.booking_time)}</span>
+                          <Clock size={12} strokeWidth={1.75} className="shrink-0 text-ink-3" />
+                          <span className="font-medium text-ink">{formatTime(b.booking_time)}</span>
                         </div>
-                        <div className="mt-0.5 pl-[18px] text-xs text-gray-400">{formatDate(b.booking_date)}</div>
+                        <div className="mt-0.5 pl-[18px] text-xs text-ink-3">{formatDate(b.booking_date)}</div>
                       </td>
-                      <td className="px-4 py-3 text-gray-700">{b.customer_name}</td>
-                      <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">
+                      <td className="px-4 py-3 text-ink-2">{b.customer_name}</td>
+                      <td className="px-4 py-3 text-ink-2 hidden sm:table-cell">
                         {b.services ? (
                           <div className="flex items-center gap-1">
-                            <Scissors size={11} strokeWidth={1.75} className="shrink-0 text-gray-300" />
+                            <Scissors size={11} strokeWidth={1.75} className="shrink-0 text-ink-3" />
                             {b.services.name}
                           </div>
                         ) : (
-                          <span className="italic text-gray-300">Unknown</span>
+                          <span className="italic text-ink-3">Unknown</span>
                         )}
                       </td>
                       <td className="px-4 py-3">

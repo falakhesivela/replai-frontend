@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react'
 import { resetPasswordAction, type ResetPasswordState } from './actions'
 
 const inputClass =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent'
+  'w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink shadow-xs placeholder:text-ink-3 transition-shadow focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25'
 
 const initialState: ResetPasswordState = {}
 
@@ -16,7 +16,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-on-solid shadow-sm shadow-accent/25 transition-all hover:bg-accent-hover hover:shadow-md hover:shadow-accent/25 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {pending && <Loader2 size={13} className="animate-spin" />}
       {pending ? 'Updating…' : 'Set new password'}
@@ -28,19 +28,19 @@ export default function ResetPasswordPage() {
   const [state, action] = useActionState(resetPasswordAction, initialState)
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold text-gray-900">Set new password</h1>
-          <p className="mt-1 text-sm text-gray-500">Choose a new password for your account.</p>
+          <h1 className="text-2xl font-semibold text-ink">Set new password</h1>
+          <p className="mt-1 text-sm text-ink-2">Choose a new password for your account.</p>
         </div>
 
         <form
           action={action}
-          className="bg-white rounded-lg border border-gray-200 p-6 sm:p-8 shadow-sm space-y-5"
+          className="bg-surface rounded-xl border border-line p-6 sm:p-8 shadow-card space-y-5"
         >
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-ink-2 mb-1">
               New password
             </label>
             <input
@@ -56,7 +56,7 @@ export default function ResetPasswordPage() {
           </div>
 
           <div>
-            <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="confirm" className="block text-sm font-medium text-ink-2 mb-1">
               Confirm new password
             </label>
             <input
@@ -72,7 +72,7 @@ export default function ResetPasswordPage() {
           </div>
 
           {(state.fieldError || state.error) && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+            <p className="text-sm text-danger bg-danger-soft border border-danger/25 rounded-md px-3 py-2">
               {state.fieldError ?? state.error}
             </p>
           )}

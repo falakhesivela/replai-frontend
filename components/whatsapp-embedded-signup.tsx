@@ -40,26 +40,50 @@ const getFreshToken: TokenGetter = async () => {
 export default function WhatsAppEmbeddedSignup({
   onConnected,
   onError,
+  onCancel,
   variant = 'primary',
   label = 'Connect with WhatsApp',
 }: {
   onConnected: (status: WhatsAppConnectionStatus) => void
   onError?: (message: string) => void
+  /** Called when the user closes Meta's popup without finishing. */
+  onCancel?: () => void
   variant?: 'primary' | 'secondary'
   label?: string
 }) {
   const [sdkReady, setSdkReady] = useState(false)
+  const [sdkBlocked, setSdkBlocked] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  // Embedded Signup delivers the WABA + phone-number ids via a postMessage and
-  // the authorization code via the FB.login callback — independently. Stash
-  // both and submit once we have all three.
-  const sessionRef = useRef<{ waba_id?: string; phone_number_id?: string }>({})
+  // Embedded Signup delivers the WABA (+ phone-number id when present) via a
+  // postMessage and the authorization code via the FB.login callback —
+  // independently. Stash both and submit once we have the code + waba_id.
+  // Coexistence finish events sometimes omit phone_number_id; the backend
+  // resolves it from the WABA in that case.
+  const sessionRef = useRef<{
+    waba_id?: string
+    phone_number_id?: string
+    coexistence?: boolean
+  }>({})
+
+  // Keep the latest onCancel in a ref so the postMessage listener (registered
+  // once) always calls the current callback without re-subscribing.
+  const onCancelRef = useRef(onCancel)
+  onCancelRef.current = onCancel
 
   const submit = useCallback(
     async (code: string) => {
-      const { waba_id, phone_number_id } = sessionRef.current
-      if (!waba_id || !phone_number_id) {
+      // The waba_id arrives via postMessage and the code via the FB.login
+      // callback — independently, in no guaranteed order. Wait briefly for the
+      // session info instead of failing a signup the user just completed.
+      let session = sessionRef.current
+      const deadline = Date.now() + 3000
+      while (!session.waba_id && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 100))
+        session = sessionRef.current
+      }
+      const { waba_id, phone_number_id, coexistence } = session
+      if (!waba_id || (!coexistence && !phone_number_id)) {
         setBusy(false)
         onError?.('WhatsApp did not return the account details. Please try again.')
         return
@@ -68,7 +92,8 @@ export default function WhatsAppEmbeddedSignup({
         const status = await completeWhatsAppEmbeddedSignup(getFreshToken, {
           code,
           waba_id,
-          phone_number_id,
+          ...(phone_number_id ? { phone_number_id } : {}),
+          ...(coexistence ? { coexistence: true } : {}),
         })
         onConnected(status)
       } catch (err) {
@@ -96,13 +121,20 @@ export default function WhatsAppEmbeddedSignup({
       try {
         const parsed = JSON.parse(event.data)
         if (parsed?.type !== 'WA_EMBEDDED_SIGNUP') return
-        if (parsed.event === 'FINISH' && parsed.data) {
+        const isCoexistence =
+          parsed.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING'
+        if (
+          (parsed.event === 'FINISH' || isCoexistence) &&
+          parsed.data
+        ) {
           sessionRef.current = {
             waba_id: parsed.data.waba_id,
             phone_number_id: parsed.data.phone_number_id,
+            coexistence: isCoexistence,
           }
         } else if (parsed.event === 'CANCEL') {
           setBusy(false)
+          onCancelRef.current?.()
         }
       } catch {
         // Non-JSON cross-origin chatter — ignore.
@@ -121,7 +153,18 @@ export default function WhatsAppEmbeddedSignup({
       version: GRAPH_VERSION,
     })
     setSdkReady(true)
+    setSdkBlocked(false)
   }, [])
+
+  // Ad blockers commonly kill connect.facebook.net — without this the button
+  // would just sit disabled forever with no explanation.
+  useEffect(() => {
+    if (sdkReady) return
+    const timer = setTimeout(() => {
+      if (!window.FB) setSdkBlocked(true)
+    }, 8000)
+    return () => clearTimeout(timer)
+  }, [sdkReady])
 
   function handleClick() {
     if (!window.FB || !CONFIG_ID) {
@@ -136,14 +179,22 @@ export default function WhatsAppEmbeddedSignup({
         if (code) {
           submit(code)
         } else {
+          // No code → the user closed the popup or did not authorize.
           setBusy(false)
+          onCancelRef.current?.()
         }
       },
       {
         config_id: CONFIG_ID,
         response_type: 'code',
         override_default_response_type: true,
-        extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },
+        // whatsapp_business_app_onboarding = coexistence: keep using the
+        // WhatsApp Business app on the same number while connecting Cloud API.
+        extras: {
+          setup: {},
+          featureType: 'whatsapp_business_app_onboarding',
+          sessionInfoVersion: '3',
+        },
       }
     )
   }
@@ -175,6 +226,12 @@ export default function WhatsAppEmbeddedSignup({
           label
         )}
       </button>
+      {sdkBlocked && !sdkReady && (
+        <p className="max-w-55 text-right text-xs leading-relaxed text-warning">
+          Your browser is blocking Facebook&apos;s signup script (often an ad
+          blocker). Allow it for this page, or enter credentials manually.
+        </p>
+      )}
     </>
   )
 }

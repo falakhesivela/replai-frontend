@@ -11,8 +11,11 @@ interface PortalShellProps {
   allowedHrefs: string[]
   lockedHrefs?: string[]
   teamMemberId: string | null
+  initialCollapsed?: boolean
   children: React.ReactNode
 }
+
+const COLLAPSED_COOKIE = 'portal_sidebar_collapsed'
 
 export default function PortalShell({
   businessName,
@@ -20,17 +23,23 @@ export default function PortalShell({
   allowedHrefs,
   lockedHrefs = [],
   teamMemberId,
+  initialCollapsed = false,
   children,
 }: PortalShellProps) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(initialCollapsed)
   const [mobileOpen, setMobileOpen] = useState(false)
 
+  const handleCollapsedChange = (next: boolean) => {
+    setCollapsed(next)
+    document.cookie = `${COLLAPSED_COOKIE}=${next ? '1' : '0'}; path=/; max-age=31536000; samesite=lax`
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-canvas">
       {/* Mobile backdrop */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
           onClick={() => setMobileOpen(false)}
           aria-hidden="true"
         />
@@ -43,7 +52,7 @@ export default function PortalShell({
         lockedHrefs={lockedHrefs}
         teamMemberId={teamMemberId}
         collapsed={collapsed}
-        onCollapsedChange={setCollapsed}
+        onCollapsedChange={handleCollapsedChange}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />
@@ -55,11 +64,11 @@ export default function PortalShell({
       >
         <MobileTopBar onMenuClick={() => setMobileOpen(true)} />
 
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-4 md:p-8">
           {children}
         </main>
 
-        <PortalLegalFooter className="px-4 pb-4 md:px-6 md:pb-6" />
+        <PortalLegalFooter className="px-4 pb-4 md:px-8 md:pb-6" />
       </div>
     </div>
   )

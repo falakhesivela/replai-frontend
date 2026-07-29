@@ -148,15 +148,15 @@ export function ActivityFeed() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Activity</h1>
-          <p className="mt-1 text-sm text-gray-500">Last 7 days of team actions</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Activity</h1>
+          <p className="mt-1 text-sm text-ink-2">Last 7 days of team actions</p>
         </div>
 
         {/* Member filter */}
         <select
           value={memberFilter}
           onChange={(e) => setMemberFilter(e.target.value)}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent w-full sm:w-52"
+          className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink shadow-xs focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 w-full sm:w-52"
         >
           <option value="">All members</option>
           {members.map((m) => (
@@ -168,22 +168,22 @@ export function ActivityFeed() {
       </div>
 
       {error && (
-        <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+        <p className="mb-4 text-sm text-danger bg-danger-soft border border-danger/30 rounded-md px-3 py-2">
           {error}
         </p>
       )}
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm text-ink-2">
           <Loader2 className="animate-spin" size={18} />
           Loading activity…
         </div>
       ) : entries.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50/80 px-5 py-10 text-center">
-          <p className="text-sm text-gray-500">No activity yet.</p>
+        <div className="rounded-lg border border-dashed border-line-strong bg-surface-2/80 px-5 py-10 text-center">
+          <p className="text-sm text-ink-2">No activity yet.</p>
         </div>
       ) : (
-        <ol className="relative border-l border-gray-200 space-y-0">
+        <ol className="relative border-l border-line space-y-0">
           {entries.map((entry) => (
             <ActivityItem key={entry.id} entry={entry} />
           ))}
@@ -196,7 +196,7 @@ export function ActivityFeed() {
             type="button"
             onClick={() => void loadMore()}
             disabled={loadingMore}
-            className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink-2 shadow-xs hover:border-line-strong hover:bg-surface-2 disabled:opacity-50"
           >
             {loadingMore ? (
               <>
@@ -219,24 +219,24 @@ function ActivityItem({ entry }: { entry: ActivityLogEntry }) {
   return (
     <li className="ml-6 pb-8">
       {/* Timeline dot + avatar */}
-      <span className="absolute -left-4 flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold text-white shadow-sm ring-2 ring-white"
+      <span className="absolute -left-4 flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold text-on-solid shadow-sm ring-2 ring-white"
         style={{ backgroundColor: color }}>
         {initials(entry.member_name)}
       </span>
 
       <div className="pl-2">
-        <p className="text-sm text-gray-900">
+        <p className="text-sm text-ink">
           <span className="font-medium">{entry.member_name}</span>
           {' '}
-          <span className="text-gray-600">{actionLabel(entry.action)}</span>
+          <span className="text-ink-2">{actionLabel(entry.action)}</span>
           {entry.details && (
-            <span className="ml-1 text-gray-500 font-mono text-xs">
+            <span className="ml-1 text-ink-2 font-mono text-xs">
               — {entry.details}
             </span>
           )}
         </p>
 
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-400">
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-ink-3">
           <time dateTime={entry.created_at}>{timeAgo(entry.created_at)}</time>
           {entry.conversation_phone && (
             <span className="font-mono">{entry.conversation_phone}</span>

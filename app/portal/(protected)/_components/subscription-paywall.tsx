@@ -118,13 +118,13 @@ export default function SubscriptionPaywall({ isOwner }: { isOwner: boolean }) {
 
   if (activating) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
+      <div className="flex min-h-screen items-center justify-center bg-canvas px-6">
         <div className="w-full max-w-sm text-center">
-          <Loader2 size={24} className="mx-auto animate-spin text-gray-400" />
-          <p className="mt-4 text-sm font-medium text-gray-900">
+          <Loader2 size={24} className="mx-auto animate-spin text-ink-3" />
+          <p className="mt-4 text-sm font-medium text-ink">
             Activating your subscription…
           </p>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-ink-3">
             This usually takes a few seconds.
           </p>
           {activationSlow && (
@@ -142,13 +142,13 @@ export default function SubscriptionPaywall({ isOwner }: { isOwner: boolean }) {
                   }
                   window.location.reload()
                 }}
-                className="w-full rounded-md bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800"
+                className="w-full rounded-md bg-accent px-4 py-2 text-xs font-semibold text-accent-fg hover:bg-accent-hover"
               >
                 I already paid — refresh access
               </button>
               <button
                 onClick={() => window.location.reload()}
-                className="w-full text-xs font-medium text-gray-500 underline"
+                className="w-full text-xs font-medium text-ink-3 underline"
               >
                 Reload page
               </button>
@@ -163,17 +163,17 @@ export default function SubscriptionPaywall({ isOwner }: { isOwner: boolean }) {
   const canCheckout = paddleConfigured()
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-canvas px-6 py-12">
       <div className="w-full max-w-lg">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-900 text-white">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-soft text-accent-text ring-1 ring-accent/20">
             <Lock size={18} />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">
+            <h1 className="text-lg font-semibold text-ink">
               Your subscription is inactive
             </h1>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-ink-2">
               Your free trial has ended or the subscription lapsed.
             </p>
           </div>
@@ -181,25 +181,25 @@ export default function SubscriptionPaywall({ isOwner }: { isOwner: boolean }) {
 
         {!isOwner ? (
           <Card>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-ink-2">
               Please ask your account owner to renew the subscription to restore
               access for the team.
             </p>
             <button
               onClick={signOut}
-              className="mt-4 text-sm font-medium text-gray-900 underline"
+              className="mt-4 text-sm font-medium text-ink underline"
             >
               Log out
             </button>
           </Card>
         ) : loading ? (
           <div className="flex h-40 items-center justify-center">
-            <Loader2 size={20} className="animate-spin text-gray-400" />
+            <Loader2 size={20} className="animate-spin text-ink-3" />
           </div>
         ) : (
           <div className="space-y-4">
             {!canCheckout && (
-              <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              <p className="rounded-md bg-warning-soft px-3 py-2 text-xs text-warning">
                 Online payment isn’t available yet — please contact support to
                 reactivate your account.
               </p>
@@ -212,8 +212,8 @@ export default function SubscriptionPaywall({ isOwner }: { isOwner: boolean }) {
                   onClick={() => setCycle(c)}
                   className={`rounded-md px-3 py-1.5 text-xs font-medium capitalize ${
                     cycle === c
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-accent text-accent-fg'
+                      : 'bg-surface-2 text-ink-2 hover:bg-line'
                   }`}
                 >
                   {c}
@@ -229,22 +229,22 @@ export default function SubscriptionPaywall({ isOwner }: { isOwner: boolean }) {
               return (
                 <div
                   key={plan.key}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-5"
+                  className="flex items-center justify-between rounded-xl border border-line bg-surface shadow-card p-5"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">
+                    <p className="text-sm font-semibold text-ink">
                       {plan.name}
                     </p>
-                    <p className="text-xs text-gray-500">{plan.description}</p>
+                    <p className="text-xs text-ink-2">{plan.description}</p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-sm font-semibold text-ink">
                       {isScale ? 'Custom' : `${usd(price)}/mo`}
                     </span>
                     {isScale ? (
                       <a
                         href="mailto:hello@replai.co.za?subject=Replai%20Scale"
-                        className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                        className="rounded-md bg-surface-2 px-2.5 py-1 text-xs font-medium text-ink-2 hover:bg-line"
                       >
                         Contact sales
                       </a>
@@ -252,7 +252,7 @@ export default function SubscriptionPaywall({ isOwner }: { isOwner: boolean }) {
                       <button
                         onClick={() => choose(plan.key)}
                         disabled={!canCheckout || busy === plan.key}
-                        className="rounded-md bg-gray-900 px-3 py-1 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                        className="rounded-md bg-accent px-3 py-1 text-xs font-medium text-accent-fg hover:bg-accent-hover disabled:opacity-50"
                       >
                         {busy === plan.key ? (
                           <Loader2 size={13} className="animate-spin" />
@@ -268,7 +268,7 @@ export default function SubscriptionPaywall({ isOwner }: { isOwner: boolean }) {
 
             <button
               onClick={signOut}
-              className="text-sm font-medium text-gray-500 underline"
+              className="text-sm font-medium text-ink-3 underline"
             >
               Log out
             </button>

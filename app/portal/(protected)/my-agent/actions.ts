@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { getPortalAccessToken } from '@/lib/supabase/server'
 import { updateMySystemPrompt, updateMyAgentSettings, toggleMyAI } from '@/lib/api'
 import { getEffectivePortalRole, hasPermission } from '@/lib/team-auth'
 
@@ -22,15 +22,11 @@ export async function saveSystemPromptAction(
 
   if (!prompt) return { error: 'System prompt cannot be empty.' }
 
-  const supabase = await createClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  if (!session) return { error: 'Not authenticated.' }
+  const token = await getPortalAccessToken()
+  if (!token) return { error: 'Not authenticated.' }
 
   try {
-    await updateMySystemPrompt(session.access_token, prompt)
+    await updateMySystemPrompt(token, prompt)
     return { success: true }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to save changes.' }
@@ -46,17 +42,13 @@ export async function saveAgentNameAction(
     return { error: 'You do not have permission to edit the agent configuration.' }
   }
 
-  const supabase = await createClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  if (!session) return { error: 'Not authenticated.' }
+  const token = await getPortalAccessToken()
+  if (!token) return { error: 'Not authenticated.' }
 
   const agentName = (formData.get('agent_name') as string ?? '').trim()
 
   try {
-    await updateMyAgentSettings(session.access_token, { agent_name: agentName })
+    await updateMyAgentSettings(token, { agent_name: agentName })
     return { success: true }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to save changes.' }
@@ -72,17 +64,13 @@ export async function saveAgentSettingsAction(
     return { error: 'You do not have permission to edit the agent configuration.' }
   }
 
-  const supabase = await createClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  if (!session) return { error: 'Not authenticated.' }
+  const token = await getPortalAccessToken()
+  if (!token) return { error: 'Not authenticated.' }
 
   const style = formData.get('response_style') as 'formal' | 'friendly' | 'casual'
 
   try {
-    await updateMyAgentSettings(session.access_token, {
+    await updateMyAgentSettings(token, {
       agent_auto_language: formData.get('auto_language') === 'true',
       agent_use_emoji: formData.get('use_emoji') === 'true',
       agent_sign_off: formData.get('sign_off') === 'true',
@@ -103,13 +91,12 @@ export async function toggleAIAction(
     return { error: 'You do not have permission to change AI settings.' }
   }
 
-  const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return { error: 'Not authenticated.' }
+  const token = await getPortalAccessToken()
+  if (!token) return { error: 'Not authenticated.' }
 
   const enabled = formData.get('ai_enabled') === 'true'
   try {
-    await toggleMyAI(session.access_token, enabled)
+    await toggleMyAI(token, enabled)
     return { success: true }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to save changes.' }

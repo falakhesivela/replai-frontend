@@ -5,15 +5,15 @@ import { usePathname } from 'next/navigation'
 import { cn } from './cn'
 
 const TAB_BASE =
-  'relative flex items-center gap-1.5 border-b-2 -mb-px px-4 py-2 text-sm font-medium transition-colors'
-const TAB_ACTIVE = 'border-accent text-accent'
+  'relative flex items-center gap-1.5 rounded-t-md border-b-2 -mb-px px-4 py-2 text-sm font-medium transition-colors'
+const TAB_ACTIVE = 'border-accent text-accent-text'
 const TAB_INACTIVE =
-  'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-const LIST = 'flex gap-1 border-b border-gray-200'
+  'border-transparent text-ink-3 hover:bg-surface-2 hover:text-ink'
+const LIST = 'flex gap-1 border-b border-line'
 
 function CountBadge({ count }: { count: number }) {
   return (
-    <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-bold text-white">
+    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-warning px-1 text-[10px] font-bold text-on-solid">
       {count}
     </span>
   )

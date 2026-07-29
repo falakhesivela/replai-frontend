@@ -7,6 +7,7 @@ export interface Client {
   wa_access_token: string
   wa_phone_number: string
   waba_id?: string | null
+  wa_coexistence?: boolean
   system_prompt: string
   is_active: boolean
   user_id?: string
@@ -277,6 +278,33 @@ export interface WhatsAppConnectionStatus {
   phone_number?: string | null
   phone_number_id?: string | null
   waba_id?: string | null
+  coexistence?: boolean        // onboarded alongside the WhatsApp Business app
+  /** Set on the signup response when the number isn't CONNECTED on Cloud API
+   * (e.g. an existing two-step PIN blocked registration). */
+  registration_warning?: string | null
+}
+
+export type MetaSyncStatus = 'pending' | 'synced' | 'error' | 'skipped'
+
+export interface WhatsAppCatalogStatus {
+  configured: boolean          // backend allows catalog flows (server flag + Meta creds)
+  whatsapp_connected: boolean  // prerequisite: workspace has a connected WhatsApp number
+  status: 'not_connected' | 'pending' | 'active' | 'disabled'
+  enabled: boolean             // native product-message sending toggle
+  catalog_id?: string | null
+  catalog_name?: string | null
+  auto_create_available: boolean
+  oauth_available: boolean     // catalog-only consent popup is configured server-side
+  has_catalog_grant: boolean   // a catalog-scoped token is stored for this workspace
+  last_synced_at?: string | null
+  last_error?: string | null
+  products: {
+    total: number
+    synced: number
+    pending: number
+    error: number
+    skipped: number
+  }
 }
 
 export interface Booking {
@@ -451,6 +479,95 @@ export interface SlaCsatMetrics {
   avg_csat_score: number | null
   csat_response_rate: number | null
   total_csat_responses: number
+  /** Present only when the endpoint was called with a date range. */
+  series?: SlaCsatDay[]
+  period?: MetricsPeriod
+}
+
+export interface MetricsPeriod {
+  start: string
+  end: string
+}
+
+export interface SlaCsatDay {
+  date: string
+  avg_first_response_minutes: number | null
+  breaches: number
+  responded: number
+  csat_avg: number | null
+  csat_count: number
+}
+
+export interface AnalyticsTotals {
+  conversations: number
+  messages_in: number
+  messages_out: number
+  ai_handled: number
+  human_handled: number
+  resolved: number
+  leads: number
+  bookings: number
+  orders: number
+}
+
+export interface AnalyticsDay {
+  date: string
+  conversations: number
+  messages_in: number
+  messages_out: number
+  ai_handled: number
+  human_handled: number
+}
+
+export interface AnalyticsOverview {
+  period: MetricsPeriod
+  totals: AnalyticsTotals
+  previous: AnalyticsTotals
+  series: AnalyticsDay[]
+}
+
+export interface SentimentDay {
+  date: string
+  positive: number
+  neutral: number
+  negative: number
+}
+
+export interface SentimentMetrics {
+  period: MetricsPeriod
+  totals: { positive: number; neutral: number; negative: number }
+  series: SentimentDay[]
+}
+
+export interface OnboardingStep {
+  done: boolean
+  skipped: boolean
+}
+
+export interface OnboardingStatus {
+  steps: {
+    profile: OnboardingStep
+    knowledge: OnboardingStep
+    test: OnboardingStep
+    go_live: OnboardingStep
+    power_ups: OnboardingStep
+  }
+  completed_at: string | null
+}
+
+export interface UsageMetrics {
+  state: 'ok' | 'approaching' | 'over' | 'unlimited' | 'no_subscription'
+  used: number
+  included: number | null
+  pct: number | null
+  overage_conversations: number
+  overage_accrued_usd: number
+  wa_used: number
+  wa_included: number | null
+  wa_overage_messages: number
+  wa_overage_accrued_usd: number
+  period_start: string
+  period_end: string
 }
 
 // ── Departments ───────────────────────────────────────────────────────────────
@@ -615,6 +732,10 @@ export interface Product {
   is_active: boolean
   created_at: string
   updated_at: string
+  // Meta catalog push-sync bookkeeping (present once the migration is applied)
+  meta_sync_status?: MetaSyncStatus
+  meta_synced_at?: string | null
+  meta_sync_error?: string | null
 }
 
 export type OrderStatus =
@@ -626,11 +747,13 @@ export type OrderStatus =
   | 'cancelled'
 
 export interface OrderItem {
-  product_id: string
+  product_id: string | null   // null = custom line item (manual orders)
   name: string
   price: number
   quantity: number
 }
+
+export type OrderSource = 'ai' | 'manual'
 
 export interface Order {
   id: string
@@ -647,6 +770,66 @@ export interface Order {
   payment_reference?: string | null
   assigned_to: string | null
   assigned_member: { id: string; name: string; avatar_color: string | null; role: string; role_label: string | null } | null
+  source?: OrderSource
+  notes?: string | null
+  created_by?: string | null
+  fulfillment_method?: 'none' | 'pickup' | 'delivery'
+  delivery_address?: string | null
+  discount_amount?: number
+  tracking_number?: string | null
+  /** Present on PATCH responses when the Paystack link was re-created for a new total. */
+  payment_link_regenerated?: boolean
   created_at: string
   updated_at: string
+}
+
+export interface ManualOrderItemInput {
+  product_id?: string | null
+  name?: string          // required for custom items
+  price?: number         // required for custom items
+  quantity: number
+}
+
+export type ManualOrderPaymentMode = 'link' | 'paid' | 'none'
+
+export type FulfillmentMethod = 'none' | 'pickup' | 'delivery'
+
+export interface ManualOrderInput {
+  customer_name?: string
+  customer_phone?: string
+  customer_email?: string
+  items: ManualOrderItemInput[]
+  notes?: string
+  payment_mode?: ManualOrderPaymentMode
+  notify_customer?: boolean
+  fulfillment_method?: FulfillmentMethod
+  delivery_address?: string
+  discount_amount?: number
+}
+
+export interface OrderUpdateInput {
+  customer_name?: string | null
+  customer_email?: string | null
+  items?: ManualOrderItemInput[]
+  notes?: string | null
+  fulfillment_method?: FulfillmentMethod
+  delivery_address?: string | null
+  tracking_number?: string | null
+}
+
+export type OrderEventType =
+  | 'created'
+  | 'status_changed'
+  | 'payment_received'
+  | 'items_edited'
+  | 'assigned'
+  | 'note'
+
+export interface OrderEvent {
+  id: string
+  client_id: string
+  order_id: string
+  type: OrderEventType
+  data: Record<string, unknown>
+  created_at: string
 }

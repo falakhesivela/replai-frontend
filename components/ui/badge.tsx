@@ -1,13 +1,14 @@
 import { cn } from './cn'
 
-export type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
+export type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'accent'
 
 const TONES: Record<BadgeTone, string> = {
-  neutral: 'bg-gray-100 text-gray-600 ring-gray-500/20',
-  success: 'bg-green-50 text-green-700 ring-green-600/20',
-  warning: 'bg-amber-50 text-amber-700 ring-amber-600/20',
-  danger: 'bg-red-50 text-red-600 ring-red-500/20',
-  info: 'bg-accent-soft text-accent ring-accent/20',
+  neutral: 'bg-surface-2 text-ink-2 ring-line',
+  success: 'bg-success-soft text-success ring-success/20',
+  warning: 'bg-warning-soft text-warning ring-warning/20',
+  danger: 'bg-danger-soft text-danger ring-danger/20',
+  info: 'bg-info-soft text-info ring-info/20',
+  accent: 'bg-accent-soft text-accent-text ring-accent/20',
 }
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {

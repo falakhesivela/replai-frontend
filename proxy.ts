@@ -18,6 +18,16 @@ const COOKIE_UI_ROLE = {
   secure: process.env.NODE_ENV === 'production',
 }
 
+/** Admin allowlist for /dashboard — comma-separated emails in ADMIN_EMAILS. */
+function isAdminUser(user: User): boolean {
+  const allowlist = (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+  const email = user.email?.toLowerCase()
+  return Boolean(email && allowlist.includes(email))
+}
+
 function normalizeTeamRole(raw: unknown): 'manager' | 'agent' {
   const r = String(raw ?? 'agent').toLowerCase()
   return r === 'manager' ? 'manager' : 'agent'
@@ -131,6 +141,12 @@ export async function proxy(request: NextRequest) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('next', path)
     return NextResponse.redirect(loginUrl)
+  }
+
+  // The dashboard server-fetches with ADMIN_API_KEY, so an authenticated
+  // session alone must never grant access — only allowlisted admins pass.
+  if (path.startsWith('/dashboard') && !isAdminUser(user)) {
+    return NextResponse.redirect(new URL('/portal/overview', request.url))
   }
 
   if (isPortalRoute) {

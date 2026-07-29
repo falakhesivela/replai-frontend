@@ -22,7 +22,7 @@ import {
   type TokenGetter,
 } from '@/lib/api'
 import type { CustomRole } from '@/lib/types'
-import { Card } from '@/components/ui'
+import { Card, ConfirmDialog } from '@/components/ui'
 
 const getFreshToken: TokenGetter = async () => {
   const supabase = createClient()
@@ -108,38 +108,38 @@ function RoleForm({
   return (
     <Card padding="sm" className="space-y-5">
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Role name</label>
+        <label className="mb-1 block text-xs font-medium text-ink-2">Role name</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Receptionist"
-          className="w-full max-w-xs rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-accent"
+          className="w-full max-w-xs rounded-md border border-line px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
 
       <div className="space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Permissions</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-3">Permissions</p>
         {PERMISSION_GROUPS.map((group) => (
           <div key={group.label}>
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">{group.label}</p>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-ink-3">{group.label}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {group.items.map(({ key, label }) => (
                 <label
                   key={key}
-                  className="flex cursor-pointer items-center gap-2.5 rounded-md border border-gray-100 px-3 py-2 hover:bg-gray-50 transition-colors"
+                  className="flex cursor-pointer items-center gap-2.5 rounded-md border border-line px-3 py-2 hover:bg-surface-2 transition-colors"
                 >
                   <div
                     onClick={() => toggle(key)}
                     className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
                       perms.has(key)
-                        ? 'border-accent bg-brand'
-                        : 'border-gray-300 bg-white'
+                        ? 'border-accent bg-accent'
+                        : 'border-line-strong bg-surface'
                     }`}
                   >
-                    {perms.has(key) && <Check size={10} strokeWidth={3} className="text-white" />}
+                    {perms.has(key) && <Check size={10} strokeWidth={3} className="text-on-solid" />}
                   </div>
-                  <span className="text-sm text-gray-700">{label}</span>
+                  <span className="text-sm text-ink-2">{label}</span>
                 </label>
               ))}
             </div>
@@ -147,19 +147,19 @@ function RoleForm({
         ))}
       </div>
 
-      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
+      {error && <p className="rounded-md bg-danger-soft px-3 py-2 text-xs text-danger">{error}</p>}
 
       <div className="flex gap-2 pt-1">
         <button
           onClick={onCancel}
-          className="rounded-md border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          className="rounded-md border border-line px-4 py-2 text-xs font-medium text-ink-2 hover:bg-surface-2 transition-colors"
         >
           Cancel
         </button>
         <button
           onClick={() => onSave(name.trim(), Array.from(perms))}
           disabled={!name.trim() || saving}
-          className="flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-xs font-medium text-white hover:bg-brand-hover transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-lg bg-accent shadow-sm shadow-accent/25 px-4 py-2 text-xs font-medium text-on-solid hover:bg-accent-hover transition-colors disabled:opacity-40"
         >
           {saving && <Loader2 size={12} className="animate-spin" />}
           Save role
@@ -189,22 +189,22 @@ function RoleCard({
     <Card padding="sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100">
-            <Shield size={14} strokeWidth={1.75} className="text-gray-500" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-2">
+            <Shield size={14} strokeWidth={1.75} className="text-ink-2" />
           </div>
-          <h3 className="text-sm font-semibold text-gray-900">{role.name}</h3>
+          <h3 className="text-sm font-semibold text-ink">{role.name}</h3>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={onEdit}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            className="rounded-md p-1.5 text-ink-3 hover:bg-surface-2 hover:text-ink-2 transition-colors"
           >
             <Pencil size={13} strokeWidth={1.75} />
           </button>
           <button
             onClick={onDelete}
             disabled={deleting}
-            className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-40"
+            className="rounded-md p-1.5 text-ink-3 hover:bg-danger-soft hover:text-danger transition-colors disabled:opacity-40"
           >
             {deleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} strokeWidth={1.75} />}
           </button>
@@ -214,13 +214,13 @@ function RoleCard({
       {role.permissions.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {role.permissions.map((p) => (
-            <span key={p} className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+            <span key={p} className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-ink-2">
               {ALL_PERMISSION_LABELS[p] ?? p}
             </span>
           ))}
         </div>
       ) : (
-        <p className="mt-3 text-xs text-gray-400">No permissions assigned.</p>
+        <p className="mt-3 text-xs text-ink-3">No permissions assigned.</p>
       )}
     </Card>
   )
@@ -238,6 +238,7 @@ export default function RolesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [savingId, setSavingId] = useState<string | null>(null)  // 'new' or role id
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -284,7 +285,7 @@ export default function RolesPage() {
   }
 
   async function handleDelete(roleId: string) {
-    if (!window.confirm('Delete this role? Team members assigned to it will fall back to their base permissions.')) return
+    setConfirmDeleteId(null)
     setDeletingId(roleId)
     try {
       await deleteClientRole(getFreshToken, roleId)
@@ -300,33 +301,33 @@ export default function RolesPage() {
     <div className="max-w-2xl space-y-6">
       <button
         onClick={() => router.push('/portal/team')}
-        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+        className="flex items-center gap-1.5 text-sm text-ink-2 hover:text-ink transition-colors"
       >
         <ArrowLeft size={14} strokeWidth={1.75} /> Team
       </button>
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Roles</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Roles</h1>
+          <p className="mt-0.5 text-sm text-ink-2">
             Create custom roles with specific permissions and assign them to team members.
           </p>
         </div>
         {!showCreate && (
           <button
             onClick={() => { setShowCreate(true); setEditingId(null); setSaveError(null) }}
-            className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover transition-colors"
+            className="flex items-center gap-1.5 rounded-lg bg-accent shadow-sm shadow-accent/25 px-3 py-1.5 text-xs font-medium text-on-solid hover:bg-accent-hover transition-colors"
           >
             <Plus size={13} strokeWidth={2} /> New role
           </button>
         )}
       </div>
 
-      {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
 
       {loading ? (
         <div className="flex h-48 items-center justify-center">
-          <Loader2 size={20} className="animate-spin text-gray-400" />
+          <Loader2 size={20} className="animate-spin text-ink-3" />
         </div>
       ) : (
         <div className="space-y-4">
@@ -341,12 +342,12 @@ export default function RolesPage() {
           )}
 
           {roles.length === 0 && !showCreate ? (
-            <div className="rounded-lg border border-dashed border-gray-200 py-14 text-center">
-              <Shield size={24} className="mx-auto mb-2 text-gray-200" />
-              <p className="text-sm text-gray-400">No custom roles yet.</p>
+            <div className="rounded-lg border border-dashed border-line py-14 text-center">
+              <Shield size={24} className="mx-auto mb-2 text-ink-3/50" />
+              <p className="text-sm text-ink-3">No custom roles yet.</p>
               <button
                 onClick={() => setShowCreate(true)}
-                className="mt-3 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                className="mt-3 text-xs text-info hover:text-info transition-colors"
               >
                 Create your first role
               </button>
@@ -367,13 +368,22 @@ export default function RolesPage() {
                   key={role.id}
                   role={role}
                   onEdit={() => { setEditingId(role.id); setShowCreate(false); setSaveError(null) }}
-                  onDelete={() => handleDelete(role.id)}
+                  onDelete={() => setConfirmDeleteId(role.id)}
                   deleting={deletingId === role.id}
                 />
               )
             )
           )}
         </div>
+      )}
+
+      {confirmDeleteId && (
+        <ConfirmDialog
+          title="Delete role"
+          description="Delete this role? Team members assigned to it will fall back to their base permissions."
+          onConfirm={() => handleDelete(confirmDeleteId)}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
       )}
     </div>
   )

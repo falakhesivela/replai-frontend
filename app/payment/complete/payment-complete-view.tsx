@@ -94,13 +94,20 @@ export default function PaymentCompleteView({ reference: referenceProp }: { refe
   const status = data?.payment_status ?? (error ? 'unknown' : 'pending')
 
   return (
-    <main className="flex min-h-full flex-col items-center justify-center bg-gray-50 px-4 py-16">
-      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-8 shadow-sm text-center">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-6">Replai</p>
+    <main className="flex min-h-full flex-col items-center justify-center bg-canvas px-4 py-16">
+      <div className="w-full max-w-md rounded-2xl border border-gray-200/70 bg-white p-8 shadow-card text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/replai_logo.png"
+          alt="Replai"
+          className="mx-auto mb-6 h-6 w-auto object-contain"
+        />
 
         {loading && (
           <>
-            <Loader2 className="mx-auto h-10 w-10 animate-spin text-amber-500" />
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 ring-1 ring-amber-600/15">
+              <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+            </span>
             <h1 className="mt-4 text-lg font-semibold text-gray-900">Confirming payment…</h1>
             <p className="mt-4 text-sm text-gray-600">
               This usually takes a few seconds. You can close this page and return to WhatsApp.
@@ -110,7 +117,9 @@ export default function PaymentCompleteView({ reference: referenceProp }: { refe
 
         {!loading && !reference && (
           <>
-            <XCircle className="mx-auto h-10 w-10 text-amber-500" />
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 ring-1 ring-amber-600/15">
+              <XCircle className="h-8 w-8 text-amber-500" />
+            </span>
             <h1 className="mt-4 text-lg font-semibold text-gray-900">Missing payment reference</h1>
             <p className="mt-2 text-sm text-gray-500">
               If you completed a payment, you can close this page and return to WhatsApp — the
@@ -121,7 +130,9 @@ export default function PaymentCompleteView({ reference: referenceProp }: { refe
 
         {!loading && reference && status === 'paid' && (
           <>
-            <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-50 ring-1 ring-green-600/15">
+              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            </span>
             <h1 className="mt-4 text-lg font-semibold text-gray-900">Payment successful</h1>
             <p className="mt-2 text-sm text-gray-500">
               {data?.kind === 'booking'
@@ -138,7 +149,9 @@ export default function PaymentCompleteView({ reference: referenceProp }: { refe
 
         {!loading && reference && status === 'pending' && !error && (
           <>
-            <Clock className="mx-auto h-10 w-10 text-amber-500" />
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 ring-1 ring-amber-600/15">
+              <Clock className="h-8 w-8 text-amber-500" />
+            </span>
             <h1 className="mt-4 text-lg font-semibold text-gray-900">Payment processing</h1>
             <p className="mt-2 text-sm text-gray-500">
               We are still confirming your payment. You can close this page and return to WhatsApp
@@ -149,7 +162,9 @@ export default function PaymentCompleteView({ reference: referenceProp }: { refe
 
         {!loading && reference && status === 'failed' && (
           <>
-            <XCircle className="mx-auto h-10 w-10 text-red-500" />
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 ring-1 ring-red-600/15">
+              <XCircle className="h-8 w-8 text-red-500" />
+            </span>
             <h1 className="mt-4 text-lg font-semibold text-gray-900">Payment not completed</h1>
             <p className="mt-2 text-sm text-gray-500">
               This payment did not go through. Return to WhatsApp and ask for a new payment link.
@@ -159,7 +174,9 @@ export default function PaymentCompleteView({ reference: referenceProp }: { refe
 
         {!loading && error && (
           <>
-            <Clock className="mx-auto h-10 w-10 text-gray-400" />
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 ring-1 ring-gray-500/10">
+              <Clock className="h-8 w-8 text-gray-400" />
+            </span>
             <h1 className="mt-4 text-lg font-semibold text-gray-900">Thank you</h1>
             <p className="mt-2 text-sm text-gray-500">{error}</p>
             <p className="mt-3 text-xs text-gray-400">

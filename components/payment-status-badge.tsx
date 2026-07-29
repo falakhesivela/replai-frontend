@@ -1,10 +1,10 @@
 import type { PaymentStatus } from '@/lib/types'
 
 const STYLES: Record<PaymentStatus, string> = {
-  not_required: 'bg-gray-100 text-gray-500 ring-1 ring-gray-200',
-  pending: 'bg-amber-50 text-amber-800 ring-1 ring-amber-200',
-  paid: 'bg-green-50 text-green-700 ring-1 ring-green-200',
-  failed: 'bg-red-50 text-red-700 ring-1 ring-red-200',
+  not_required: 'bg-surface-2 text-ink-2 ring-1 ring-line',
+  pending: 'bg-warning-soft text-warning ring-1 ring-warning/25',
+  paid: 'bg-success-soft text-success ring-1 ring-success/25',
+  failed: 'bg-danger-soft text-danger ring-1 ring-danger/25',
 }
 
 const LABELS: Record<PaymentStatus, string> = {

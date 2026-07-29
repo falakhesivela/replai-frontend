@@ -1,40 +1,182 @@
 @import "tailwindcss";
 
-/* ── Design tokens ──────────────────────────────────────────────────────────
-   Single source of truth for brand color. Every brand value in the app should
-   reference these via Tailwind utilities (bg-brand, text-accent, …) rather
-   than hardcoded hex literals, so a rebrand is a one-file change.
+/* ── Theming ────────────────────────────────────────────────────────────────
+   The portal is dark-first: components/theme/theme-script.tsx stamps
+   data-theme="dark" | "light" on <html> before paint (portal routes only).
+   Non-portal surfaces (admin dashboard, /payment, /widget) never set the
+   attribute and therefore always get the :root (light) values.
 
-   Brand    — deep purple. Primary actions (buttons, key emphasis).
-   Accent   — vivid blue.  Active states, links, focus rings, selected tabs.
-   Semantic — success / warning / danger reuse Tailwind's green/amber/red.
-   Neutrals — Tailwind's gray scale (already used app-wide) is kept as-is. */
-@theme {
-  --color-brand: #1e0b6f;
-  --color-brand-hover: #2d1499;
-  --color-brand-foreground: #ffffff;
-  --color-brand-soft: #ede9fb;
+   The `dark:` variant is rebound from the OS media query to the attribute so
+   theme choice is explicit and per-user. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-  --color-accent: #3d6bf8;
-  --color-accent-hover: #2f57d6;
-  --color-accent-foreground: #ffffff;
-  --color-accent-soft: #eef2ff;
+/* ── Runtime tokens (light) ─────────────────────────────────────────────────
+   Semantic roles:
+   canvas    — page background behind everything
+   surface   — cards, sidebar, panels          surface-2 — nested/hover fills
+   overlay   — modals, popovers
+   line      — hairline borders                line-strong — emphasized borders
+   ink       — primary text   ink-2 — secondary   ink-3 — muted/captions
+   accent    — the one vivid brand hue (violet)
+   on-solid  — text on solid colored fills; #fff in BOTH themes (never remap)
+   chart-1..8 — categorical data-viz slots (assigned per entity, never cycled) */
+/* [data-theme="light"] doubles as a "light island" marker: put it on a subtree
+   (e.g. the customer-facing widget preview) to reset the semantic tokens to
+   light even while the portal is dark. */
+:root,
+[data-theme="light"] {
+  --canvas: #f7f7f9;
+  --surface: #ffffff;
+  --surface-2: #f3f3f6;
+  --overlay: #ffffff;
+  --line: #e4e4ea;
+  --line-strong: #cfcfd8;
+  --ink: #17171c;
+  --ink-2: #55555f;
+  --ink-3: #8a8a96;
 
-  --color-background: #ffffff;
-  --color-foreground: #171717;
+  --accent: #5b45e0;
+  --accent-hover: #4936c4;
+  --accent-fg: #ffffff;
+  --accent-soft: rgb(91 69 224 / 0.1);
+  --accent-text: #5b45e0;
+
+  --success: #16a34a;
+  --warning: #b45309;
+  --danger: #dc2626;
+  --info: #2563eb;
+  --success-soft: rgb(22 163 74 / 0.1);
+  --warning-soft: rgb(180 83 9 / 0.1);
+  --danger-soft: rgb(220 38 38 / 0.1);
+  --info-soft: rgb(37 99 235 / 0.1);
+
+  --chart-1: #2a78d6;
+  --chart-2: #008300;
+  --chart-3: #e87ba4;
+  --chart-4: #eda100;
+  --chart-5: #1baf7a;
+  --chart-6: #eb6834;
+  --chart-7: #4a3aa7;
+  --chart-8: #e34948;
+
+  /* Layered elevation (light = soft shadows). */
+  --elev-card: 0 1px 2px rgb(20 16 60 / 0.04), 0 3px 10px -2px rgb(20 16 60 / 0.05);
+  --elev-card-hover: 0 2px 4px rgb(20 16 60 / 0.05), 0 10px 24px -6px rgb(20 16 60 / 0.1);
+  --elev-overlay: 0 8px 16px rgb(20 16 60 / 0.08), 0 24px 48px -12px rgb(20 16 60 / 0.18);
+  --glow-accent: 0 0 24px -8px var(--accent);
 }
 
-/* Map the Geist fonts loaded in app/layout.tsx onto Tailwind's font tokens.
-   `inline` keeps the CSS-variable reference (set on <html>) instead of
-   snapshotting it at build time. */
+/* ── Runtime tokens (dark) ─────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas: #0b0b10;
+  --surface: #14141b;
+  --surface-2: #1a1a23;
+  --overlay: #1c1c26;
+  --line: #26262f;
+  --line-strong: #34343f;
+  --ink: #ededf2;
+  --ink-2: #a0a0ae;
+  --ink-3: #6d6d7a;
+
+  --accent: #6e56f8;
+  --accent-hover: #8b76ff;
+  --accent-fg: #ffffff;
+  --accent-soft: rgb(110 86 248 / 0.14);
+  --accent-text: #a598ff;
+
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --success-soft: rgb(74 222 128 / 0.12);
+  --warning-soft: rgb(251 191 36 / 0.12);
+  --danger-soft: rgb(248 113 113 / 0.12);
+  --info-soft: rgb(96 165 250 / 0.12);
+
+  --chart-1: #3987e5;
+  --chart-2: #008300;
+  --chart-3: #d55181;
+  --chart-4: #c98500;
+  --chart-5: #199e70;
+  --chart-6: #d95926;
+  --chart-7: #9085e9;
+  --chart-8: #e66767;
+
+  /* Dark elevation = hairline ring, not shadow. */
+  --elev-card: 0 0 0 1px var(--line);
+  --elev-card-hover: 0 0 0 1px var(--line-strong);
+  --elev-overlay: 0 0 0 1px var(--line-strong), 0 24px 48px -12px rgb(0 0 0 / 0.6);
+}
+
+/* ── Tailwind utility surface ───────────────────────────────────────────────
+   `inline` keeps the var() reference live at runtime so utilities follow the
+   active theme. Utilities: bg-canvas, bg-surface, bg-surface-2, bg-overlay,
+   border-line, text-ink / ink-2 / ink-3, bg-accent, text-accent-text,
+   bg-success-soft, text-on-solid, shadow-card, … */
 @theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-overlay: var(--overlay);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-success-soft: var(--success-soft);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger-soft: var(--danger-soft);
+  --color-info-soft: var(--info-soft);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+
+  /* Text on solid colored fills — #fff in both themes, never remapped. */
+  --color-on-solid: #ffffff;
+
+  /* Elevation */
+  --shadow-card: var(--elev-card);
+  --shadow-card-hover: var(--elev-card-hover);
+  --shadow-overlay: var(--elev-overlay);
+  --shadow-glow-accent: var(--glow-accent);
+
+  /* Fonts (set on <html> by app/layout.tsx) */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  /* Was hardcoded to Arial, which silently overrode the loaded Geist font. */
+  background: var(--canvas);
+  color: var(--ink);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Respect the OS motion preference: collapse animations and transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -16,6 +16,8 @@ import {
   EyeOff,
   Clock,
   ChevronRight,
+  ChevronDown,
+  Info,
 } from 'lucide-react'
 import { changePasswordAction, updateCredentialsAction, saveNotificationPrefsAction, type PasswordState, type CredentialsState } from '../actions'
 import { useToast } from '@/components/toast'
@@ -28,14 +30,14 @@ import WhatsAppEmbeddedSignup, {
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 const inputClass =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent'
+  'w-full rounded-lg border border-line px-3 py-2 text-sm text-ink shadow-xs transition-shadow placeholder:text-ink-3 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25'
 
 const readonlyClass =
-  'flex items-center gap-2.5 rounded-md border border-gray-200 bg-gray-50 px-3 py-2'
+  'flex items-center gap-2.5 rounded-md border border-line bg-surface-2 px-3 py-2'
 
 function FieldLabel({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) {
   return (
-    <label htmlFor={htmlFor} className="block text-sm font-medium text-gray-700 mb-1">
+    <label htmlFor={htmlFor} className="block text-sm font-medium text-ink-2 mb-1">
       {children}
     </label>
   )
@@ -55,8 +57,8 @@ function Toggle({
   return (
     <div className="flex items-start justify-between gap-4 py-3">
       <div>
-        <p className="text-sm font-medium text-gray-700">{label}</p>
-        {description && <p className="mt-0.5 text-xs text-gray-400">{description}</p>}
+        <p className="text-sm font-medium text-ink-2">{label}</p>
+        {description && <p className="mt-0.5 text-xs text-ink-3">{description}</p>}
       </div>
       <button
         type="button"
@@ -64,11 +66,11 @@ function Toggle({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
-          checked ? 'bg-brand' : 'bg-gray-200'
+          checked ? 'bg-accent' : 'bg-line'
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+          className={`inline-block h-4 w-4 rounded-full bg-surface shadow transition-transform ${
             checked ? 'translate-x-4' : 'translate-x-0'
           }`}
         />
@@ -111,7 +113,7 @@ function PasswordInput({
         type="button"
         tabIndex={-1}
         onClick={() => setShow((s) => !s)}
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink-2 transition-colors"
         aria-label={show ? 'Hide password' : 'Show password'}
       >
         {show ? <EyeOff size={15} strokeWidth={1.75} /> : <Eye size={15} strokeWidth={1.75} />}
@@ -152,8 +154,8 @@ function ChangePasswordSection() {
 
   return (
     <Card>
-      <h3 className="mb-1 text-sm font-semibold text-gray-900">Change password</h3>
-      <p className="mb-5 text-xs text-gray-500">Choose a strong password at least 8 characters long.</p>
+      <h3 className="mb-1 text-sm font-semibold text-ink">Change password</h3>
+      <p className="mb-5 text-xs text-ink-2">Choose a strong password at least 8 characters long.</p>
 
       <form key={formKey} action={action} className="space-y-4">
         <div>
@@ -192,7 +194,7 @@ function ChangePasswordSection() {
         </div>
 
         {state.fieldError && (
-          <p className="text-xs text-red-600">{state.fieldError}</p>
+          <p className="text-xs text-danger">{state.fieldError}</p>
         )}
 
         <div className="flex justify-end pt-1">
@@ -235,16 +237,16 @@ function UpdateCredentialsModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-xl">
+      <div className="relative w-full max-w-md rounded-xl border border-line bg-surface shadow-card p-6 shadow-xl">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+          className="absolute right-4 top-4 rounded p-0.5 text-ink-3 hover:text-ink-2 transition-colors"
         >
           <X size={16} strokeWidth={2} />
         </button>
 
-        <h4 className="text-sm font-semibold text-gray-900">Update WhatsApp credentials</h4>
-        <p className="mt-1 mb-5 text-xs text-gray-500">
+        <h4 className="text-sm font-semibold text-ink">Update WhatsApp credentials</h4>
+        <p className="mt-1 mb-5 text-xs text-ink-2">
           Paste your new Phone Number ID and access token from the Meta developer portal.
         </p>
 
@@ -269,9 +271,9 @@ function UpdateCredentialsModal({ onClose }: { onClose: () => void }) {
               required
               rows={4}
               placeholder="Paste your access token here…"
-              className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent font-mono text-xs"
+              className="w-full resize-none rounded-lg border border-line px-3 py-2 text-sm text-ink shadow-xs transition-shadow placeholder:text-ink-3 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 font-mono text-xs"
             />
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-ink-3">
               Find this in Meta for Developers → WhatsApp → API Setup.
             </p>
           </div>
@@ -280,7 +282,7 @@ function UpdateCredentialsModal({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-2 hover:bg-surface-2 transition-colors"
             >
               Cancel
             </button>
@@ -302,6 +304,7 @@ function maskPhoneNumberId(id: string): string {
 
 function WhatsAppSection({ client }: { client: Client }) {
   const [modalOpen, setModalOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
   const isConnected = !!client.wa_access_token
@@ -313,8 +316,8 @@ function WhatsAppSection({ client }: { client: Client }) {
       <Card>
         <div className="flex items-start justify-between mb-5 gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">WhatsApp connection</h3>
-            <p className="mt-0.5 text-xs text-gray-500">
+            <h3 className="text-sm font-semibold text-ink">WhatsApp connection</h3>
+            <p className="mt-0.5 text-xs text-ink-2">
               Your connected WhatsApp Business number.
             </p>
           </div>
@@ -324,15 +327,20 @@ function WhatsAppSection({ client }: { client: Client }) {
                 <WhatsAppEmbeddedSignup
                   variant="primary"
                   label={isConnected ? 'Reconnect WhatsApp' : 'Connect with WhatsApp'}
-                  onConnected={() => {
-                    toast.success('WhatsApp connected.')
+                  onConnected={(status) => {
+                    if (status.registration_warning) {
+                      toast.error(status.registration_warning)
+                    } else {
+                      toast.success('WhatsApp connected.')
+                    }
                     router.refresh()
                   }}
                   onError={(message) => toast.error(message)}
+                  onCancel={() => setHelpOpen(true)}
                 />
                 <button
                   onClick={() => setModalOpen(true)}
-                  className="text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-xs font-medium text-ink-3 hover:text-ink-2 transition-colors"
                 >
                   Enter credentials manually
                 </button>
@@ -340,7 +348,7 @@ function WhatsAppSection({ client }: { client: Client }) {
             ) : (
               <button
                 onClick={() => setModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 transition-colors"
               >
                 Update credentials
               </button>
@@ -348,21 +356,63 @@ function WhatsAppSection({ client }: { client: Client }) {
           </div>
         </div>
 
+        {whatsappEmbeddedSignupConfigured && (
+          <div className="mb-5 rounded-md border border-line bg-surface-2/60">
+            <button
+              type="button"
+              onClick={() => setHelpOpen((v) => !v)}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
+            >
+              <Info size={14} strokeWidth={2} className="shrink-0 text-ink-3" />
+              <span className="text-xs font-medium text-ink-2">
+                Already use this number in the WhatsApp Business app?
+              </span>
+              <ChevronDown
+                size={14}
+                strokeWidth={2}
+                className={`ml-auto shrink-0 text-ink-3 transition-transform ${
+                  helpOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+            {helpOpen && (
+              <div className="space-y-2 border-t border-line px-3 py-2.5 text-xs leading-relaxed text-ink-2">
+                <p>
+                  You can keep using the WhatsApp Business <strong>app</strong> on the same
+                  number while Replai connects via the API (Meta calls this coexistence).
+                  During Connect, choose the option to link your existing WhatsApp Business
+                  account and follow the in-app verification prompts.
+                </p>
+                <p>
+                  Keep the WhatsApp Business app open for a few minutes after connecting so
+                  Meta can finish syncing. You need app version 2.24.17 or newer.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-medium text-gray-500 mb-1.5">Connected number</p>
+            <p className="text-xs font-medium text-ink-2 mb-1.5">Connected number</p>
             <div className={readonlyClass}>
-              <Phone size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
-              <span className="text-sm text-gray-700">
+              <Phone size={14} strokeWidth={1.75} className="shrink-0 text-ink-3" />
+              <span className="text-sm text-ink-2">
                 {client.wa_phone_number || '—'}
               </span>
             </div>
+            {isConnected && client.wa_coexistence && (
+              <p className="mt-1.5 text-xs text-ink-3">
+                Coexistence mode — you can keep using the WhatsApp Business app on
+                your phone alongside Replai.
+              </p>
+            )}
           </div>
 
           <div>
-            <p className="text-xs font-medium text-gray-500 mb-1.5">Phone Number ID</p>
+            <p className="text-xs font-medium text-ink-2 mb-1.5">Phone Number ID</p>
             <div className={readonlyClass}>
-              <span className="text-sm font-mono text-gray-600 tracking-wide">
+              <span className="text-sm font-mono text-ink-2 tracking-wide">
                 {client.wa_phone_number_id
                   ? maskPhoneNumberId(client.wa_phone_number_id)
                   : '—'}
@@ -371,17 +421,17 @@ function WhatsAppSection({ client }: { client: Client }) {
           </div>
 
           <div>
-            <p className="text-xs font-medium text-gray-500 mb-1.5">Access token</p>
+            <p className="text-xs font-medium text-ink-2 mb-1.5">Access token</p>
             <div className={readonlyClass}>
               {isConnected ? (
                 <>
-                  <CheckCircle2 size={14} strokeWidth={2} className="shrink-0 text-green-500" />
-                  <span className="text-sm text-green-700 font-medium">Connected</span>
+                  <CheckCircle2 size={14} strokeWidth={2} className="shrink-0 text-success" />
+                  <span className="text-sm text-success font-medium">Connected</span>
                 </>
               ) : (
                 <>
-                  <XCircle size={14} strokeWidth={2} className="shrink-0 text-red-400" />
-                  <span className="text-sm text-red-600 font-medium">Not configured</span>
+                  <XCircle size={14} strokeWidth={2} className="shrink-0 text-danger" />
+                  <span className="text-sm text-danger font-medium">Not configured</span>
                 </>
               )}
             </div>
@@ -420,10 +470,10 @@ function NotificationsSection({
 
   return (
     <Card>
-      <h3 className="mb-1 text-sm font-semibold text-gray-900">Notifications</h3>
-      <p className="mb-4 text-xs text-gray-500">Choose when you'd like to receive email alerts.</p>
+      <h3 className="mb-1 text-sm font-semibold text-ink">Notifications</h3>
+      <p className="mb-4 text-xs text-ink-2">Choose when you'd like to receive email alerts.</p>
 
-      <div className="divide-y divide-gray-50">
+      <div className="divide-y divide-line/60">
         <Toggle
           label="Email me when a new conversation starts"
           description="Get an email each time a customer messages you for the first time."
@@ -472,8 +522,8 @@ export default function SettingsForm({
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">Settings</h1>
-        <p className="mt-0.5 text-sm text-gray-500">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">Settings</h1>
+        <p className="mt-0.5 text-sm text-ink-2">
           {isAgent
             ? 'Your account and password.'
             : 'Manage your account and agent configuration.'}
@@ -482,16 +532,16 @@ export default function SettingsForm({
 
       {/* Section 1 — Account */}
       <Card>
-        <h3 className="mb-1 text-sm font-semibold text-gray-900">Account</h3>
-        <p className="mb-5 text-xs text-gray-500">Your login details.</p>
+        <h3 className="mb-1 text-sm font-semibold text-ink">Account</h3>
+        <p className="mb-5 text-xs text-ink-2">Your login details.</p>
 
         <div>
-          <p className="text-xs font-medium text-gray-500 mb-1.5">Email address</p>
+          <p className="text-xs font-medium text-ink-2 mb-1.5">Email address</p>
           <div className={readonlyClass}>
-            <Mail size={14} strokeWidth={1.75} className="shrink-0 text-gray-400" />
-            <span className="text-sm text-gray-600 select-all">{email}</span>
+            <Mail size={14} strokeWidth={1.75} className="shrink-0 text-ink-3" />
+            <span className="text-sm text-ink-2 select-all">{email}</span>
           </div>
-          <p className="mt-1.5 text-xs text-gray-400">
+          <p className="mt-1.5 text-xs text-ink-3">
             To change your email address, contact support.
           </p>
         </div>
@@ -513,20 +563,20 @@ export default function SettingsForm({
       {!isAgent && (
         <Link
           href="/portal/settings/business-hours"
-          className="group flex items-center justify-between rounded-lg border border-gray-200 bg-white p-6 hover:border-gray-300 hover:shadow-sm transition-all"
+          className="group flex items-center justify-between rounded-xl border border-line bg-surface shadow-card p-6 hover:border-line-strong hover:shadow-sm transition-all"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-gray-100 group-hover:bg-gray-200 transition-colors">
-              <Clock size={16} strokeWidth={1.75} className="text-gray-600" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-2 group-hover:bg-line transition-colors">
+              <Clock size={16} strokeWidth={1.75} className="text-ink-2" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">Business Hours</p>
-              <p className="text-xs text-gray-500">
+              <p className="text-sm font-semibold text-ink">Business Hours</p>
+              <p className="text-xs text-ink-2">
                 Weekly schedule, closed dates &amp; after-hours messages.
               </p>
             </div>
           </div>
-          <ChevronRight size={16} strokeWidth={1.75} className="shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors" />
+          <ChevronRight size={16} strokeWidth={1.75} className="shrink-0 text-ink-3 group-hover:text-ink-2 transition-colors" />
         </Link>
       )}
     </div>

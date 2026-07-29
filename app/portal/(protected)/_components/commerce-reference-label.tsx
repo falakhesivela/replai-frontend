@@ -9,7 +9,7 @@ export function CommerceReferenceLabel({
 }) {
   return (
     <span
-      className={`font-mono text-xs font-semibold uppercase tracking-wide text-gray-600 ${className}`}
+      className={`font-mono text-xs font-semibold uppercase tracking-wide text-ink-2 ${className}`}
       title="Customer confirmation reference"
     >
       {formatCommerceReference(id)}

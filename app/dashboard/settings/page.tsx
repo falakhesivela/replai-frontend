@@ -18,7 +18,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <h2 className="text-xl font-semibold text-gray-900">Settings</h2>
+      <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Settings</h1>
 
       {/* Account */}
       <Card>

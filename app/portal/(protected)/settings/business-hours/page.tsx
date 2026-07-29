@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient, getClientProfile } from '@/lib/supabase/server'
+import { createClient, getClientProfile, getPortalAccessToken } from '@/lib/supabase/server'
 import { getMyBusinessHours, getMyClosedDates, getAfterHoursMessages } from '@/lib/api'
 import BusinessHoursForm from './_components/business-hours-form'
 
@@ -14,10 +14,7 @@ export default async function BusinessHoursPage() {
   const client = await getClientProfile()
   if (!client) redirect('/portal/login')
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  const token = session?.access_token ?? ''
+  const token = (await getPortalAccessToken()) ?? ''
 
   const [businessHours, closedDates, afterHoursMessages] = await Promise.all([
     getMyBusinessHours(token).catch(() => []),

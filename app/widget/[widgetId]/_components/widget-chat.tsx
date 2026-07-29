@@ -18,6 +18,7 @@ import {
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
+  getWidgetHistory,
   sendWidgetMessage,
   streamWidgetMessage,
   startWidgetConversation,
@@ -213,14 +214,39 @@ export default function WidgetChat({ widgetId, config }: Props) {
     [widgetId],
   )
 
-  // Restore conversation across navigation within the same tab.
+  // Restore conversation across navigation/reload within the same tab, and
+  // rehydrate the message thread from the server so it isn't blank.
   useEffect(() => {
     const stored = sessionStorage.getItem(sessionKeys.conv)
-    if (stored) {
-      setConversationId(stored)
-      setLeadSubmitted(true)
+    if (!stored) return
+    setConversationId(stored)
+    setLeadSubmitted(true)
+
+    let cancelled = false
+    getWidgetHistory(widgetId, stored)
+      .then((res) => {
+        if (cancelled || !res.messages?.length) return
+        setMessages(
+          res.messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+            attachments: m.attachments,
+          })),
+        )
+        setTimes(res.messages.map((m) => (m.created_at ? new Date(m.created_at) : new Date())))
+      })
+      .catch(() => {
+        // Stale/expired conversation — clear it so a fresh one starts.
+        sessionStorage.removeItem(sessionKeys.conv)
+        if (!cancelled) {
+          setConversationId(null)
+          setLeadSubmitted(false)
+        }
+      })
+    return () => {
+      cancelled = true
     }
-  }, [sessionKeys.conv])
+  }, [sessionKeys.conv, widgetId])
 
   // Restore client cart for this conversation (instant re-add after refresh).
   useEffect(() => {
@@ -1076,7 +1102,9 @@ export default function WidgetChat({ widgetId, config }: Props) {
                                 id,
                                 name,
                                 price: 0,
-                                currency: 'ZAR',
+                                // Reuse the active cart's currency instead of a
+                                // hardcoded 'ZAR' so non-ZAR stores stay correct.
+                                currency: activeCartRef.current?.currency ?? 'ZAR',
                                 in_stock: true,
                               })
                             }
@@ -1172,7 +1200,7 @@ export default function WidgetChat({ widgetId, config }: Props) {
             )}
 
             {cartToast && (
-              <div className="shrink-0 border-t border-gray-100 bg-gray-900 px-4 py-2 text-center text-xs font-medium text-white">
+              <div className="shrink-0 border-t border-gray-100 bg-gray-900 px-4 py-2 text-center text-xs font-medium text-on-solid">
                 {cartToast}
               </div>
             )}
@@ -1196,7 +1224,7 @@ export default function WidgetChat({ widgetId, config }: Props) {
                   type="button"
                   disabled={sending}
                   onClick={() => void sendWidgetAction({ type: 'browse_services' })}
-                  className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                  className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200/70 bg-white shadow-card py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
                 >
                   <Calendar size={14} />
                   Book appointment

@@ -14,7 +14,7 @@ import {
 } from '@/lib/api'
 import type { CustomRole, PortalTeamDirectory, PortalTeamRow } from '@/lib/types'
 import { usePermissions } from '@/hooks/usePermissions'
-import { buttonClasses } from '@/components/ui'
+import { buttonClasses, ConfirmDialog } from '@/components/ui'
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -25,8 +25,8 @@ function initials(name: string): string {
 
 function roleBadgeClasses(role: PortalTeamRow['role']): string {
   if (role === 'owner') return 'bg-violet-100 text-violet-800 ring-violet-600/15'
-  if (role === 'manager') return 'bg-blue-100 text-blue-800 ring-blue-600/15'
-  return 'bg-gray-100 text-gray-700 ring-gray-500/15'
+  if (role === 'manager') return 'bg-info-soft text-info ring-info/25'
+  return 'bg-surface-2 text-ink-2 ring-line'
 }
 
 function roleLabel(role: PortalTeamRow['role']): string {
@@ -94,13 +94,13 @@ export function TeamMembersPage() {
   return (
     <div className="max-w-5xl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <h1 className="text-xl font-semibold text-gray-900">Team Members</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">Team Members</h1>
         <div className="flex items-center gap-2">
           {canManageTeam && (
             <button
               type="button"
               onClick={() => router.push('/portal/team/roles')}
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-line bg-surface px-3 py-2 text-sm font-medium text-ink-2 hover:bg-surface-2 transition-colors"
             >
               Manage roles
             </button>
@@ -119,13 +119,13 @@ export function TeamMembersPage() {
       </div>
 
       {loadError && (
-        <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+        <p className="mb-4 text-sm text-danger bg-danger-soft border border-danger/30 rounded-md px-3 py-2">
           {loadError}
         </p>
       )}
 
       {loading && !data && (
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm text-ink-2">
           <Loader2 className="animate-spin" size={18} />
           Loading team…
         </div>
@@ -134,18 +134,18 @@ export function TeamMembersPage() {
       {data && (
         <>
           {onlyOwner && (
-            <div className="mb-6 rounded-lg border border-dashed border-gray-300 bg-gray-50/80 px-5 py-8 text-center">
-              <p className="text-sm text-gray-600 max-w-md mx-auto leading-relaxed">
+            <div className="mb-6 rounded-lg border border-dashed border-line-strong bg-surface-2/80 px-5 py-8 text-center">
+              <p className="text-sm text-ink-2 max-w-md mx-auto leading-relaxed">
                 Just you so far. Invite team members to collaborate on conversations.
               </p>
             </div>
           )}
 
-          <div className="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
+          <div className="rounded-xl border border-line bg-surface shadow-card overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/80 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <tr className="border-b border-line bg-surface-2/80 text-left text-xs font-medium uppercase tracking-wide text-ink-2">
                     <th className="px-4 py-3 w-14" />
                     <th className="px-4 py-3">Name</th>
                     <th className="px-4 py-3">Email</th>
@@ -155,7 +155,7 @@ export function TeamMembersPage() {
                     {canManageTeam && <th className="px-4 py-3 w-48">Actions</th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-line">
                   {data.rows.map((row) => (
                     <TeamRowView
                       key={row.member_id ?? `owner-${row.user_id}`}
@@ -210,6 +210,7 @@ function TeamRowView({
   const router = useRouter()
   const mid = row.member_id
   const busy = mid != null && busyId === mid
+  const [confirmRemove, setConfirmRemove] = useState(false)
 
   async function onRoleChange(value: string) {
     if (!mid || !row.actions.change_role) return
@@ -240,13 +241,7 @@ function TeamRowView({
 
   async function onRemove() {
     if (!mid || !row.actions.remove) return
-    if (
-      !window.confirm(
-        `Remove ${row.name} from the team? They will lose portal access and assigned conversations will be unassigned.`
-      )
-    ) {
-      return
-    }
+    setConfirmRemove(false)
     setBusy(mid)
     try {
       await removePortalTeamMember(getAccessToken, mid)
@@ -260,12 +255,12 @@ function TeamRowView({
 
   return (
     <tr
-      className={`hover:bg-gray-50/60 ${mid ? 'cursor-pointer' : ''}`}
+      className={`hover:bg-surface-2/60 ${mid ? 'cursor-pointer' : ''}`}
       onClick={mid ? () => router.push(`/portal/team/${mid}`) : undefined}
     >
       <td className="px-4 py-3">
         <div
-          className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white shadow-sm"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-on-solid shadow-sm"
           style={{ backgroundColor: color }}
         >
           {initials(row.name || row.email)}
@@ -273,18 +268,18 @@ function TeamRowView({
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium text-gray-900">{row.name || '—'}</span>
+          <span className="font-medium text-ink">{row.name || '—'}</span>
           {row.is_self && (
-            <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-on-solid">
               You
             </span>
           )}
         </div>
       </td>
-      <td className="px-4 py-3 text-gray-600">{row.email || '—'}</td>
+      <td className="px-4 py-3 text-ink-2">{row.email || '—'}</td>
       <td className="px-4 py-3">
         {row.custom_role ? (
-          <span className="inline-flex rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium ring-1 ring-brand/15 text-brand">
+          <span className="inline-flex rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium ring-1 ring-accent/15 text-accent-text">
             {row.custom_role.name}
           </span>
         ) : (
@@ -297,23 +292,23 @@ function TeamRowView({
       </td>
       <td className="px-4 py-3">
         {row.role === 'owner' ? (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-success">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
             Active
           </span>
         ) : row.is_active ? (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-success">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
             Active
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500">
-            <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-ink-3" />
             Inactive
           </span>
         )}
       </td>
-      <td className="px-4 py-3 text-right tabular-nums text-gray-700">
+      <td className="px-4 py-3 text-right tabular-nums text-ink-2">
         {row.conversation_count}
       </td>
       {!readOnly && (
@@ -325,7 +320,7 @@ function TeamRowView({
                   disabled={busy}
                   value={row.custom_role?.id ?? (row.role === 'agent' ? 'agent' : 'manager')}
                   onChange={(e) => void onRoleChange(e.target.value)}
-                  className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+                  className="rounded-md border border-line-strong bg-surface px-2 py-1 text-xs text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:opacity-50"
                 >
                   {customRoles.length > 0 && (
                     <optgroup label="Custom roles">
@@ -346,7 +341,7 @@ function TeamRowView({
                     type="button"
                     disabled={busy}
                     onClick={() => void setActive(false)}
-                    className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    className="rounded-md border border-line px-2 py-1 text-xs font-medium text-ink-2 hover:bg-surface-2 disabled:opacity-50"
                   >
                     Deactivate
                   </button>
@@ -356,7 +351,7 @@ function TeamRowView({
                     type="button"
                     disabled={busy}
                     onClick={() => void setActive(true)}
-                    className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    className="rounded-md border border-line px-2 py-1 text-xs font-medium text-ink-2 hover:bg-surface-2 disabled:opacity-50"
                   >
                     Reactivate
                   </button>
@@ -365,17 +360,31 @@ function TeamRowView({
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => void onRemove()}
-                    className="rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setConfirmRemove(true)
+                    }}
+                    className="rounded-md border border-danger/30 px-2 py-1 text-xs font-medium text-danger hover:bg-danger-soft disabled:opacity-50"
                   >
                     Remove
                   </button>
                 )}
               </div>
-              {busy && <Loader2 className="animate-spin text-gray-400" size={14} />}
+              {busy && <Loader2 className="animate-spin text-ink-3" size={14} />}
             </div>
           ) : (
-            <span className="text-xs text-gray-400">—</span>
+            <span className="text-xs text-ink-3">—</span>
+          )}
+          {confirmRemove && (
+            <div onClick={(e) => e.stopPropagation()}>
+              <ConfirmDialog
+                title="Remove team member"
+                description={`Remove ${row.name} from the team? They will lose portal access and assigned conversations will be unassigned.`}
+                confirmLabel="Remove"
+                onConfirm={() => void onRemove()}
+                onCancel={() => setConfirmRemove(false)}
+              />
+            </div>
           )}
         </td>
       )}
@@ -441,12 +450,12 @@ function InviteModal({
   const login = portalLoginUrl()
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="relative w-full max-w-md rounded-lg border border-gray-200 bg-white shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="relative w-full max-w-md rounded-xl border border-line bg-surface shadow-card">
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          className="absolute right-3 top-3 rounded-md p-1 text-ink-3 hover:bg-surface-2 hover:text-ink-2"
           aria-label="Close"
         >
           <X size={18} />
@@ -454,71 +463,71 @@ function InviteModal({
 
         {done ? (
           <div className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-ink">
               {done.email_sent ? 'Invite sent' : 'Member added'}
             </h2>
             {!done.email_sent && (
-              <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <p className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
                 We could not send the invitation email (check Resend API key and verified sender
                 domain). Share the temporary password below with {done.name} manually.
               </p>
             )}
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-ink-2">
               Share this with {done.name} to log in
             </p>
-            <div className="rounded-md border border-gray-200 bg-gray-50 p-3 font-mono text-sm break-all text-gray-900">
+            <div className="rounded-md border border-line bg-surface-2 p-3 font-mono text-sm break-all text-ink">
               {done.temp_password}
             </div>
             <button
               type="button"
               onClick={() => void copyPassword()}
-              className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 rounded-md border border-line-strong bg-surface px-3 py-1.5 text-sm font-medium text-ink-2 hover:bg-surface-2"
             >
               <Copy size={14} />
               {copied ? 'Copied' : 'Copy password'}
             </button>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-ink-2">
               Portal login:{' '}
-              <span className="font-mono text-gray-700 break-all">{login}</span>
+              <span className="font-mono text-ink-2 break-all">{login}</span>
             </p>
             <button
               type="button"
               onClick={onSuccess}
-              className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
+              className="w-full rounded-lg bg-accent shadow-sm shadow-accent/25 px-4 py-2 text-sm font-medium text-on-solid hover:bg-accent-hover"
             >
               Done
             </button>
           </div>
         ) : (
           <form onSubmit={(e) => void submit(e)} className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Invite member</h2>
+            <h2 className="text-lg font-semibold text-ink">Invite member</h2>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+              <label className="block text-xs font-medium text-ink-2 mb-1">Name</label>
               <input
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full rounded-lg border border-line px-3 py-2 text-sm text-ink shadow-xs transition-shadow focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
                 placeholder="Full name"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-xs font-medium text-ink-2 mb-1">Email</label>
               <input
                 required
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full rounded-lg border border-line px-3 py-2 text-sm text-ink shadow-xs transition-shadow focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
                 placeholder="colleague@company.com"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
+              <label className="block text-xs font-medium text-ink-2 mb-1">Role</label>
               <select
                 value={roleValue}
                 onChange={(e) => setRoleValue(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full rounded-lg border border-line px-3 py-2 text-sm text-ink shadow-xs transition-shadow focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
               >
                 {customRoles.length > 0 && (
                   <optgroup label="Custom roles">
@@ -534,7 +543,7 @@ function InviteModal({
               </select>
             </div>
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              <p className="text-sm text-danger bg-danger-soft border border-danger/30 rounded-md px-3 py-2">
                 {error}
               </p>
             )}
@@ -542,14 +551,14 @@ function InviteModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="flex-1 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink-2 shadow-xs hover:border-line-strong hover:bg-surface-2"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={pending}
-                className="flex-1 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50"
+                className="flex-1 rounded-lg bg-accent shadow-sm shadow-accent/25 px-4 py-2 text-sm font-medium text-on-solid hover:bg-accent-hover disabled:opacity-50"
               >
                 {pending ? 'Sending…' : 'Send invite'}
               </button>

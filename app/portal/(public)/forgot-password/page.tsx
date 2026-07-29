@@ -31,11 +31,11 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold text-gray-900">Reset password</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold text-ink">Reset password</h1>
+          <p className="mt-1 text-sm text-ink-2">
             {status === 'done'
               ? 'Check your inbox.'
               : "Enter your email and we'll send you a reset link."}
@@ -43,13 +43,13 @@ export default function ForgotPasswordPage() {
         </div>
 
         {status === 'done' ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 sm:p-8 shadow-sm text-center space-y-4">
-            <p className="text-sm text-gray-600">
+          <div className="bg-surface rounded-xl border border-line p-6 sm:p-8 shadow-card text-center space-y-4">
+            <p className="text-sm text-ink-2">
               If that email is registered, you&apos;ll receive a password reset link shortly.
             </p>
             <Link
               href="/portal/login"
-              className="inline-block text-sm font-medium text-gray-900 hover:underline"
+              className="inline-block text-sm font-medium text-ink hover:underline"
             >
               Back to sign in
             </Link>
@@ -57,12 +57,12 @@ export default function ForgotPasswordPage() {
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="bg-white rounded-lg border border-gray-200 p-6 sm:p-8 shadow-sm space-y-5"
+            className="bg-surface rounded-xl border border-line p-6 sm:p-8 shadow-card space-y-5"
           >
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-ink-2 mb-1"
               >
                 Email
               </label>
@@ -72,13 +72,13 @@ export default function ForgotPasswordPage() {
                 type="email"
                 required
                 autoComplete="email"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink shadow-xs placeholder:text-ink-3 transition-shadow focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
                 placeholder="you@example.com"
               />
             </div>
 
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              <p className="text-sm text-danger bg-danger-soft border border-danger/25 rounded-md px-3 py-2">
                 {error}
               </p>
             )}
@@ -86,15 +86,15 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={status === 'loading'}
-              className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-on-solid shadow-sm shadow-accent/25 transition-all hover:bg-accent-hover hover:shadow-md hover:shadow-accent/25 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {status === 'loading' ? 'Sending…' : 'Send reset link'}
             </button>
 
-            <p className="text-center text-xs text-gray-400">
+            <p className="text-center text-xs text-ink-3">
               <Link
                 href="/portal/login"
-                className="hover:text-gray-600 transition-colors"
+                className="hover:text-ink-2 transition-colors"
               >
                 Back to sign in
               </Link>

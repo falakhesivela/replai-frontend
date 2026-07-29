@@ -131,8 +131,8 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Chatbot Widget</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">Chatbot Widget</h1>
+        <p className="text-sm text-ink-2 mt-0.5">
           Configure your live chat widget and embed it on any website.
         </p>
       </div>
@@ -155,7 +155,7 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
                 />
                 <div className="flex-1 space-y-3">
                   <label className="block">
-                    <span className="block text-xs font-medium text-gray-600 mb-1">
+                    <span className="block text-xs font-medium text-ink-2 mb-1">
                       Agent name
                     </span>
                     <input
@@ -164,11 +164,11 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
                       onChange={(e) => setAgentName(e.target.value)}
                       maxLength={40}
                       placeholder="Support"
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder-gray-400 transition-colors focus:border-gray-900 focus:outline-none"
+                      className="w-full rounded-xl border border-line bg-surface shadow-card px-3 py-2 text-sm text-ink placeholder:text-ink-3 transition-colors focus:border-accent focus:outline-none"
                     />
                   </label>
                   <label className="block">
-                    <span className="block text-xs font-medium text-gray-600 mb-1">
+                    <span className="block text-xs font-medium text-ink-2 mb-1">
                       Tagline
                     </span>
                     <input
@@ -177,7 +177,7 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
                       onChange={(e) => setAgentTagline(e.target.value)}
                       maxLength={60}
                       placeholder="Typically replies in seconds"
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder-gray-400 transition-colors focus:border-gray-900 focus:outline-none"
+                      className="w-full rounded-xl border border-line bg-surface shadow-card px-3 py-2 text-sm text-ink placeholder:text-ink-3 transition-colors focus:border-accent focus:outline-none"
                     />
                   </label>
                 </div>
@@ -192,13 +192,13 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
               rows={3}
               maxLength={240}
               placeholder="Hi there! How can I help you today?"
-              className="w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 transition-colors focus:border-gray-900 focus:outline-none"
+              className="w-full resize-none rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-ink-3 transition-colors focus:border-accent focus:outline-none"
             />
             <div className="mt-1 flex items-center justify-between">
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-ink-3">
                 Shown both as a teaser bubble and inside the chat window.
               </p>
-              <span className="text-xs text-gray-400">{welcomeMessage.length}/240</span>
+              <span className="text-xs text-ink-3">{welcomeMessage.length}/240</span>
             </div>
           </Card>
 
@@ -206,7 +206,7 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
             <div className="space-y-5">
               {/* Theme presets */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-2">
+                <label className="block text-xs font-medium text-ink-2 mb-2">
                   Theme presets
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -219,7 +219,7 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
                         onClick={() => setBrandColor(preset.color)}
                         title={preset.name}
                         className={`relative h-8 w-8 rounded-full transition-transform hover:scale-110 ${
-                          active ? 'ring-2 ring-offset-2 ring-gray-900' : ''
+                          active ? 'ring-2 ring-offset-2 ring-accent' : ''
                         }`}
                         style={{ backgroundColor: preset.color }}
                       >
@@ -239,7 +239,7 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
 
               {/* Custom color */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                <label className="block text-xs font-medium text-ink-2 mb-1.5">
                   Custom color
                 </label>
                 <div className="flex items-center gap-3">
@@ -248,7 +248,7 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
                       type="color"
                       value={brandColor}
                       onChange={(e) => setBrandColor(e.target.value)}
-                      className="h-9 w-14 cursor-pointer rounded border border-gray-200 bg-white p-0.5"
+                      className="h-9 w-14 cursor-pointer rounded border border-line bg-surface p-0.5"
                     />
                   </div>
                   <input
@@ -260,14 +260,14 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
                         setBrandColor(v.startsWith('#') ? v : `#${v}`)
                       }
                     }}
-                    className="w-28 rounded-md border border-gray-200 bg-white px-2 py-1.5 font-mono text-xs uppercase text-gray-700 focus:border-gray-900 focus:outline-none"
+                    className="w-28 rounded-md border border-line bg-surface px-2 py-1.5 font-mono text-xs uppercase text-ink-2 focus:border-accent focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Position */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                <label className="block text-xs font-medium text-ink-2 mb-1.5">
                   Widget position
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -278,8 +278,8 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
                       onClick={() => setPosition(pos)}
                       className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
                         position === pos
-                          ? 'border-gray-900 bg-gray-50 text-gray-900'
-                          : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                          ? 'border-accent bg-surface-2 text-ink'
+                          : 'border-line text-ink-2 hover:bg-surface-2'
                       }`}
                     >
                       <PositionIcon side={pos === 'bottom-right' ? 'right' : 'left'} active={position === pos} />
@@ -294,10 +294,10 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
           </Card>
 
           <Card title="Behavior" subtitle="What happens before the visitor sends their first message.">
-            <div className="flex items-start justify-between gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <div className="flex items-start justify-between gap-4 rounded-lg border border-line bg-surface-2 p-4">
               <div>
-                <p className="text-sm font-medium text-gray-800">Collect visitor info</p>
-                <p className="mt-0.5 text-xs text-gray-500">
+                <p className="text-sm font-medium text-ink">Collect visitor info</p>
+                <p className="mt-0.5 text-xs text-ink-2">
                   Show a name + email form before the chat starts. Useful for lead capture.
                 </p>
               </div>
@@ -306,22 +306,22 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
           </Card>
 
           {error && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+            <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
               {error}
             </div>
           )}
 
-          <div className="sticky bottom-0 -mx-4 flex items-center gap-3 border-t border-gray-100 bg-white/80 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:border-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+          <div className="sticky bottom-0 -mx-4 flex items-center gap-3 border-t border-line bg-surface/80 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:border-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-60"
+              className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-solid transition-colors hover:bg-accent-hover disabled:opacity-60"
             >
               {saving && <Loader2 size={14} className="animate-spin" />}
               {saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'}
             </button>
             {saved && (
-              <span className="flex items-center gap-1 text-sm text-green-600">
+              <span className="flex items-center gap-1 text-sm text-success">
                 <Check size={14} /> Changes live
               </span>
             )}
@@ -333,7 +333,7 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
         {/* Live preview */}
         <aside className="hidden lg:block">
           <div className="sticky top-6 space-y-3">
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Preview</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-ink-3">Preview</p>
             <WidgetPreview
               brandColor={brandColor}
               welcomeMessage={welcomeMessage || 'Hi! How can we help?'}
@@ -348,7 +348,7 @@ export default function WidgetSettingsForm({ initialConfig }: Props) {
                 href={`/widget/${widgetId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                className="flex items-center justify-center gap-1.5 rounded-md border border-line bg-surface px-3 py-2 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-2"
               >
                 Open live preview <ExternalLink size={11} />
               </a>
@@ -372,10 +372,10 @@ function Card({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5">
+    <section className="rounded-xl border border-line bg-surface p-5">
       <header className="mb-4">
-        <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>}
+        <h2 className="text-sm font-semibold text-ink">{title}</h2>
+        {subtitle && <p className="mt-0.5 text-xs text-ink-2">{subtitle}</p>}
       </header>
       {children}
     </section>
@@ -402,12 +402,12 @@ function AvatarUploader({
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
-        className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-50 text-gray-400 transition-colors hover:bg-gray-100 disabled:opacity-60"
+        className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-line bg-surface-2 text-ink-3 transition-colors hover:bg-surface-2 disabled:opacity-60"
         style={url ? { backgroundColor: brandColor } : undefined}
         aria-label="Upload avatar"
       >
         {uploading ? (
-          <Loader2 size={18} className="animate-spin text-white" />
+          <Loader2 size={18} className="animate-spin text-on-solid" />
         ) : url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt="Agent avatar" className="h-full w-full object-cover" />
@@ -431,12 +431,12 @@ function AvatarUploader({
           type="button"
           onClick={onClear}
           disabled={uploading}
-          className="flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-red-500 disabled:opacity-50"
+          className="flex items-center gap-1 text-[11px] font-medium text-ink-2 hover:text-danger disabled:opacity-50"
         >
           <Trash2 size={11} /> Remove
         </button>
       ) : (
-        <span className="text-[11px] text-gray-400">PNG / JPG · 2 MB</span>
+        <span className="text-[11px] text-ink-3">PNG / JPG · 2 MB</span>
       )}
     </div>
   )
@@ -456,11 +456,11 @@ function Toggle({
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-        checked ? 'bg-gray-900' : 'bg-gray-200'
+        checked ? 'bg-accent' : 'bg-line'
       }`}
     >
       <span
-        className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+        className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-surface shadow transition-transform ${
           checked ? 'translate-x-5' : 'translate-x-0'
         }`}
       />
@@ -534,25 +534,25 @@ function EmbedCode({ widgetId }: { widgetId: string }) {
   }
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5">
+    <section className="rounded-xl border border-line bg-surface p-5">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-gray-900">Install on your site</h2>
-          <p className="mt-0.5 text-xs text-gray-500">
-            Paste this snippet just before <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[11px]">&lt;/body&gt;</code>.
+          <h2 className="text-sm font-semibold text-ink">Install on your site</h2>
+          <p className="mt-0.5 text-xs text-ink-2">
+            Paste this snippet just before <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11px]">&lt;/body&gt;</code>.
           </p>
         </div>
         <button
           type="button"
           onClick={copy}
           disabled={!widgetId}
-          className="flex shrink-0 items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-40"
+          className="flex shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-2 disabled:opacity-40"
         >
-          {copied ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
+          {copied ? <Check size={13} className="text-success" /> : <Copy size={13} />}
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <pre className="overflow-x-auto rounded-md border border-gray-100 bg-gray-50 p-3 font-mono text-xs leading-relaxed text-gray-700">
+      <pre className="overflow-x-auto rounded-md border border-line bg-surface-2 p-3 font-mono text-xs leading-relaxed text-ink-2">
         {snippet}
       </pre>
     </section>
@@ -584,17 +584,22 @@ function WidgetPreview({
   const isRight = position !== 'bottom-left'
 
   return (
-    <div className="relative h-[560px] overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 shadow-inner">
+    // data-theme="light": the preview shows the customer-facing widget, which
+    // is always light — this resets the semantic tokens inside this subtree.
+    <div
+      data-theme="light"
+      className="relative h-[560px] overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-[#f9fafb] to-[#f3f4f6] shadow-inner"
+    >
       {/* faux page hint */}
       <div className="absolute inset-x-6 top-6 space-y-2 opacity-60">
-        <div className="h-2 w-1/3 rounded bg-gray-300" />
-        <div className="h-2 w-2/3 rounded bg-gray-200" />
-        <div className="h-2 w-1/2 rounded bg-gray-200" />
+        <div className="h-2 w-1/3 rounded bg-line-strong" />
+        <div className="h-2 w-2/3 rounded bg-line" />
+        <div className="h-2 w-1/2 rounded bg-line" />
       </div>
 
       {/* Panel */}
       <div
-        className="absolute flex flex-col overflow-hidden bg-white"
+        className="absolute flex flex-col overflow-hidden bg-surface"
         style={{
           [isRight ? 'right' : 'left']: '16px',
           bottom: '76px',
@@ -639,13 +644,13 @@ function WidgetPreview({
         </div>
 
         {collectLead ? (
-          <div className="flex flex-1 flex-col gap-3 px-5 py-5 bg-white">
-            <p className="text-xs font-semibold text-gray-900">Before we start</p>
-            <p className="text-[11px] text-gray-500 -mt-2">
+          <div className="flex flex-1 flex-col gap-3 px-5 py-5 bg-surface">
+            <p className="text-xs font-semibold text-ink">Before we start</p>
+            <p className="text-[11px] text-ink-2 -mt-2">
               Tell us a bit about yourself.
             </p>
-            <div className="h-9 rounded-lg border border-gray-200 bg-white" />
-            <div className="h-9 rounded-lg border border-gray-200 bg-white" />
+            <div className="h-9 rounded-xl border border-line bg-surface shadow-card" />
+            <div className="h-9 rounded-xl border border-line bg-surface shadow-card" />
             <div
               className="mt-auto flex h-9 items-center justify-center rounded-lg text-xs font-semibold"
               style={{ backgroundColor: brandColor, color: onBrand }}
@@ -657,7 +662,7 @@ function WidgetPreview({
           <>
             <div className="flex-1 space-y-2 px-3 py-3" style={{ background: '#f7f8fa' }}>
               <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-2xl rounded-bl-md border border-gray-100 bg-white px-3 py-2 text-[11px] leading-relaxed text-gray-800 shadow-sm">
+                <div className="max-w-[80%] rounded-2xl rounded-bl-md border border-line bg-surface px-3 py-2 text-[11px] leading-relaxed text-ink shadow-sm">
                   {welcomeMessage}
                 </div>
               </div>
@@ -670,14 +675,14 @@ function WidgetPreview({
                 </div>
               </div>
               <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-2xl rounded-bl-md border border-gray-100 bg-white px-3 py-2 text-[11px] leading-relaxed text-gray-800 shadow-sm">
+                <div className="max-w-[80%] rounded-2xl rounded-bl-md border border-line bg-surface px-3 py-2 text-[11px] leading-relaxed text-ink shadow-sm">
                   Yes, we ship to over 40 countries. Where would you like it sent?
                 </div>
               </div>
             </div>
-            <div className="border-t border-gray-100 bg-white px-3 py-2.5">
-              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-1.5">
-                <span className="flex-1 text-[11px] text-gray-400">Type a message…</span>
+            <div className="border-t border-line bg-surface px-3 py-2.5">
+              <div className="flex items-center gap-2 rounded-2xl border border-line bg-surface-2 px-3 py-1.5">
+                <span className="flex-1 text-[11px] text-ink-3">Type a message…</span>
                 <div
                   className="flex h-6 w-6 items-center justify-center rounded-full"
                   style={{ backgroundColor: brandColor, color: onBrand }}

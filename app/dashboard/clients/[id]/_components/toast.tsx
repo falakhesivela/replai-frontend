@@ -17,7 +17,7 @@ export function Toast({ message, type, onDismiss }: ToastProps) {
 
   return (
     <div
-      className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-lg px-4 py-3 text-sm text-white shadow-lg animate-in fade-in slide-in-from-bottom-2 ${
+      className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-lg px-4 py-3 text-sm text-on-solid shadow-lg animate-in fade-in slide-in-from-bottom-2 ${
         type === 'success' ? 'bg-gray-900' : 'bg-red-600'
       }`}
     >

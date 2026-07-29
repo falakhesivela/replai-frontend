@@ -142,13 +142,13 @@ function relativeTime(iso: string): string {
 // ── Shared primitives ─────────────────────────────────────────────────────────
 
 const inputClass =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed'
+  'w-full rounded-lg border border-line px-3 py-2 text-sm text-ink shadow-xs transition-shadow placeholder:text-ink-3 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:bg-surface-2 disabled:text-ink-3 disabled:cursor-not-allowed'
 
 const btnPrimary =
-  'inline-flex items-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+  'inline-flex items-center gap-2 rounded-lg bg-accent shadow-sm shadow-accent/25 px-3 py-2 text-sm font-medium text-on-solid hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
 
 const btnGhost =
-  'inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+  'inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
 
 function SectionCard({
   title,
@@ -160,10 +160,10 @@ function SectionCard({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-        {description && <p className="mt-0.5 text-xs text-gray-500">{description}</p>}
+    <section className="rounded-xl border border-line bg-surface shadow-card overflow-hidden">
+      <div className="px-6 py-4 border-b border-line">
+        <h3 className="text-sm font-semibold text-ink">{title}</h3>
+        {description && <p className="mt-0.5 text-xs text-ink-2">{description}</p>}
       </div>
       <div className="px-6 py-5">{children}</div>
     </section>
@@ -184,11 +184,11 @@ function DayToggle({
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
-        checked ? 'bg-brand' : 'bg-gray-200'
+        checked ? 'bg-accent' : 'bg-line'
       }`}
     >
       <span
-        className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+        className={`inline-block h-4 w-4 rounded-full bg-surface shadow transition-transform ${
           checked ? 'translate-x-4' : 'translate-x-0'
         }`}
       />
@@ -252,7 +252,7 @@ function ScheduleSection({
       <div className="overflow-x-auto">
       <div className="space-y-1 min-w-[420px]">
         {/* Header row */}
-        <div className="hidden sm:grid grid-cols-[120px_52px_1fr_1fr] gap-3 pb-1 text-xs font-medium text-gray-400 uppercase tracking-wide">
+        <div className="hidden sm:grid grid-cols-[120px_52px_1fr_1fr] gap-3 pb-1 text-xs font-medium text-ink-3 uppercase tracking-wide">
           <span>Day</span>
           <span>Open?</span>
           <span>Opens</span>
@@ -262,9 +262,9 @@ function ScheduleSection({
         {schedule.map((row) => (
           <div
             key={row.day_of_week}
-            className="grid grid-cols-[120px_52px_1fr_1fr] items-center gap-3 py-2 border-b border-gray-50 last:border-0"
+            className="grid grid-cols-[120px_52px_1fr_1fr] items-center gap-3 py-2 border-b border-line/60 last:border-0"
           >
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-ink-2">
               {DAY_NAMES[row.day_of_week]}
             </span>
 
@@ -348,25 +348,25 @@ function TempClosureCard({
 
   return (
     <section
-      className={`rounded-lg border-2 bg-white overflow-hidden transition-colors ${
-        isClosed ? 'border-amber-400' : 'border-gray-200'
+      className={`rounded-lg border-2 bg-surface overflow-hidden transition-colors ${
+        isClosed ? 'border-warning/30' : 'border-line'
       }`}
     >
       <div
         className={`px-6 py-4 flex items-center justify-between transition-colors ${
-          isClosed ? 'bg-amber-50 border-b border-amber-100' : 'border-b border-gray-100'
+          isClosed ? 'bg-warning-soft border-b border-warning/30' : 'border-b border-line'
         }`}
       >
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-gray-900">Away mode</h3>
+            <h3 className="text-sm font-semibold text-ink">Away mode</h3>
             {isClosed && (
-              <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+              <span className="inline-flex items-center rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning">
                 Active
               </span>
             )}
           </div>
-          <p className="mt-0.5 text-xs text-gray-500">
+          <p className="mt-0.5 text-xs text-ink-2">
             Temporarily close and give the AI a custom message to reply with.
           </p>
         </div>
@@ -384,7 +384,7 @@ function TempClosureCard({
         <div>
           <label
             htmlFor="temp_closed_message"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-ink-2 mb-1"
           >
             Message for the AI to reply with
           </label>
@@ -394,9 +394,9 @@ function TempClosureCard({
             placeholder="e.g. We're in a meeting until 3pm. We'll get back to you shortly."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full resize-none rounded-lg border border-line px-3 py-2 text-sm text-ink shadow-xs transition-shadow placeholder:text-ink-3 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           />
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-ink-3">
             Customers will see this message and be asked if they want to leave a message for you.
           </p>
         </div>
@@ -415,7 +415,7 @@ function TempClosureCard({
       </div>
 
       {!isClosed && (
-        <div className="px-6 py-4 text-xs text-gray-400">
+        <div className="px-6 py-4 text-xs text-ink-3">
           Toggle away mode on to set a custom message.
         </div>
       )}
@@ -450,7 +450,7 @@ function TimezoneSection({ currentTimezone }: { currentTimezone: string }) {
     >
       <form action={action} className="flex flex-col sm:flex-row items-end gap-3">
         <div className="flex-1 w-full">
-          <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="timezone" className="block text-sm font-medium text-ink-2 mb-1">
             Timezone
           </label>
           <select
@@ -532,7 +532,7 @@ function ClosedDatesSection({
     >
       {/* Quick-add SA public holidays */}
       <div className="mb-5">
-        <p className="text-xs font-medium text-gray-500 mb-2">
+        <p className="text-xs font-medium text-ink-2 mb-2">
           SA public holidays — click to add:
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -547,11 +547,11 @@ function ClosedDatesSection({
                 title={formatDate(h.date)}
                 className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
                   already
-                    ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'border-gray-300 bg-white text-gray-700 hover:border-accent hover:bg-gray-50'
+                    ? 'border-line bg-surface-2 text-ink-3 cursor-not-allowed'
+                    : 'border-line-strong bg-surface text-ink-2 hover:border-accent hover:bg-surface-2'
                 }`}
               >
-                {already && <Check size={10} className="inline mr-1 text-gray-400" />}
+                {already && <Check size={10} className="inline mr-1 text-ink-3" />}
                 {h.name}
               </button>
             )
@@ -562,7 +562,7 @@ function ClosedDatesSection({
       {/* Manual add form */}
       <div className="flex flex-col sm:flex-row items-end gap-2 mb-5">
         <div className="flex-1 w-full">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Date</label>
+          <label className="block text-xs font-medium text-ink-2 mb-1">Date</label>
           <input
             type="date"
             value={newDate}
@@ -572,8 +572,8 @@ function ClosedDatesSection({
           />
         </div>
         <div className="flex-[2] w-full">
-          <label className="block text-xs font-medium text-gray-500 mb-1">
-            Reason <span className="text-gray-400">(optional)</span>
+          <label className="block text-xs font-medium text-ink-2 mb-1">
+            Reason <span className="text-ink-3">(optional)</span>
           </label>
           <input
             type="text"
@@ -597,31 +597,31 @@ function ClosedDatesSection({
 
       {/* Table */}
       {dates.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 text-center text-gray-400">
+        <div className="flex flex-col items-center justify-center py-8 text-center text-ink-3">
           <CalendarX size={28} strokeWidth={1.5} className="mb-2" />
           <p className="text-sm">No closed dates added yet.</p>
         </div>
       ) : (
-        <div className="rounded-md border border-gray-200 overflow-hidden">
+        <div className="rounded-md border border-line overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-surface-2 border-b border-line">
               <tr>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Date</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">Reason</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-ink-2">Date</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-ink-2">Reason</th>
                 <th className="w-10" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-line">
               {dates.map((d) => (
-                <tr key={d.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-gray-900 whitespace-nowrap">{formatDate(d.date)}</td>
-                  <td className="px-4 py-3 text-gray-500">{d.reason ?? '—'}</td>
+                <tr key={d.id} className="hover:bg-surface-2 transition-colors">
+                  <td className="px-4 py-3 text-ink whitespace-nowrap">{formatDate(d.date)}</td>
+                  <td className="px-4 py-3 text-ink-2">{d.reason ?? '—'}</td>
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
                       disabled={removing === d.date}
                       onClick={() => handleRemove(d.date)}
-                      className="rounded p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+                      className="rounded p-1 text-ink-3 hover:text-danger hover:bg-danger-soft transition-colors disabled:opacity-40"
                       aria-label="Remove"
                     >
                       {removing === d.date ? (
@@ -713,7 +713,7 @@ function AfterHoursSection({
       <div className="flex items-center gap-2 mb-4">
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-            count > 0 ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500'
+            count > 0 ? 'bg-accent text-on-solid' : 'bg-surface-2 text-ink-2'
           }`}
         >
           <MessageSquare size={11} />
@@ -722,7 +722,7 @@ function AfterHoursSection({
       </div>
 
       {count === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 text-center text-gray-400">
+        <div className="flex flex-col items-center justify-center py-8 text-center text-ink-3">
           <MessageSquare size={28} strokeWidth={1.5} className="mb-2" />
           <p className="text-sm">No unread after-hours messages.</p>
         </div>
@@ -731,16 +731,16 @@ function AfterHoursSection({
           {messages.map((m) => (
             <li
               key={m.id}
-              className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3"
+              className="flex items-start gap-3 rounded-lg border border-line bg-surface-2 p-3"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xs font-medium text-gray-700 font-mono">
+                  <span className="text-xs font-medium text-ink-2 font-mono">
                     {maskPhone(m.customer_phone)}
                   </span>
-                  <span className="text-xs text-gray-400">{relativeTime(m.created_at)}</span>
+                  <span className="text-xs text-ink-3">{relativeTime(m.created_at)}</span>
                 </div>
-                <p className="text-sm text-gray-700 line-clamp-3 break-words">{m.message}</p>
+                <p className="text-sm text-ink-2 line-clamp-3 break-words">{m.message}</p>
               </div>
               <button
                 type="button"
@@ -812,15 +812,15 @@ function ReminderSection({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-900">Send reminders</p>
-            <p className="text-xs text-gray-500 mt-0.5">Customers get a WhatsApp message before their appointment.</p>
+            <p className="text-sm font-medium text-ink">Send reminders</p>
+            <p className="text-xs text-ink-2 mt-0.5">Customers get a WhatsApp message before their appointment.</p>
           </div>
           <DayToggle checked={enabled} onChange={setEnabled} />
         </div>
 
         {enabled && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-ink-2 mb-1.5">
               When to send
             </label>
             <select
@@ -881,14 +881,14 @@ export default function BusinessHoursForm({
       <div className="flex items-center gap-3">
         <Link
           href="/portal/settings"
-          className="rounded-md p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+          className="rounded-md p-1.5 text-ink-3 hover:text-ink-2 hover:bg-surface-2 transition-colors"
           aria-label="Back to settings"
         >
           <ArrowLeft size={16} strokeWidth={2} />
         </Link>
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Business Hours</h2>
-          <p className="text-sm text-gray-500">Manage when your AI responds and collects messages.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Business Hours</h1>
+          <p className="text-sm text-ink-2">Manage when your AI responds and collects messages.</p>
         </div>
       </div>
 

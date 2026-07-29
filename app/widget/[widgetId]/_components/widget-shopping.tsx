@@ -141,12 +141,17 @@ export function ProductGrid({
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-gray-900">{p.name}</p>
+              {p.description && (
+                <p className="line-clamp-2 text-xs text-gray-500">{p.description}</p>
+              )}
               <p className="text-sm text-gray-600">
                 {formatWidgetMoney(p.currency, p.price)}
               </p>
-              {!p.in_stock && (
+              {!p.in_stock ? (
                 <p className="mt-0.5 text-xs text-red-500">Out of stock</p>
-              )}
+              ) : p.stock_left != null ? (
+                <p className="mt-0.5 text-xs text-amber-600">Only {p.stock_left} left</p>
+              ) : null}
             </div>
             <button
               type="button"

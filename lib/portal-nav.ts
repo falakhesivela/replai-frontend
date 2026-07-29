@@ -7,6 +7,7 @@ export type PortalNavEntry =
 
 export const PORTAL_NAV_ACCESS: readonly PortalNavEntry[] = [
   { href: '/portal/overview', permission: 'view_analytics' },
+  { href: '/portal/analytics', permission: 'view_analytics' },
   /** Agents use read-only My Agent; editing requires `manage_agent`. */
   { href: '/portal/my-agent', permission: 'view_conversations' },
   { href: '/portal/knowledge-base', permission: 'manage_agent' },

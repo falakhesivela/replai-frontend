@@ -10,13 +10,12 @@ import {
   FolderOpen,
   CheckCircle2,
   XCircle,
-  X,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getMyKnowledgeFiles, deleteMyKnowledge, deleteMyKnowledgeFile, scrapeWebsiteKnowledge } from '@/lib/api'
 import { useToast } from '@/components/toast'
 import type { KnowledgeFile } from '@/lib/types'
-import { Card } from '@/components/ui'
+import { Card, ConfirmDialog } from '@/components/ui'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!
 
@@ -71,52 +70,6 @@ function uploadWithProgress(
   })
 }
 
-// ── Confirm dialog ────────────────────────────────────────────────────────────
-
-function ConfirmDialog({
-  title,
-  description,
-  confirmLabel = 'Delete',
-  onConfirm,
-  onCancel,
-}: {
-  title: string
-  description: string
-  confirmLabel?: string
-  onConfirm: () => void
-  onCancel: () => void
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onCancel} />
-      <div className="relative w-full max-w-sm rounded-lg border border-gray-200 bg-white p-6 shadow-xl">
-        <button
-          onClick={onCancel}
-          className="absolute right-4 top-4 rounded p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <X size={16} strokeWidth={2} />
-        </button>
-        <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
-        <p className="mt-1.5 text-sm text-gray-500">{description}</p>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 transition-colors"
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── Tips card ─────────────────────────────────────────────────────────────────
 
 function TipsCard() {
@@ -130,27 +83,27 @@ function TipsCard() {
 
   return (
     <Card padding="sm" className="h-fit">
-      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink-3 mb-4">
         What to upload
       </p>
       <ul className="space-y-2">
         {good.map((item) => (
-          <li key={item} className="flex items-start gap-2 text-sm text-gray-600">
-            <CheckCircle2 size={14} strokeWidth={2} className="mt-px shrink-0 text-green-500" />
+          <li key={item} className="flex items-start gap-2 text-sm text-ink-2">
+            <CheckCircle2 size={14} strokeWidth={2} className="mt-px shrink-0 text-success" />
             {item}
           </li>
         ))}
         <li className="pt-1" />
         {bad.map((item) => (
-          <li key={item} className="flex items-start gap-2 text-sm text-gray-400">
-            <XCircle size={14} strokeWidth={2} className="mt-px shrink-0 text-red-400" />
+          <li key={item} className="flex items-start gap-2 text-sm text-ink-3">
+            <XCircle size={14} strokeWidth={2} className="mt-px shrink-0 text-danger" />
             {item}
           </li>
         ))}
       </ul>
-      <div className="mt-5 rounded-md bg-gray-50 p-3">
-        <p className="text-xs text-gray-500 leading-relaxed">
-          <span className="font-medium text-gray-700">Tip:</span> The more specific your documents,
+      <div className="mt-5 rounded-md bg-surface-2 p-3">
+        <p className="text-xs text-ink-2 leading-relaxed">
+          <span className="font-medium text-ink-2">Tip:</span> The more specific your documents,
           the better your agent's answers. Include real questions your customers ask.
         </p>
       </div>
@@ -318,8 +271,8 @@ export default function KnowledgeBasePage() {
 
       <div className="mx-auto max-w-5xl">
         <div className="mb-5">
-          <h1 className="text-xl font-semibold text-gray-900">Knowledge Base</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Knowledge Base</h1>
+          <p className="mt-0.5 text-sm text-ink-2">
             Upload documents your AI agent can reference when answering customer questions.
           </p>
         </div>
@@ -330,7 +283,7 @@ export default function KnowledgeBasePage() {
 
             {/* Section 1 — Upload zone */}
             <Card>
-              <h3 className="mb-4 text-sm font-semibold text-gray-900">Upload document</h3>
+              <h3 className="mb-4 text-sm font-semibold text-ink">Upload document</h3>
 
               {/* Drop zone */}
               <div
@@ -344,10 +297,10 @@ export default function KnowledgeBasePage() {
                 onDrop={onDrop}
                 className={`flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors ${
                   isUploading
-                    ? 'cursor-not-allowed border-gray-200 bg-gray-50'
+                    ? 'cursor-not-allowed border-line bg-surface-2'
                     : isDragging
-                    ? 'cursor-copy border-gray-500 bg-gray-50'
-                    : 'cursor-pointer border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    ? 'cursor-copy border-accent/60 bg-surface-2'
+                    : 'cursor-pointer border-line hover:border-line-strong hover:bg-surface-2'
                 }`}
               >
                 <input
@@ -359,26 +312,26 @@ export default function KnowledgeBasePage() {
                   disabled={isUploading}
                 />
 
-                <div className={`rounded-full p-3 ${isDragging ? 'bg-gray-100' : 'bg-gray-50'}`}>
+                <div className={`rounded-full p-3 ${isDragging ? 'bg-surface-2' : 'bg-surface-2'}`}>
                   <Upload
                     size={22}
                     strokeWidth={1.75}
-                    className={isDragging ? 'text-gray-700' : 'text-gray-400'}
+                    className={isDragging ? 'text-ink-2' : 'text-ink-3'}
                   />
                 </div>
 
                 {selectedFile ? (
                   <div className="text-center">
-                    <p className="text-sm font-medium text-gray-700">{selectedFile.name}</p>
-                    <p className="text-xs text-gray-400">{formatBytes(selectedFile.size)}</p>
+                    <p className="text-sm font-medium text-ink-2">{selectedFile.name}</p>
+                    <p className="text-xs text-ink-3">{formatBytes(selectedFile.size)}</p>
                   </div>
                 ) : (
                   <div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-ink-2">
                       Drag &amp; drop your file here,{' '}
-                      <span className="font-medium text-gray-800">or click to browse</span>
+                      <span className="font-medium text-ink">or click to browse</span>
                     </p>
-                    <p className="mt-1 text-xs text-gray-400">PDF and TXT files only · Max 10 MB</p>
+                    <p className="mt-1 text-xs text-ink-3">PDF and TXT files only · Max 10 MB</p>
                   </div>
                 )}
               </div>
@@ -387,12 +340,12 @@ export default function KnowledgeBasePage() {
               {isUploading && (
                 <div className="mt-3">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-500">Uploading…</span>
-                    <span className="text-xs text-gray-400">{uploadProgress}%</span>
+                    <span className="text-xs text-ink-2">Uploading…</span>
+                    <span className="text-xs text-ink-3">{uploadProgress}%</span>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
                     <div
-                      className="h-full rounded-full bg-brand transition-all duration-150"
+                      className="h-full rounded-full bg-accent transition-all duration-150"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
@@ -402,8 +355,8 @@ export default function KnowledgeBasePage() {
 
             {/* Section 2 — Website crawl */}
             <Card>
-              <h3 className="mb-1 text-sm font-semibold text-gray-900">Crawl your website</h3>
-              <p className="mb-4 text-xs text-gray-400">
+              <h3 className="mb-1 text-sm font-semibold text-ink">Crawl your website</h3>
+              <p className="mb-4 text-xs text-ink-3">
                 We'll visit your site, follow internal links, and index the content automatically.
               </p>
               <form onSubmit={handleCrawl} className="flex gap-2">
@@ -414,12 +367,12 @@ export default function KnowledgeBasePage() {
                   onChange={(e) => setWebsiteUrl(e.target.value)}
                   disabled={isCrawling}
                   required
-                  className="flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+                  className="flex-1 rounded-md border border-line px-3 py-2 text-sm text-ink placeholder:text-ink-3 focus:border-accent/50 focus:outline-none disabled:bg-surface-2 disabled:text-ink-3"
                 />
                 <button
                   type="submit"
                   disabled={isCrawling || !websiteUrl.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-accent shadow-sm shadow-accent/25 px-4 py-2 text-sm font-medium text-on-solid hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isCrawling ? (
                     <>
@@ -435,32 +388,32 @@ export default function KnowledgeBasePage() {
                 </button>
               </form>
               {isCrawling && (
-                <p className="mt-2 text-xs text-gray-400">
+                <p className="mt-2 text-xs text-ink-3">
                   This may take a minute for larger sites…
                 </p>
               )}
             </Card>
 
             {/* Section 3 — Files table */}
-            <section className="rounded-lg border border-gray-200 bg-white">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900">
+            <section className="rounded-xl border border-line bg-surface shadow-card">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-line">
+                <h3 className="text-sm font-semibold text-ink">
                   Knowledge sources
                   {files.length > 0 && (
-                    <span className="ml-2 text-xs font-normal text-gray-400">({files.length})</span>
+                    <span className="ml-2 text-xs font-normal text-ink-3">({files.length})</span>
                   )}
                 </h3>
               </div>
 
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 size={18} className="animate-spin text-gray-300" />
+                  <Loader2 size={18} className="animate-spin text-ink-3" />
                 </div>
               ) : files.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
-                  <FolderOpen size={28} strokeWidth={1.5} className="text-gray-200 mb-3" />
-                  <p className="text-sm font-medium text-gray-500">No documents yet</p>
-                  <p className="mt-1 text-xs text-gray-400 max-w-xs leading-relaxed">
+                  <FolderOpen size={28} strokeWidth={1.5} className="text-ink-3/50 mb-3" />
+                  <p className="text-sm font-medium text-ink-2">No documents yet</p>
+                  <p className="mt-1 text-xs text-ink-3 max-w-xs leading-relaxed">
                     Upload your FAQs, product info, or policies to teach your AI agent.
                   </p>
                 </div>
@@ -469,59 +422,59 @@ export default function KnowledgeBasePage() {
                   <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-100 bg-gray-50">
-                        <th className="px-6 py-2.5 text-left text-xs font-medium text-gray-400">
+                      <tr className="border-b border-line bg-surface-2">
+                        <th className="px-6 py-2.5 text-left text-xs font-medium text-ink-3">
                           Filename
                         </th>
-                        <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400">
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-ink-3">
                           Chunks
                         </th>
-                        <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400">
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-ink-3">
                           Uploaded
                         </th>
                         <th className="px-4 py-2.5" />
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody className="divide-y divide-line/60">
                       {files.map((file) => {
                         const isWebsite = file.filename.startsWith('website:')
                         const displayName = isWebsite
                           ? file.filename.slice('website:'.length)
                           : file.filename
                         return (
-                        <tr key={file.filename} className="hover:bg-gray-50 transition-colors">
+                        <tr key={file.filename} className="hover:bg-surface-2 transition-colors">
                           <td className="px-6 py-3">
                             <div className="flex items-center gap-2.5 min-w-0">
                               {isWebsite ? (
                                 <Globe
                                   size={14}
                                   strokeWidth={1.75}
-                                  className="shrink-0 text-blue-400"
+                                  className="shrink-0 text-info"
                                 />
                               ) : (
                                 <FileText
                                   size={14}
                                   strokeWidth={1.75}
-                                  className="shrink-0 text-gray-400"
+                                  className="shrink-0 text-ink-3"
                                 />
                               )}
                               <div className="min-w-0">
-                                <p className="truncate font-medium text-gray-800">
+                                <p className="truncate font-medium text-ink">
                                   {displayName}
                                 </p>
                                 {!isWebsite && file.size && (
-                                  <p className="text-xs text-gray-400">{formatBytes(file.size)}</p>
+                                  <p className="text-xs text-ink-3">{formatBytes(file.size)}</p>
                                 )}
                                 {isWebsite && (
-                                  <p className="text-xs text-gray-400">Website</p>
+                                  <p className="text-xs text-ink-3">Website</p>
                                 )}
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-gray-500">
+                          <td className="px-4 py-3 text-ink-2">
                             {file.chunks ?? '—'}
                           </td>
-                          <td className="px-4 py-3 text-gray-500">
+                          <td className="px-4 py-3 text-ink-2">
                             {formatDate(file.created_at)}
                           </td>
                           <td className="px-4 py-3 text-right">
@@ -530,7 +483,7 @@ export default function KnowledgeBasePage() {
                                 setConfirm({ kind: 'file', filename: file.filename })
                               }
                               disabled={deletingFile === file.filename || clearingAll}
-                              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-ink-3 hover:bg-danger-soft hover:text-danger disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
                               {deletingFile === file.filename ? (
                                 <Loader2 size={12} className="animate-spin" />
@@ -547,11 +500,11 @@ export default function KnowledgeBasePage() {
                   </table>
                   </div>
 
-                  <div className="flex justify-end px-6 py-3 border-t border-gray-100">
+                  <div className="flex justify-end px-6 py-3 border-t border-line">
                     <button
                       onClick={() => setConfirm({ kind: 'all' })}
                       disabled={clearingAll || isUploading}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink-2 hover:border-danger/30 hover:bg-danger-soft hover:text-danger disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
                       {clearingAll ? (
                         <Loader2 size={12} className="animate-spin" />

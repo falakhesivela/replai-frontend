@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { ChevronDown, ChevronUp, Loader2, Save, RotateCcw, X, LayoutTemplate } from 'lucide-react'
+import { ChevronDown, ChevronUp, Loader2, Save, RotateCcw, LayoutTemplate } from 'lucide-react'
 import {
   saveSystemPromptAction,
   saveAgentNameAction,
@@ -14,11 +14,11 @@ import { useToast } from '@/components/toast'
 import { usePermissions } from '@/hooks/usePermissions'
 import TemplatePicker from './template-picker'
 import type { IndustryTemplate } from '@/lib/types'
-import { Card, buttonClasses } from '@/components/ui'
+import { Card, buttonClasses, ConfirmDialog } from '@/components/ui'
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const readonlyBoxClass =
-  'rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 whitespace-pre-wrap font-mono min-h-[120px]'
+  'rounded-md border border-line bg-surface-2 px-3 py-2 text-sm text-ink whitespace-pre-wrap font-mono min-h-[120px]'
 
 const DEFAULT_PROMPT =
   `You are a helpful customer support assistant. Be friendly, concise, and professional. ` +
@@ -61,8 +61,8 @@ function Section({
 }) {
   return (
     <Card>
-      <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-      {description && <p className="mt-0.5 mb-5 text-xs text-gray-500">{description}</p>}
+      <h3 className="text-sm font-semibold text-ink">{title}</h3>
+      {description && <p className="mt-0.5 mb-5 text-xs text-ink-2">{description}</p>}
       {!description && <div className="mb-5" />}
       {children}
     </Card>
@@ -85,8 +85,8 @@ function Toggle({
   return (
     <div className="flex items-start justify-between gap-4 py-3">
       <div>
-        <p className="text-sm font-medium text-gray-700">{label}</p>
-        {description && <p className="text-xs text-gray-400 mt-0.5">{description}</p>}
+        <p className="text-sm font-medium text-ink-2">{label}</p>
+        {description && <p className="text-xs text-ink-3 mt-0.5">{description}</p>}
       </div>
       <button
         type="button"
@@ -94,61 +94,15 @@ function Toggle({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
-          checked ? 'bg-brand' : 'bg-gray-200'
+          checked ? 'bg-accent' : 'bg-line'
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+          className={`inline-block h-4 w-4 rounded-full bg-surface shadow transition-transform ${
             checked ? 'translate-x-4' : 'translate-x-0'
           }`}
         />
       </button>
-    </div>
-  )
-}
-
-// ── Confirmation dialog ───────────────────────────────────────────────────────
-
-function ConfirmDialog({
-  title,
-  description,
-  confirmLabel,
-  onConfirm,
-  onCancel,
-}: {
-  title: string
-  description: string
-  confirmLabel: string
-  onConfirm: () => void
-  onCancel: () => void
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onCancel} />
-      <div className="relative w-full max-w-sm rounded-lg border border-gray-200 bg-white p-6 shadow-xl">
-        <button
-          onClick={onCancel}
-          className="absolute right-4 top-4 rounded p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <X size={16} strokeWidth={2} />
-        </button>
-        <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
-        <p className="mt-1.5 text-sm text-gray-500">{description}</p>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 transition-colors"
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
     </div>
   )
 }
@@ -247,8 +201,8 @@ export default function AgentForm({
 
       <div className="mx-auto max-w-2xl space-y-5">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">My Agent</h2>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">My Agent</h1>
+          <p className="mt-0.5 text-sm text-ink-2">
             {canManageAgent
               ? "Configure your AI assistant's identity and behaviour."
               : 'View-only: only owners and managers can change agent configuration.'}
@@ -263,7 +217,7 @@ export default function AgentForm({
           {canManageAgent ? (
             <form action={nameAction} className="space-y-4">
               <div>
-                <label htmlFor="agent_name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="agent_name" className="block text-sm font-medium text-ink-2 mb-1">
                   Agent name
                 </label>
                 <input
@@ -272,7 +226,7 @@ export default function AgentForm({
                   type="text"
                   defaultValue={initialAgentName}
                   placeholder="e.g. Sarah from Acme Support"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="w-full rounded-lg border border-line px-3 py-2 text-sm text-ink shadow-xs transition-shadow placeholder:text-ink-3 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
                 />
               </div>
               <div className="flex justify-end">
@@ -281,7 +235,7 @@ export default function AgentForm({
             </form>
           ) : (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-1.5">Agent name</p>
+              <p className="text-xs font-medium text-ink-2 mb-1.5">Agent name</p>
               <div className={readonlyBoxClass}>{initialAgentName.trim() || '—'}</div>
             </div>
           )}
@@ -293,13 +247,13 @@ export default function AgentForm({
             <form action={promptAction} className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label htmlFor="system_prompt" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="system_prompt" className="block text-sm font-medium text-ink-2">
                     System prompt
                   </label>
                   <button
                     type="button"
                     onClick={() => setTemplatePickerOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-xs font-medium text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
                   >
                     <LayoutTemplate size={11} strokeWidth={2} />
                     Browse templates
@@ -311,19 +265,19 @@ export default function AgentForm({
                   rows={10}
                   value={currentPrompt}
                   onChange={(e) => setCurrentPrompt(e.target.value)}
-                  className="w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent font-mono"
+                  className="w-full resize-y rounded-lg border border-line px-3 py-2 text-sm text-ink shadow-xs transition-shadow placeholder:text-ink-3 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 font-mono"
                 />
-                <p className="mt-1.5 text-xs text-gray-400 leading-relaxed">
+                <p className="mt-1.5 text-xs text-ink-3 leading-relaxed">
                   This tells your AI agent how to behave, what tone to use, and what topics to cover.
                   Be specific about your business.
                 </p>
               </div>
 
-              <div className="rounded-md border border-gray-100 bg-gray-50">
+              <div className="rounded-md border border-line bg-surface-2">
                 <button
                   type="button"
                   onClick={() => setExampleOpen((o) => !o)}
-                  className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                  className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-medium text-ink-2 hover:text-ink-2 transition-colors"
                 >
                   See example
                   {exampleOpen ? (
@@ -333,14 +287,14 @@ export default function AgentForm({
                   )}
                 </button>
                 {exampleOpen && (
-                  <div className="border-t border-gray-100 px-4 pb-4 pt-3">
-                    <p className="text-xs text-gray-500 leading-relaxed font-mono whitespace-pre-wrap">
+                  <div className="border-t border-line px-4 pb-4 pt-3">
+                    <p className="text-xs text-ink-2 leading-relaxed font-mono whitespace-pre-wrap">
                       {EXAMPLE_PROMPT}
                     </p>
                     <button
                       type="button"
                       onClick={() => setCurrentPrompt(EXAMPLE_PROMPT)}
-                      className="mt-3 text-xs font-medium text-gray-600 hover:text-gray-900 underline underline-offset-2 transition-colors"
+                      className="mt-3 text-xs font-medium text-ink-2 hover:text-ink underline underline-offset-2 transition-colors"
                     >
                       Use this as a starting point
                     </button>
@@ -354,7 +308,7 @@ export default function AgentForm({
             </form>
           ) : (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-1.5">System prompt</p>
+              <p className="text-xs font-medium text-ink-2 mb-1.5">System prompt</p>
               <div className={readonlyBoxClass}>{currentPrompt.trim() || '—'}</div>
             </div>
           )}
@@ -377,7 +331,7 @@ export default function AgentForm({
                 }}
                 className="space-y-1"
               >
-                <div className="divide-y divide-gray-50">
+                <div className="divide-y divide-line/60">
                   <Toggle
                     label="Reply in customer's language automatically"
                     description="Detects the customer's language and responds in kind."
@@ -399,14 +353,14 @@ export default function AgentForm({
                 </div>
 
                 <div className="mt-5">
-                  <label htmlFor="response_style" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="response_style" className="block text-sm font-medium text-ink-2 mb-1">
                     Response style
                   </label>
                   <select
                     id="response_style"
                     value={responseStyle}
                     onChange={(e) => setResponseStyle(e.target.value as typeof responseStyle)}
-                    className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent bg-white"
+                    className="rounded-lg border border-line px-3 py-2 text-sm text-ink shadow-xs transition-shadow focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 bg-surface"
                   >
                     <option value="formal">Formal</option>
                     <option value="friendly">Friendly</option>
@@ -444,20 +398,20 @@ export default function AgentForm({
               </form>
             </Section>
 
-            <section className="rounded-lg border border-red-200 bg-white p-6">
-              <h3 className="text-sm font-semibold text-red-700">Danger zone</h3>
-              <p className="mt-0.5 mb-5 text-xs text-gray-500">
+            <section className="rounded-lg border border-danger/30 bg-surface p-6">
+              <h3 className="text-sm font-semibold text-danger">Danger zone</h3>
+              <p className="mt-0.5 mb-5 text-xs text-ink-2">
                 These actions affect your agent's configuration.
               </p>
-              <div className="flex items-center justify-between rounded-md border border-red-100 bg-red-50/50 px-4 py-3">
+              <div className="flex items-center justify-between rounded-md border border-danger/30 bg-danger-soft/50 px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Reset to default prompt</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Replaces your current prompt with the generic default.</p>
+                  <p className="text-sm font-medium text-ink-2">Reset to default prompt</p>
+                  <p className="text-xs text-ink-3 mt-0.5">Replaces your current prompt with the generic default.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowResetDialog(true)}
-                  className="inline-flex items-center gap-2 rounded-md border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-md border border-danger/30 bg-surface px-3 py-1.5 text-sm font-medium text-danger hover:bg-danger-soft hover:border-danger/30 transition-colors"
                 >
                   <RotateCcw size={13} strokeWidth={2} />
                   Reset

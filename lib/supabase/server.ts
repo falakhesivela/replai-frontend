@@ -28,6 +28,48 @@ export async function createClient() {
 }
 
 /**
+ * Access token for calling the backend API from Server Components / actions.
+ * getSession() alone has proven unreliable in Server Components (see the note
+ * in app/portal/(protected)/layout.tsx), so when it comes back empty we parse
+ * the Supabase auth cookie (sb-<ref>-auth-token, possibly chunked and
+ * base64-prefixed) directly.
+ */
+export async function getPortalAccessToken(): Promise<string | null> {
+  const supabase = await createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (session?.access_token) return session.access_token
+
+  const cookieStore = await cookies()
+  const chunks = cookieStore
+    .getAll()
+    .filter((c) => /^sb-.+-auth-token(\.\d+)?$/.test(c.name))
+    .sort((a, b) => {
+      const na = Number(a.name.split('.').pop() ?? 0)
+      const nb = Number(b.name.split('.').pop() ?? 0)
+      return na - nb
+    })
+  if (chunks.length === 0) return null
+
+  let raw = chunks.map((c) => c.value).join('')
+  if (raw.startsWith('base64-')) {
+    try {
+      raw = Buffer.from(raw.slice(7), 'base64').toString('utf-8')
+    } catch {
+      return null
+    }
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    const token = (parsed as { access_token?: unknown })?.access_token
+    return typeof token === 'string' ? token : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Returns the clients row for the currently authenticated user, or null if
  * the user is not signed in or has no associated client record.
  */

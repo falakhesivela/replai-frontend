@@ -9,16 +9,10 @@ import {
   Sparkles,
 } from 'lucide-react'
 import type { WidgetComponent } from '@/lib/api'
+import { formatMoney } from '@/lib/format'
 
 function money(currency: string, amount: number): string {
-  try {
-    return new Intl.NumberFormat('en-ZA', {
-      style: 'currency',
-      currency: currency || 'ZAR',
-    }).format(amount)
-  } catch {
-    return `${currency} ${amount.toFixed(2)}`
-  }
+  return formatMoney(amount, currency || 'ZAR')
 }
 
 function PreviewCard({
@@ -31,11 +25,11 @@ function PreviewCard({
   detail?: string
 }) {
   return (
-    <div className="mt-1.5 flex items-start gap-2 rounded-lg border border-gray-200/80 bg-white/90 px-2.5 py-2 text-xs text-gray-700 shadow-sm">
-      <span className="mt-0.5 shrink-0 text-gray-400">{icon}</span>
+    <div className="mt-1.5 flex items-start gap-2 rounded-lg border border-line/80 bg-surface/90 px-2.5 py-2 text-xs text-ink-2 shadow-sm">
+      <span className="mt-0.5 shrink-0 text-ink-3">{icon}</span>
       <div className="min-w-0">
-        <p className="font-medium text-gray-800">{title}</p>
-        {detail && <p className="mt-0.5 text-gray-500">{detail}</p>}
+        <p className="font-medium text-ink">{title}</p>
+        {detail && <p className="mt-0.5 text-ink-2">{detail}</p>}
       </div>
     </div>
   )
@@ -141,6 +135,15 @@ export function MessageComponentsPreview({
                     : 'Booking preview'
                 }
                 detail={`${comp.service_name} · ${comp.date_label} ${comp.time_label}`}
+              />
+            )
+          case 'booking_intake_form':
+            return (
+              <PreviewCard
+                key={idx}
+                icon={<Calendar size={14} />}
+                title={`Booking details · ${comp.service_name}`}
+                detail={`${comp.fields.length} field${comp.fields.length === 1 ? '' : 's'} · ${comp.date_label} ${comp.time_label}`}
               />
             )
           default:

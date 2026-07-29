@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getClientProfile, createClient } from '@/lib/supabase/server'
+import { getClientProfile, getPortalAccessToken } from '@/lib/supabase/server'
 import { isFeatureUnlocked } from '@/lib/entitlements.server'
 import FeatureLocked from '../_components/feature-locked'
 import { getMyWidgetConfig } from '@/lib/api'
@@ -24,11 +24,7 @@ export default async function ChatbotWidgetPage() {
     return <FeatureLocked feature="website_widget" />
   }
 
-  const supabase = await createClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  const token = session?.access_token ?? ''
+  const token = (await getPortalAccessToken()) ?? ''
 
   let config: WidgetConfig | null = null
   if (token) {

@@ -13,13 +13,13 @@ export default function FeatureLocked({ feature }: { feature: FeatureKey }) {
   return (
     <div className="mx-auto flex max-w-lg flex-col items-center justify-center py-16 text-center">
       <Card padding="md" className="w-full">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100">
-          <Lock size={20} className="text-gray-500" />
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-surface-2">
+          <Lock size={20} className="text-ink-2" />
         </div>
-        <h1 className="text-lg font-semibold text-gray-900">
+        <h1 className="text-lg font-semibold text-ink">
           {meta.label} is not on your plan
         </h1>
-        <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500">{meta.description}</p>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-ink-2">{meta.description}</p>
         <Link
           href={`/portal/subscription?feature=${feature}`}
           className={`${buttonClasses({ variant: 'primary' })} mt-6 inline-flex`}

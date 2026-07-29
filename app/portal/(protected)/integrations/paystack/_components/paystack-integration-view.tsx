@@ -22,7 +22,7 @@ const getFreshToken: TokenGetter = async () => {
 }
 
 const inputClass =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent'
+  'w-full rounded-lg border border-line px-3 py-2 text-sm text-ink shadow-xs transition-shadow placeholder:text-ink-3 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25'
 
 export default function PaystackIntegrationView({
   ownerEmail,
@@ -108,19 +108,19 @@ export default function PaystackIntegrationView({
       <div>
         <Link
           href="/portal/integrations"
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-2 hover:text-ink transition-colors"
         >
           <ArrowLeft size={14} />
           Integrations
         </Link>
-        <h1 className="text-xl font-semibold text-gray-900">Paystack</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">Paystack</h1>
+        <p className="mt-1 text-sm text-ink-2">
           Customer payments for WhatsApp orders and paid bookings. Settlements go to your
           business bank account — separate from your Replai subscription.
         </p>
-        <p className="mt-2 text-xs text-gray-400">
-          In Paystack, set <strong className="font-medium text-gray-500">Test callback URL</strong>{' '}
-          to your public page: <code className="text-gray-600">/payment/complete</code> on your app
+        <p className="mt-2 text-xs text-ink-3">
+          In Paystack, set <strong className="font-medium text-ink-2">Test callback URL</strong>{' '}
+          to your public page: <code className="text-ink-2">/payment/complete</code> on your app
           domain (e.g. https://app.replai.co.za/payment/complete). Customers land there after paying
           — no login required.
         </p>
@@ -128,36 +128,36 @@ export default function PaystackIntegrationView({
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          <Loader2 className="h-6 w-6 animate-spin text-ink-3" />
         </div>
       ) : (
         <>
           <Card>
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-100">
-                <CreditCard size={18} className="text-gray-600" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface-2">
+                <CreditCard size={18} className="text-ink-2" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-gray-900">Connection status</p>
+                <p className="text-sm font-semibold text-ink">Connection status</p>
                 {isActive ? (
-                  <div className="mt-2 space-y-1 text-sm text-gray-600">
-                    <p className="inline-flex items-center gap-1.5 text-green-700">
+                  <div className="mt-2 space-y-1 text-sm text-ink-2">
+                    <p className="inline-flex items-center gap-1.5 text-success">
                       <CheckCircle2 size={14} />
                       Connected
                     </p>
                     {account?.business_name && (
                       <p>
-                        <span className="text-gray-400">Business:</span> {account.business_name}
+                        <span className="text-ink-3">Business:</span> {account.business_name}
                       </p>
                     )}
                     {account?.account_number_last4 && (
                       <p>
-                        <span className="text-gray-400">Account:</span> ••••{account.account_number_last4}
+                        <span className="text-ink-3">Account:</span> ••••{account.account_number_last4}
                       </p>
                     )}
                   </div>
                 ) : (
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-ink-2">
                     {account?.paystack_configured
                       ? 'Connect your business bank account to receive customer payments.'
                       : 'Online payments are not enabled on this Replai environment yet.'}
@@ -169,10 +169,10 @@ export default function PaystackIntegrationView({
 
           {!isActive && account?.paystack_configured && canManage && (
             <Card>
-              <h2 className="text-sm font-semibold text-gray-900 mb-4">Connect account</h2>
+              <h2 className="text-sm font-semibold text-ink mb-4">Connect account</h2>
               <form onSubmit={handleConnect} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Business name</label>
+                  <label className="block text-xs font-medium text-ink-2 mb-1">Business name</label>
                   <input
                     type="text"
                     required
@@ -182,9 +182,9 @@ export default function PaystackIntegrationView({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Settlement bank</label>
+                  <label className="block text-xs font-medium text-ink-2 mb-1">Settlement bank</label>
                   {banksError ? (
-                    <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+                    <p className="rounded-md bg-warning-soft px-3 py-2 text-xs text-warning ring-1 ring-warning/25">
                       {banksError}
                     </p>
                   ) : (
@@ -207,7 +207,7 @@ export default function PaystackIntegrationView({
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Account number</label>
+                  <label className="block text-xs font-medium text-ink-2 mb-1">Account number</label>
                   <input
                     type="text"
                     required
@@ -218,7 +218,7 @@ export default function PaystackIntegrationView({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Contact email</label>
+                  <label className="block text-xs font-medium text-ink-2 mb-1">Contact email</label>
                   <input
                     type="email"
                     required
@@ -228,7 +228,7 @@ export default function PaystackIntegrationView({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Contact name (optional)</label>
+                  <label className="block text-xs font-medium text-ink-2 mb-1">Contact name (optional)</label>
                   <input
                     type="text"
                     value={primary_contact_name}
@@ -237,7 +237,7 @@ export default function PaystackIntegrationView({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Contact phone (optional)</label>
+                  <label className="block text-xs font-medium text-ink-2 mb-1">Contact phone (optional)</label>
                   <input
                     type="tel"
                     value={primary_contact_phone}
@@ -264,7 +264,7 @@ export default function PaystackIntegrationView({
           )}
 
           {!canManage && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-ink-2">
               Only the workspace owner can connect integrations.
             </p>
           )}

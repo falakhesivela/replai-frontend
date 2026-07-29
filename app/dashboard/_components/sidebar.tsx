@@ -30,7 +30,7 @@ export default function Sidebar({ email, mobileOpen, onMobileClose }: SidebarPro
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-gray-200 bg-white transition-transform duration-200
+      className={`fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-gray-200/70 bg-white shadow-xl shadow-gray-950/5 transition-transform duration-200 md:shadow-none
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0`}
     >
@@ -63,13 +63,13 @@ export default function Sidebar({ email, mobileOpen, onMobileClose }: SidebarPro
               key={href}
               href={href}
               onClick={onMobileClose}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 active
-                  ? 'bg-brand-soft text-brand'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-accent-soft text-accent-text before:absolute before:left-0 before:top-1/2 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-accent'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
-              <Icon size={16} strokeWidth={1.75} />
+              <Icon size={16} strokeWidth={active ? 2 : 1.75} />
               {label}
             </Link>
           )
@@ -77,11 +77,16 @@ export default function Sidebar({ email, mobileOpen, onMobileClose }: SidebarPro
       </nav>
 
       {/* User footer */}
-      <div className="border-t border-gray-100 px-4 py-4">
-        <p className="truncate text-xs text-gray-400 mb-2">{email}</p>
+      <div className="border-t border-gray-100 px-3 py-3">
+        <div className="flex items-center gap-2.5 px-1 mb-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-accent to-accent-hover text-[11px] font-semibold text-on-solid">
+            {email.charAt(0).toUpperCase()}
+          </span>
+          <p className="min-w-0 flex-1 truncate text-xs text-gray-500">{email}</p>
+        </div>
         <button
           onClick={handleSignOut}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
         >
           <LogOut size={14} strokeWidth={1.75} />
           Sign out

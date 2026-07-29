@@ -12,11 +12,11 @@ interface MobileTopBarProps {
  *  one place is what prevents the two shells from drifting again. */
 export default function MobileTopBar({ onMenuClick }: MobileTopBarProps) {
   return (
-    <header className="flex h-14 items-center gap-3 border-b border-gray-200 bg-white px-4 md:hidden">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-surface/85 px-4 backdrop-blur-md md:hidden">
       <button
         type="button"
         onClick={onMenuClick}
-        className="rounded-md p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+        className="rounded-md p-1.5 text-ink-3 hover:text-ink transition-colors"
         aria-label="Open menu"
       >
         <Menu size={20} strokeWidth={1.75} />
@@ -26,7 +26,7 @@ export default function MobileTopBar({ onMenuClick }: MobileTopBarProps) {
         alt="Replai"
         width={80}
         height={24}
-        className="object-contain object-left"
+        className="object-contain object-left dark:brightness-0 dark:invert"
         priority
       />
     </header>

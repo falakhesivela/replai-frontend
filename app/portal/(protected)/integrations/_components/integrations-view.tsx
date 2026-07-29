@@ -2,10 +2,19 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Calendar, CheckCircle2, ChevronRight, CreditCard, Loader2, Plug } from 'lucide-react'
+import { Calendar, CheckCircle2, ChevronRight, CreditCard, Loader2, Plug, ShoppingBag } from 'lucide-react'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
-import { getMyCalendarStatus, getMyPaymentAccount, type TokenGetter } from '@/lib/api'
-import type { CalendarConnectionStatus, PaymentAccountStatus } from '@/lib/types'
+import {
+  getMyCalendarStatus,
+  getMyPaymentAccount,
+  getMyWhatsAppCatalogStatus,
+  type TokenGetter,
+} from '@/lib/api'
+import type {
+  CalendarConnectionStatus,
+  PaymentAccountStatus,
+  WhatsAppCatalogStatus,
+} from '@/lib/types'
 import { Card } from '@/components/ui'
 
 const getFreshToken: TokenGetter = async () => {
@@ -27,17 +36,20 @@ type IntegrationCard = {
 export default function IntegrationsView() {
   const [paystack, setPaystack] = useState<PaymentAccountStatus | null>(null)
   const [calendar, setCalendar] = useState<CalendarConnectionStatus | null>(null)
+  const [catalog, setCatalog] = useState<WhatsAppCatalogStatus | null>(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [pay, cal] = await Promise.allSettled([
+      const [pay, cal, cat] = await Promise.allSettled([
         getMyPaymentAccount(getFreshToken),
         getMyCalendarStatus(getFreshToken),
+        getMyWhatsAppCatalogStatus(getFreshToken),
       ])
       setPaystack(pay.status === 'fulfilled' ? pay.value : null)
       setCalendar(cal.status === 'fulfilled' ? cal.value : null)
+      setCatalog(cat.status === 'fulfilled' ? cat.value : null)
     } finally {
       setLoading(false)
     }
@@ -49,6 +61,7 @@ export default function IntegrationsView() {
 
   const paystackConnected = paystack?.status === 'active'
   const calendarConnected = calendar?.connected === true
+  const catalogConnected = catalog?.status === 'active'
 
   const integrations: IntegrationCard[] = [
     {
@@ -75,18 +88,32 @@ export default function IntegrationsView() {
       status: calendarConnected ? 'connected' : 'available',
       statusLabel: calendarConnected ? 'Connected' : 'Not connected',
     },
+    {
+      id: 'whatsapp-catalog',
+      name: 'WhatsApp Catalog',
+      description:
+        'Show your products as native WhatsApp cards with Meta’s built-in cart — synced automatically from your product list.',
+      href: '/portal/integrations/whatsapp-catalog',
+      icon: ShoppingBag,
+      status: catalogConnected ? 'connected' : 'available',
+      statusLabel: catalogConnected
+        ? 'Connected'
+        : catalog?.configured
+          ? 'Not connected'
+          : 'Unavailable',
+    },
   ]
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <div>
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gray-100">
-            <Plug size={18} className="text-gray-600" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-surface-2">
+            <Plug size={18} className="text-ink-2" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Integrations</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-2xl font-semibold tracking-tight text-ink">Integrations</h1>
+            <p className="text-sm text-ink-2">
               Connect third-party services to extend your Replai workspace.
             </p>
           </div>
@@ -95,7 +122,7 @@ export default function IntegrationsView() {
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          <Loader2 className="h-6 w-6 animate-spin text-ink-3" />
         </div>
       ) : (
         <ul className="space-y-3">
@@ -103,35 +130,35 @@ export default function IntegrationsView() {
             const Icon = item.icon
             const isLink = item.status !== 'coming_soon'
             const inner = (
-              <Card className="p-0 overflow-hidden transition-colors hover:border-gray-300">
+              <Card className="p-0 overflow-hidden transition-colors hover:border-line-strong">
                 <div className="flex items-center gap-4 p-5">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gray-100">
-                    <Icon size={20} className="text-gray-600" />
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-surface-2">
+                    <Icon size={20} className="text-ink-2" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-gray-900">{item.name}</p>
+                      <p className="text-sm font-semibold text-ink">{item.name}</p>
                       {item.status === 'connected' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700 ring-1 ring-green-200">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-medium text-success ring-1 ring-success/25">
                           <CheckCircle2 size={10} />
                           {item.statusLabel ?? 'Connected'}
                         </span>
                       )}
                       {item.status === 'available' && item.statusLabel && (
-                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                        <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-ink-2">
                           {item.statusLabel}
                         </span>
                       )}
                       {item.status === 'coming_soon' && (
-                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-400">
+                        <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-ink-3">
                           Coming soon
                         </span>
                       )}
                     </div>
-                    <p className="mt-1 text-sm text-gray-500">{item.description}</p>
+                    <p className="mt-1 text-sm text-ink-2">{item.description}</p>
                   </div>
                   {isLink && (
-                    <ChevronRight size={18} className="shrink-0 text-gray-300" />
+                    <ChevronRight size={18} className="shrink-0 text-ink-3" />
                   )}
                 </div>
               </Card>
@@ -151,9 +178,9 @@ export default function IntegrationsView() {
         </ul>
       )}
 
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-ink-3">
         Your Replai subscription is billed separately via Paddle under{' '}
-        <Link href="/portal/subscription" className="text-gray-500 hover:text-gray-700 underline">
+        <Link href="/portal/subscription" className="text-ink-2 hover:text-ink-2 underline">
           Subscription
         </Link>
         .
